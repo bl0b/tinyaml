@@ -1,0 +1,56 @@
+_whitespace = /([ \r\n\t]|#[^\r\n]*[\r\n]+)+/.
+
+id = /[_a-zA-Z][0-9_a-zA-Z-]*/.
+
+String ::= "\"" /[^"]*/ "\"".
+Float ::= /-?(0|[1-9][0-9]*)\\.[0-9]+/.
+Integer ::= /-?(0|[1-9][0-9]*)/.
+
+
+sub_message = "[" <message> "]".
+
+REF ::= <id>.
+
+EVALUABLE = (<REF>|<sub_message>).
+
+MESSAGE ::= ( <MESSAGE> <message_rhs> | <EVALUABLE> <message_rhs> ).
+
+message_rhs = <REF> <param_seq>.
+
+message = (<MESSAGE>).
+
+param_seq = ( <PARAM> <param_seq> | epsilon ).
+PARAM ::= <id> ":" <param_value>.
+param_value = ( <EVALUABLE> | <String> | <Float> | <Integer> | <sub_message> | <DEFERRED> ).
+
+DEFERRED ::= "[[" <msg_seq_loop> "]]".
+
+MSG_SEQ ::= <msg_seq_loop>.
+msg_seq_loop = <message> ((","|".") <msg_seq_loop>|epsilon).
+BODY ::= <body_loop>.
+body_loop = <body_elem> (<body_loop> | epsilon).
+body_elem = ( <MSG_SEQ> | <Grammar> | <Plugin> ).
+_start = <BODY>.
+
+Grammar ::= ".Rules" "{" <rule_loop>.
+rule_loop = ( "}" | <rule> <rule_loop>).
+
+Plugin ::= ".Plug" <elem> "into" <elem>.
+
+elem = /[_a-zA-Z][0-9a-zA-Z_]*/ .
+T ::= ( "\"" "\" /["]/ "\""  | "\"" /[^"]+/ "\""  ) .
+NT ::= "<" <elem> ">"  .
+RE ::= "/" /((\[[^\\]]*(\])?[^\]]*])|[^/])*/ "/"  .
+rule = ( <OperatorRule> | <TransientRule> ) .
+OperatorRule ::= <elem> "::=" <rule_expr> "."  .
+TransientRule ::= <elem> "=" <rule_expr> "."  .
+rule_expr = ( <Alt> | <Seq> | <rule_elem> ) .
+Prefix ::= "[" <rule_expr> "]" <rule_elem>  .
+Seq ::= <rule_elem> <seq_expr>  .
+Alt ::= "(" <alt_expr> ")"  .
+seq_expr = ( <rule_elem> <seq_expr>  | <rule_elem> ) .
+alt_expr = ( <rule_elem> "|" <alt_expr>  | <Seq> "|" <alt_expr>  | <Seq> | <rule_elem> ) .
+rule_elem = ( <T> | <NT> | <RE> | <Alt> | <EOF> | <epsilon> | <Prefix> ) .
+EOF ::= "EOF" .
+epsilon ::= "epsilon" .
+
