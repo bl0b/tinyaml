@@ -12,6 +12,7 @@ AM_INIT_AUTOMAKE
 AC_PROG_CC
 AC_PROG_LIBTOOL
 AC_PROG_RANLIB
+AM_PROG_CC_C_O
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-ltinyap':
