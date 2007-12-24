@@ -1,0 +1,7 @@
+lib
+opcode push:Int
+opcode push:Float
+opcode pop
+opcode pop:Int
+opcode prout
+end
