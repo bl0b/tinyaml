@@ -1,41 +1,76 @@
-_whitespace = /([ \r\n\t]|#[^\r\n]*[\r\n]+)+/.
+# Grammar for the Meta-language
+#
+#
 
 id = /[_a-zA-Z][0-9_a-zA-Z-]*/.
+
+
+#####################################################################
+#
+# Evaluable atoms
+#
+#####################################################################
 
 String ::= "\"" /[^"]*/ "\"".
 Float ::= /-?(0|[1-9][0-9]*)\\.[0-9]+/.
 Integer ::= /-?(0|[1-9][0-9]*)/.
+CFunc ::= "CFunc" "(" <func_name> ")".
+
+p_EvalAtom = ( <REF> | <String> | <Float> | <Integer> | <CFunc> ).
 
 
-sub_message = "[" <message> "]".
+#####################################################################
+#
+# Contents
+#
+#####################################################################
+
+FILENAME ::= epsilon.
+func_name = <optional_file_name> <id>.
+file_name = /[^:]+/.
+optional_file_name = [( <file_name> ":" | //)] <FILENAME>.
+
+sub_message = "[" <p_Message> "]".
 
 REF ::= <id>.
 
-EVALUABLE = (<REF>|<sub_message>).
+p_Evaluable = (<p_EvalAtom>|<sub_message>|<DEFERRED>).
 
-MESSAGE ::= ( <MESSAGE> <message_rhs> | <EVALUABLE> <message_rhs> ).
-
-message_rhs = <REF> <param_seq>.
-
-message = (<MESSAGE>).
-
+MESSAGE ::= ( <MESSAGE> <message_rhs> | <p_Evaluable> <message_rhs> ).
+message_rhs = <id> <param_seq>.
 param_seq = ( <PARAM> <param_seq> | epsilon ).
-PARAM ::= <id> ":" <param_value>.
-param_value = ( <EVALUABLE> | <String> | <Float> | <Integer> | <sub_message> | <DEFERRED> ).
+
+p_Message = (<MESSAGE>|<p_EvalAtom>).
+
+PARAM ::= <id> ":" <p_Evaluable>.
 
 DEFERRED ::= "[[" <msg_seq_loop> "]]".
 
 MSG_SEQ ::= <msg_seq_loop>.
-msg_seq_loop = <message> ((","|".") <msg_seq_loop>|epsilon).
+msg_seq_loop = <p_Message> ((","|".") <msg_seq_loop>|epsilon).
+
+
+#####################################################################
+#
+# Main body
+#
+#####################################################################
+
+
 BODY ::= <body_loop>.
-body_loop = <body_elem> (<body_loop> | epsilon).
-body_elem = ( <MSG_SEQ> | <Grammar> | <Plugin> ).
-_start = <BODY>.
+body_loop = <p_BodyElem> (<body_loop> | epsilon).
+p_BodyElem = ( <MSG_SEQ> | <Grammar> ).
 
-Grammar ::= ".Rules" "{" <rule_loop>.
+
+#####################################################################
+#
+# Meta-Grammar section (copied from tinyap's meta-grammar)
+#
+#####################################################################
+
+#Grammar ::= ".Rules" "{" <rule_loop>.
+Grammar ::= "{" <rule_loop>.
 rule_loop = ( "}" | <rule> <rule_loop>).
-
-Plugin ::= ".Plug" <elem> "into" <elem>.
 
 elem = /[_a-zA-Z][0-9a-zA-Z_]*/ .
 T ::= ( "\"" "\" /["]/ "\""  | "\"" /[^"]+/ "\""  ) .
@@ -53,4 +88,28 @@ alt_expr = ( <rule_elem> "|" <alt_expr>  | <Seq> "|" <alt_expr>  | <Seq> | <rule
 rule_elem = ( <T> | <NT> | <RE> | <Alt> | <EOF> | <epsilon> | <Prefix> ) .
 EOF ::= "EOF" .
 epsilon ::= "epsilon" .
+
+
+
+#####################################################################
+#
+# Standard whitespace and comments
+#
+#####################################################################
+
+
+_whitespace = /([ \r\n\t]|#[^\r\n]*[\r\n]+)+/.
+
+
+#####################################################################
+#
+# Entry point
+#
+#####################################################################
+
+
+_start = <BODY>.
+
+
+
 

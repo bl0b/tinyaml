@@ -1,0 +1,138 @@
+# TODO: Licence, author
+# 
+# Grammar for the meta-language
+
+string = ( "\"" "\" /["]/ "\""  | "\"" /[^"]+/ "\""  ). #"\"" /([^\\"]|\\"|\\\\)*/ "\"".
+float = /[-]?[0-9]+[.][0-9]+\>/.
+int = /[-]?[0-9]+\>/.
+sym = /\<[_a-zA-Z][_a-zA-Z.0-9-]*[?]?\>/.
+
+##
+## Opcodes
+##
+#
+
+Opcode =( <Opcode_Float>
+	| <Opcode_Int>
+	| <Opcode_Label>
+	| <Opcode_String>
+	| <Opcode_Opcode>
+	| <Opcode_NoArg>
+	).
+
+Opcode_NoArg ::= <p_Opcode_NoArg>.
+Opcode_Int ::= <p_Opcode_Int> <OpcodeArg_Int>.
+Opcode_Float ::= <p_Opcode_Float> <OpcodeArg_Float>.
+Opcode_String ::= <p_Opcode_String> <OpcodeArg_String>.
+Opcode_Label ::= <p_Opcode_Label> <OpcodeArg_Label>.
+Opcode_Opcode ::= <p_Opcode_Opcode> <OpcodeArg_Opcode>.
+
+OpcodeArg_NoArg = epsilon.
+OpcodeArg_Int = <int>.
+OpcodeArg_Float = <float>.
+OpcodeArg_String = <string>.
+OpcodeArg_Label = "@" <sym>.
+OpcodeArg_Opcode = "&" <sym>.
+
+##
+## Extendable mnemonics library
+##
+#
+
+p_Opcode_NoArg = ( /\<nop\>/ | /\<SF\>/ | /\<ST\>/ | /\<pop\>/ ).
+p_Opcode_Int = ( /\<push\>/ | /\<pop\>/ | /\<dup\>/ ).
+p_Opcode_Float = ( /\<push\>/ ).
+p_Opcode_Label = ( /\<jmp\>/ ).
+p_Opcode_String = ( /\<print\>/ | /\<push\>/ | /\<DOP\.Int\>/ | /\<DOP\.Float\>/ | /\<DOP\.Label\>/ | /\<DOP\.String\>/ | /\<DOP\.Opcode\>/ | /\<DOP\>/ | /\<_lib\>/ ).
+p_Opcode_Opcode = ( /\<push\>/ ).
+
+##
+## Labels
+##
+#
+
+DeclLabel ::= <sym> ":".
+Label ::= <sym>.
+
+##
+## Assembly language (programs)
+##
+#
+
+AsmBloc ::= "asm" <asm_loop>.
+asm_loop = ( <asm_statement> <asm_loop> | <asm_statement> "end" ).
+
+asm_statement = ( <DeclLabel> <Opcode> | <Opcode> ).
+
+Program ::= <AsmBloc> EOF.
+
+
+##
+## Opcode declarations (libraries)
+##
+#
+
+DeclOpcode = [ "opcode" <sym> ] <declOpcode_opt_arg>.
+
+declOpcode_opt_arg =	( <DeclOpcode_Float>
+			| <DeclOpcode_Int>
+			| <DeclOpcode_String>
+			| <DeclOpcode_Label>
+			| <DeclOpcode_Opcode>
+			| <DeclOpcode_NoArg>
+			).
+
+DeclOpcode_Float ::= ":" "Float".
+DeclOpcode_Int ::= ":" "Int".
+DeclOpcode_String ::= ":" "String".
+DeclOpcode_Label ::= ":" "Label".
+DeclOpcode_Opcode ::= ":" "Opcode".
+DeclOpcode_NoArg ::= epsilon.
+
+Library ::= "lib" <lib_decl_loop>.
+lib_decl_loop = ( <lib_statement> <lib_decl_loop> | "end" EOF ).
+lib_statement = ( <DeclOpcode> | <LibFile> ).
+
+LibFile ::= "file" <string>.
+
+
+
+
+##
+## Entry point
+##
+#
+
+
+_start = (<Library>|<Program>).
+
+
+
+
+
+##
+## META-GRAMMAR
+##
+#
+
+elem = /[_a-zA-Z][0-9a-zA-Z_]*/ .
+T ::= ( "\"" "\" /["]/ "\""  | "\"" /[^"]+/ "\""  ) .
+NT ::= "<" <elem> ">"  .
+RE ::= "/" /((\[[^\\]]*(\])?[^\]]*])|[^/])*/ "/"  .
+rule = ( <OperatorRule> | <TransientRule> ) .
+OperatorRule ::= <elem> "::=" <rule_expr> "."  .
+TransientRule ::= <elem> "=" <rule_expr> "."  .
+rule_expr = ( <Alt> | <Seq> | <rule_elem> ) .
+Prefix ::= "[" <rule_expr> "]" <rule_elem>  .
+Postfix ::= "{" <rule_expr> "}" <rule_elem>  .
+Seq ::= <rule_elem> <seq_expr>  .
+Alt ::= "(" <alt_expr> ")"  .
+seq_expr = ( <rule_elem> <seq_expr>  | <rule_elem> ) .
+alt_expr = ( <rule_elem> "|" <alt_expr>  | <Seq> "|" <alt_expr>  | <Seq> | <rule_elem> ) .
+rule_elem = ( <T> | <NT> | <RE> | <Alt> | <EOF> | <epsilon> | <Prefix> | <Postfix> ) .
+_start = <Grammar> .
+Grammar ::= <gram_loop> .
+gram_loop = ( EOF | <rule> <gram_loop>  ) .
+EOF ::= "EOF" .
+epsilon ::= "epsilon" .
+
