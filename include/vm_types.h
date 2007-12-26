@@ -15,6 +15,8 @@ typedef struct _dynarray_t* dynarray_t;
 typedef word_t dynarray_index_t;
 typedef word_t dynarray_value_t;
 
+typedef struct _generic_stack_t* generic_stack_t;
+
 
 typedef dynarray_t code_seg_t;
 typedef struct _text_seg_t* text_seg_t;
@@ -59,9 +61,9 @@ typedef struct _opcode_dict_t* opcode_dict_t;
 
 typedef enum {
 	DataInt=0,
-	DataFloat,
-	RefString,
-	RefObject
+	DataFloat=1,
+	DataString,
+	DataObject
 } vm_data_type_t;
 
 typedef struct _slist_t* opcode_chain_t;

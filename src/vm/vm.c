@@ -5,13 +5,15 @@
 #include "program.h"
 
 #include <stdlib.h>
+#include <dlfcn.h>
 
 #include "bml_ops.h"
 
 /* hidden feature in tinyap */
 ast_node_t ast_unserialize(const char*);
 /* hidden serialized ml grammar */
-extern const char const* ml_core_grammar;
+extern const char* ml_core_grammar;
+extern const char* ml_core_lib;
 
 vm_t vm_new() {
 	vm_t ret = (vm_t)malloc(sizeof(struct _vm_t));
@@ -27,28 +29,19 @@ vm_t vm_new() {
 	dlist_init(&ret->yielded_threads);
 	ret->engine=NULL;
 
+	ret->dl_handle=NULL;
+
 	ret->cycles=0;
 
 	/* fill opcodes dictionary with basic library */
-
-	vm_add_opcode(ret,"push",OpcodeArgInt, vm_op_push_Int);
-	vm_add_opcode(ret,"push",OpcodeArgFloat, vm_op_push_Float);
-	vm_add_opcode(ret,"push",OpcodeArgString, vm_op_push_String);
-	vm_add_opcode(ret,"push",OpcodeArgOpcode, vm_op_push_Opcode);
-
-	vm_add_opcode(ret,"pop",OpcodeNoArg, vm_op_pop);
-	vm_add_opcode(ret,"pop",OpcodeArgInt, vm_op_pop_Int);
-
-	vm_add_opcode(ret,"dup",OpcodeArgInt, vm_op_dup_Int);
-
+	vm_compile_buffer(ret, ml_core_lib);
+	/* nops are hardcoded due to a limitation of tinyap */
 	vm_add_opcode(ret,"nop",OpcodeNoArg, vm_op_nop);
-
-	vm_add_opcode(ret,"SF",OpcodeNoArg, vm_op_SF);
-	vm_add_opcode(ret,"ST",OpcodeNoArg, vm_op_ST);
-
-	vm_add_opcode(ret,"jmp",OpcodeArgLabel, vm_op_jmp_Label);
-
-	vm_add_opcode(ret,"print",OpcodeArgString, vm_op_print_String);
+	vm_add_opcode(ret,"nop",OpcodeArgString, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgLabel, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgOpcode, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgInt, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgFloat, vm_op_nop);
 
 	return ret;
 }
@@ -63,6 +56,8 @@ int comp_prio(dlist_node_t a, dlist_node_t b) {
 
 
 vm_t vm_set_lib_file(vm_t vm, const char*fname) {
+	void* hnd;
+	vm->dl_handle = dlopen(fname, RTLD_LAZY);
 	return vm;
 }
 
@@ -145,7 +140,17 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 
 
 program_t vm_compile_buffer(vm_t vm, const char* buffer) {
-	return NULL;
+	program_t p=NULL;
+	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
+	tinyap_parse(vm->parser);
+
+	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
+		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
+		p = compile_wast(wa, vm);
+	} else {
+		fprintf(stderr,tinyap_get_error(vm->parser));
+	}
+	return p;
 }
 
 
@@ -191,8 +196,12 @@ void vm_exec_cycle(vm_t vm, thread_t t) {
 
 
 vm_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
-	thread_t t = thread_new(prio,p,ip);
+	thread_t t;
 	dlist_node_t dn;
+	if(!p) {
+		return vm;
+	}
+	t = thread_new(prio,p,ip);
 	vm->threads_count += 1;
 	if(vm->threads_count==1) {
 		vm->scheduler = SchedulerMonoThread;
@@ -218,7 +227,7 @@ word_t vm_get_current_thread_index(vm_t vm) {
 }
 
 thread_t vm_get_current_thread(vm_t vm) {
-	return NULL;
+	return node_value(thread_t,vm->current_thread);
 }
 
 
@@ -234,28 +243,106 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 }
 
 
+void vm_dump_data_stack(vm_t vm) {
+	struct _data_stack_entry_t* e;
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	int sz = gstack_size(stack);
+	int i;
+
+	printf("sz = %i\n",sz);
+	for(i=0;i<sz;i+=1) {
+		e = (struct _data_stack_entry_t*) gpeek(struct _data_stack_entry_t*,stack,-i);
+		printf("#%i : %8.8lX %8.8lX\n",i,e->type, e->data);
+	}
+}
 
 vm_t vm_push_data(vm_t vm, vm_data_type_t type, word_t value) {
+	struct _data_stack_entry_t e;
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	/*printf("vm push data : %lu %lu\n",type,value);*/
+	e.type = type;
+	e.data = value;
+	gpush( stack, &e );
+	/*vm_dump_data_stack(vm);*/
 	return vm;
 }
 
-vm_t vm_push_caller(vm_t vm, code_seg_t seg, word_t ofs) {
+vm_t vm_push_caller(vm_t vm, program_t seg, word_t ofs) {
+	struct _call_stack_entry_t e;
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->call_stack;
+	e.cs = seg;
+	e.ip = ofs;
+	gpush( stack, &e );
 	return vm;
 }
 
-vm_t vm_push_catcher(vm_t vm, code_seg_t seg, word_t ofs) {
+vm_t vm_push_catcher(vm_t vm, program_t seg, word_t ofs) {
+	struct _call_stack_entry_t e;
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->catch_stack;
+	e.cs = seg;
+	e.ip = ofs;
+	gpush( stack, &e );
 	return vm;
 }
+
+
+vm_t vm_peek_data(vm_t vm, int rel_ofs, vm_data_type_t* type, word_t* value) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	struct _data_stack_entry_t* top = gpeek( struct _data_stack_entry_t*, stack, rel_ofs );
+	*type = (vm_data_type_t) top->type;
+	*value = top->data;
+	return vm;
+}
+
+vm_t vm_poke_data(vm_t vm, vm_data_type_t type, word_t value) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	struct _data_stack_entry_t* top = gpeek( struct _data_stack_entry_t*, stack, 0 );
+	top->type = type;
+	top->data = value;
+	return vm;
+}
+
+vm_t vm_peek_caller(vm_t vm, program_t* cs, word_t* ip) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->call_stack;
+	struct _call_stack_entry_t* top = gpeek( struct _call_stack_entry_t*, stack, 0 );
+	*cs = top->cs;
+	*ip = top->ip;
+	return vm;
+}
+
+vm_t vm_peek_catcher(vm_t vm, program_t* cs, word_t* ip) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->catch_stack;
+	struct _call_stack_entry_t* top = gpeek( struct _catch_stack_entry_t*, stack, 0 );
+	*cs = top->cs;
+	*ip = top->ip;
+	return vm;
+}
+
 
 vm_t vm_pop_data(vm_t vm, word_t count) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	while(count>0) {
+		_gpop(stack);
+		count-=1;
+	}
 	return vm;
 }
 
-vm_t vm_pop_caller(vm_t vm) {
+vm_t vm_pop_caller(vm_t vm, word_t count) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->call_stack;
+	while(count>0) {
+		_gpop(stack);
+		count-=1;
+	}
 	return vm;
 }
 
-vm_t vm_pop_catcher(vm_t vm) {
+vm_t vm_pop_catcher(vm_t vm, word_t count) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->catch_stack;
+	while(count>0) {
+		_gpop(stack);
+		count-=1;
+	}
 	return vm;
 }
 
@@ -316,10 +403,11 @@ vm_t vm_schedule_cycle(vm_t vm) {
 	case SchedulerMonoThread:
 		current = vm_select_thread(vm);
 		if(current) {
-			printf("CURRENT THREAD %p\n",current);
+/*			printf("CURRENT THREAD %p\n",current);
 			printf("CURRENT PROGRAM %p\n",current->program);
-			vm_exec_cycle(vm,current);
+*/			vm_exec_cycle(vm,current);
 			if(current->state==ThreadDying) {
+				vm_dump_data_stack(vm);
 				dlist_remove(&vm->running_threads,vm->current_thread);
 				vm->current_thread=NULL;
 				vm->threads_count-=1;

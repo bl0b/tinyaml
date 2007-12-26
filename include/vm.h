@@ -38,11 +38,15 @@ vm_t vm_kill_thread(vm_t,thread_t);
 
 
 vm_t vm_push_data(vm_t,vm_data_type_t, word_t);
-vm_t vm_push_caller(vm_t, code_seg_t, word_t);
-vm_t vm_push_catcher(vm_t, code_seg_t, word_t);
+vm_t vm_push_caller(vm_t, program_t, word_t);
+vm_t vm_push_catcher(vm_t, program_t, word_t);
+vm_t vm_peek_data(vm_t,int,vm_data_type_t*,word_t*);
+vm_t vm_poke_data(vm_t,vm_data_type_t,word_t);
+vm_t vm_peek_caller(vm_t,program_t*,word_t*);
+vm_t vm_peek_catcher(vm_t,program_t*,word_t*);
 vm_t vm_pop_data(vm_t,word_t);
-vm_t vm_pop_caller(vm_t);
-vm_t vm_pop_catcher(vm_t);
+vm_t vm_pop_caller(vm_t,word_t);
+vm_t vm_pop_catcher(vm_t,word_t);
 
 vm_t vm_set_engine(vm_t, vm_engine_t);
 

@@ -19,8 +19,8 @@ void program_free(program_t p) {
 }
 
 void program_fetch(program_t p, word_t ip, word_t* op, word_t* arg) {
-	printf("fetch at @%p:%8.8lX : %8.8lX %8.8lX\n",p,ip,dynarray_get(&p->code,ip),dynarray_get(&p->code,ip+1));
-	*arg = dynarray_get(&p->code,ip+1);
+/*	printf("fetch at @%p:%8.8lX : %8.8lX %8.8lX\n",p,ip,dynarray_get(&p->code,ip),dynarray_get(&p->code,ip+1));
+*/	*arg = dynarray_get(&p->code,ip+1);
 	*op = dynarray_get(&p->code,ip);
 }
 
@@ -31,10 +31,10 @@ void program_reserve_code(program_t p, word_t sz) {
 
 void program_write_code(program_t p, word_t op, word_t arg) {
 	word_t ip = dynarray_size(&p->code);
-	printf("writing %8.8lX:%8.8lX into code seg at %p (%lu words long)\n",op,arg,p,dynarray_size(&p->code));
-	dynarray_set(&p->code,ip+1,arg);
+/*	printf("writing %8.8lX:%8.8lX into code seg at %p (%lu words long)\n",op,arg,p,dynarray_size(&p->code));
+*/	dynarray_set(&p->code,ip+1,arg);
 	dynarray_set(&p->code,ip,op);
-	{
+/*	{
 		int i;
 		for(i=0;i<dynarray_size(&p->code);i+=2) {
 			printf("%8.8lX %8.8lX   ",dynarray_get(&p->code,i),dynarray_get(&p->code,i+1));
@@ -42,7 +42,7 @@ void program_write_code(program_t p, word_t op, word_t arg) {
 		}
 		printf("\n");
 	}
-}
+*/}
 
 word_t program_get_code_size(program_t p) {
 	return dynarray_size(&p->code);

@@ -11,6 +11,14 @@ struct _dynarray_t {
 	dynarray_value_t* data;
 };
 
+struct _generic_stack_t {
+	word_t sz;
+	word_t sp;
+	word_t tok_sp;
+	word_t token_size;
+	void* stack;
+};
+
 struct _vm_engine_t {
 	void(*_init)(vm_engine_t);
 	void(*_deinit)(vm_engine_t);
@@ -23,14 +31,9 @@ struct _vm_engine_t {
 
 struct _opcode_chain_node_t {
 	opcode_chain_node_type_t type;
-	union {
-		const char* label;
-		struct {
-			const char* name;
-			const char* arg;
-			opcode_arg_t arg_type;
-		} opcode;
-	} node;
+	const char* name;
+	const char* arg;
+	opcode_arg_t arg_type;
 	word_t lofs;
 };
 
@@ -63,7 +66,7 @@ struct _data_stack_entry_t {
 };
 
 struct _call_stack_entry_t {
-	dynarray_t cs;
+	program_t cs;
 	word_t ip;
 };
 
@@ -72,6 +75,8 @@ struct _vm_t {
 	tinyap_t parser;
 	/* known opcodes */
 	struct _opcode_dict_t opcodes;
+	/* library management */
+	void* dl_handle;
 	/* threads */
 	scheduler_algorithm_t scheduler;
 	word_t threads_count;
@@ -107,6 +112,7 @@ struct _thread_t {
 	word_t IP_status;
 	word_t prio;
 	word_t remaining;
+	mutex_t pending_lock;
 };
 
 

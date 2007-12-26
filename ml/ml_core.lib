@@ -1,0 +1,66 @@
+        lib
+
+      # stack management
+        opcode push:Int
+        opcode push:Float
+        opcode push:String
+        opcode push:Opcode
+        opcode pop
+        opcode pop:Int          # pop n values
+        opcode dup:Int          # duplicate n-th value on top of stack
+      # tests
+        opcode SF               # skip next instruction if (zero)
+        opcode ST               # skip next instruction if (non zero)
+      # jumps
+        opcode jmp:Label        # relative intra-segment jump
+      # call stack
+        opcode call:Label       # intra-segment call
+        opcode lcall:Label      # pop segment then perform long call
+        opcode ret:Int          # copy stack top then pop out n values
+                                # then poke old stack top then return
+        opcode leave:Int        # pop out n values then return
+      # bin&arith
+        opcode shr              # shift right
+        opcode shr:Int          # shift right n bits
+        opcode vshr             # pop n then shift right n bits
+
+        opcode shl              # shift left
+        opcode shl:Int          # shift left n bits
+        opcode vshl             # pop n then shift left n bits
+
+        opcode and
+        opcode or
+        opcode not
+        opcode xor
+        opcode and:Int
+        opcode or:Int
+        opcode xor:Int
+
+        opcode inc
+        opcode dec
+
+        opcode mod
+        opcode mod:Int
+        opcode mod:Float
+
+        opcode add              # use two values on top of stack
+        opcode sub
+        opcode mul
+        opcode div
+
+        opcode add:Int          # use top of stack and immed value
+        opcode sub:Int
+        opcode mul:Int
+        opcode div:Int
+
+        opcode add:Float
+        opcode sub:Float
+        opcode mul:Float
+        opcode div:Float
+      # TODO: AST manipulation
+      # TODO: compiler manipulation
+
+      # FIXME: output and debug mechanisms
+        opcode print:Int
+        end
+

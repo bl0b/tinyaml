@@ -39,12 +39,13 @@ OpcodeArg_Opcode = "&" <sym>.
 ##
 #
 
-p_Opcode_NoArg = ( /\<nop\>/ | /\<SF\>/ | /\<ST\>/ | /\<pop\>/ ).
-p_Opcode_Int = ( /\<push\>/ | /\<pop\>/ | /\<dup\>/ ).
-p_Opcode_Float = ( /\<push\>/ ).
-p_Opcode_Label = ( /\<jmp\>/ ).
-p_Opcode_String = ( /\<print\>/ | /\<push\>/ | /\<DOP\.Int\>/ | /\<DOP\.Float\>/ | /\<DOP\.Label\>/ | /\<DOP\.String\>/ | /\<DOP\.Opcode\>/ | /\<DOP\>/ | /\<_lib\>/ ).
-p_Opcode_Opcode = ( /\<push\>/ ).
+p_Opcode_NoArg = (/\<nop\>/).
+p_Opcode_Int = (/\<nop\>/).
+p_Opcode_Float = (/\<nop\>/).
+p_Opcode_String = (/\<nop\>/).
+p_Opcode_Label = (/\<nop\>/).
+p_Opcode_Opcode = (/\<nop\>/).
+
 
 ##
 ## Labels
@@ -52,7 +53,6 @@ p_Opcode_Opcode = ( /\<push\>/ ).
 #
 
 DeclLabel ::= <sym> ":".
-Label ::= <sym>.
 
 ##
 ## Assembly language (programs)

@@ -21,24 +21,18 @@
 
 #include "vm_types.h"
 
-typedef struct _generic_stack_t {
-	word_t sz;
-	word_t sp;
-	word_t tok_sp;
-	word_t token_size;
-	void* stack;
-}* generic_stack_t;
-
 generic_stack_t new_gstack(word_t token_size);
 void gstack_init(generic_stack_t, word_t token_size);
 
 void gpush(generic_stack_t s, void* w);
 
 void* _gpop(generic_stack_t s);
-#define gpop(__t,__s) ((__t)_pop(__s))
-void* _gpeek(generic_stack_t s);
-#define gpeek(__t,__s) ((__t)_peek(__s))
+#define gpop(__t,__s) ((__t)_gpop(__s))
+void* _gpeek(generic_stack_t s,int);
+#define gpeek(__t,__s,__i) ((__t)_gpeek(__s,__i))
 void free_gstack(generic_stack_t s);
+
+word_t gstack_size(generic_stack_t s);
 
 #define gstack_is_empty(_s) (_s->sp==((word_t)-1))
 #define gstack_is_not_empty(_s) (_s->sp!=((word_t)-1))

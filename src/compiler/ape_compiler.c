@@ -10,6 +10,7 @@
 #include "opcode_chain.h"
 #include "opcode_dict.h"
 #include "program.h"
+#include "_impl.h"
 
 typedef struct _env_t {
 	vm_t vm;
@@ -18,9 +19,12 @@ typedef struct _env_t {
 
 program_t compile_wast(wast_t node, vm_t vm) {
 	opcode_chain_t result = (opcode_chain_t)tinyap_walk(node, "compiler", vm);
-	program_t ret = program_new();
-	opcode_chain_serialize(result, vm_get_dict(vm), ret);
-	return ret;
+	if(result) {
+		program_t ret = program_new();
+		opcode_chain_serialize(result, vm_get_dict(vm), ret);
+		return ret;
+	}
+	return NULL;
 }
 
 
@@ -38,23 +42,24 @@ void ape_compiler_free(void*data) {
 
 
 WalkDirection ape_compiler_default(wast_t node, env_t env) {
-//	obj_t compiler = ml_env_find(env->env,"compiler");
-//	obj_t compileMethod = obj_get_by_name(obj_get_by_name(compiler,"compileMethods"),wa_op(node));
-//	if(compileMethod) {
-//		obj_t paramlist = obj_new(ml_env_find(env->env,"Object"));
-//		obj_t tree = obj_new(ml_env_find(env->env,"AST"));
-//		tree->content_bits = CTS_INTRINSIC|CTS_PTR;
-//		tree->_intrinsic.ptr = node;
-//		obj_add(paramlist, "tree", tree);
-//		env->result = msg_send(compiler, compileMethod, paramlist, env->env);
-//		/* build a parameter list containing tree */
-//		//fprintf(stderr,"TODO : compileMethod\n");
-//		return Done;
-//	} else {
-//		fprintf(stderr,"Node is not known '%s'\n",wa_op(node));
-//		return Error;
-//	}
+/*
+	obj_t compiler = ml_env_find(env->env,"compiler");
+	obj_t compileMethod = obj_get_by_name(obj_get_by_name(compiler,"compileMethods"),wa_op(node));
+	if(compileMethod) {
+		obj_t paramlist = obj_new(ml_env_find(env->env,"Object"));
+		obj_t tree = obj_new(ml_env_find(env->env,"AST"));
+		tree->content_bits = CTS_INTRINSIC|CTS_PTR;
+		tree->_intrinsic.ptr = node;
+		obj_add(paramlist, "tree", tree);
+		env->result = msg_send(compiler, compileMethod, paramlist, env->env);
+		//fprintf(stderr,"TODO : compileMethod\n");
+		return Done;
+	} else {
+		fprintf(stderr,"Node is not known '%s'\n",wa_op(node));
+		return Error;
+	}
 	fprintf(stderr,"Node is not known '%s'\n",wa_op(node));
+*/
 	return Error;
 }
 
@@ -112,6 +117,121 @@ WalkDirection ape_compiler_Opcode_Opcode(wast_t node, env_t env) {
 
 WalkDirection ape_compiler_Opcode_NoArg(wast_t node, env_t env) {
 	return ocao(node,env,OpcodeNoArg);
+}
+
+
+/*
+ * Opcode declarations
+ */
+
+
+WalkDirection ape_compiler_Library(wast_t node, env_t env) {
+	return Down;
+}
+
+
+WalkDirection ape_compiler_LibFile(wast_t node, env_t env) {
+	vm_set_lib_file(env->vm, wa_op(wa_opd(node,0)));
+	return Next;
+}
+
+
+opcode_stub_t opcode_stub_resolve(opcode_arg_t arg_type, const char* name, void* dl_handle);
+
+
+void plug_opcode(tinyap_t parser, const char* arg_type, const char* opcode) {
+	ast_node_t new_rule;
+
+	char* re = (char*)malloc(strlen(opcode)+5);
+	char* plug = (char*) malloc(strlen(arg_type)+10);
+
+	sprintf(plug, "p_Opcode_%s",arg_type);
+	sprintf(re,"\\<%s\\>",opcode);
+
+	/* create node (RE [re]) */
+	new_rule = newPair(
+			newPair(newAtom("RE",0,0), newPair(
+				newAtom(re,0,0), NULL, 0, 0), 0, 0),
+			NULL,0,0);
+	/*printf("adding new opcode RE : %s\n",ast_serialize_to_string(new_rule));*/
+
+	tinyap_plug_node(parser, new_rule, opcode, plug);
+
+	free(re);
+	free(plug);
+}
+
+
+WalkDirection ape_compiler_DeclOpcode_Float(wast_t node, env_t env) {
+	opcode_stub_t os;
+	const char* name = wa_op(wa_opd(node,0));
+	plug_opcode(env->vm->parser, "Float", name);
+	os = opcode_stub_resolve(OpcodeArgFloat,name,env->vm->dl_handle);
+	if(!os) {
+		fprintf(stderr,"warning : loading NULL opcode : %s:Float\n",name);
+	}
+	opcode_dict_add(vm_get_dict(env->vm), OpcodeArgFloat, name, os);
+	return Next;
+}
+
+WalkDirection ape_compiler_DeclOpcode_Int(wast_t node, env_t env) {
+	opcode_stub_t os;
+	const char* name = wa_op(wa_opd(node,0));
+	plug_opcode(env->vm->parser, "Int", name);
+	os = opcode_stub_resolve(OpcodeArgInt,name,env->vm->dl_handle);
+	if(!os) {
+		fprintf(stderr,"warning : loading NULL opcode : %s:Int\n",name);
+	}
+	opcode_dict_add(vm_get_dict(env->vm), OpcodeArgInt, name, os);
+	return Next;
+}
+
+WalkDirection ape_compiler_DeclOpcode_Label(wast_t node, env_t env) {
+	opcode_stub_t os;
+	const char* name = wa_op(wa_opd(node,0));
+	plug_opcode(env->vm->parser, "Label", name);
+	os = opcode_stub_resolve(OpcodeArgLabel,name,env->vm->dl_handle);
+	if(!os) {
+		fprintf(stderr,"warning : loading NULL opcode : %s:Label\n",name);
+	}
+	opcode_dict_add(vm_get_dict(env->vm), OpcodeArgLabel, name, os);
+	return Next;
+}
+
+WalkDirection ape_compiler_DeclOpcode_Opcode(wast_t node, env_t env) {
+	opcode_stub_t os;
+	const char* name = wa_op(wa_opd(node,0));
+	plug_opcode(env->vm->parser, "Opcode", name);
+	os = opcode_stub_resolve(OpcodeArgOpcode,name,env->vm->dl_handle);
+	if(!os) {
+		fprintf(stderr,"warning : loading NULL opcode : %s:Opcode\n",name);
+	}
+	opcode_dict_add(vm_get_dict(env->vm), OpcodeArgOpcode, name, os);
+	return Next;
+}
+
+WalkDirection ape_compiler_DeclOpcode_String(wast_t node, env_t env) {
+	opcode_stub_t os;
+	const char* name = wa_op(wa_opd(node,0));
+	plug_opcode(env->vm->parser, "String", name);
+	os = opcode_stub_resolve(OpcodeArgString,name,env->vm->dl_handle);
+	if(!os) {
+		fprintf(stderr,"warning : loading NULL opcode : %s:String\n",name);
+	}
+	opcode_dict_add(vm_get_dict(env->vm), OpcodeArgString, name, os);
+	return Next;
+}
+
+WalkDirection ape_compiler_DeclOpcode_NoArg(wast_t node, env_t env) {
+	opcode_stub_t os;
+	const char* name = wa_op(wa_opd(node,0));
+	plug_opcode(env->vm->parser, "NoArg", name);
+	os = opcode_stub_resolve(OpcodeNoArg,name,env->vm->dl_handle);
+	if(!os) {
+		fprintf(stderr,"warning : loading NULL opcode : %s:NoArg\n",name);
+	}
+	opcode_dict_add(vm_get_dict(env->vm), OpcodeNoArg, name, os);
+	return Next;
 }
 
 

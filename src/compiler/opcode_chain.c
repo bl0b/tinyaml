@@ -8,26 +8,26 @@
 #include <stdio.h>
 
 opcode_chain_node_t ochain_new_opcode(opcode_arg_t arg_type, const char* opcode, const char* arg) {
-	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(opcode_chain_node_t));
+	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeOpcode;
-	ocn->node.opcode.name=strdup(opcode);
-	ocn->node.opcode.arg_type=arg_type;
-	ocn->node.opcode.arg=strdup(opcode);
+	ocn->name=strdup(opcode);
+	ocn->arg_type=arg_type;
+	ocn->arg=strdup(opcode);
 	return ocn;
 }
 
 opcode_chain_node_t ochain_new_label(const char* label) {
-	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(opcode_chain_node_t));
+	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeLabel;
-	ocn->node.label=strdup(label);
+	ocn->name=strdup(label);
 	return ocn;
 }
 
 void opcode_chain_node_free(opcode_chain_node_t ocn) {
 	if(ocn->type==NodeOpcode) {
-		free((char*)ocn->node.opcode.arg);
+		free((char*)ocn->arg);
 	}
-	free((char*)ocn->node.label);	/* label is an alias for opcode.name */
+	free((char*)ocn->name);	/* label is an alias for opcode.name */
 	free(ocn);
 }
 
@@ -47,14 +47,14 @@ opcode_chain_t opcode_chain_add_label(opcode_chain_t oc, const char*label) {
 opcode_chain_t opcode_chain_add_opcode(opcode_chain_t oc, opcode_arg_t argtyp, const char* opcode, const char* arg) {
 	const char*argdup;
 	opcode_chain_node_t ocn = ochain_new_opcode(argtyp,opcode,arg);
-	ocn->node.opcode.name=strdup(opcode);
-	ocn->node.opcode.arg_type=argtyp;
+	ocn->name=strdup(opcode);
+	ocn->arg_type=argtyp;
 	if(arg) {
 		argdup=strdup(arg);
 	} else {
 		argdup=NULL;
 	}
-	ocn->node.opcode.arg=argdup;
+	ocn->arg=argdup;
 	slist_insert_tail(oc, ocn);
 	return oc;
 }
@@ -91,7 +91,7 @@ word_t opcode_label_to_ofs(opcode_chain_t oc, const char* label) {
 	sn = list_head(oc);
 	while(sn!=NULL) {
 		ocn = node_value(opcode_chain_node_t,sn);
-		if(ocn->type==NodeLabel&&!strcmp(ocn->node.label,label)) {
+		if(ocn->type==NodeLabel&&!strcmp(ocn->name,label)) {
 			return ocn->lofs;
 		}
 		sn=sn->next;
@@ -103,39 +103,39 @@ word_t opcode_label_to_ofs(opcode_chain_t oc, const char* label) {
  * transforms a symbolic opcode into raw executable wordcode
  */
 void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_chain_node_t ocn, program_t p) {
-	word_t op = (word_t)opcode_stub_by_name(od,ocn->node.opcode.arg_type, ocn->node.opcode.name);
+	word_t op = (word_t)opcode_stub_by_name(od,ocn->arg_type, ocn->name);
 	word_t arg;
 	float tmp;
-	printf("got opcode %s.",ocn->node.opcode.name);
-	switch(ocn->node.opcode.arg_type) {
+	printf("got opcode %s.",ocn->name);
+	switch(ocn->arg_type) {
 	case OpcodeNoArg:
 		printf("noArg      ");
 		arg=0;
 		break;
 	case OpcodeArgInt:
-		printf("Int   \t(%s)",ocn->node.opcode.arg);
-		arg=(word_t)atoi(ocn->node.opcode.arg);
+		printf("Int   \t(%s)",ocn->arg);
+		arg=(word_t)atoi(ocn->arg);
 		break;
 	case OpcodeArgFloat:
-		printf("Float \t(%s)", ocn->node.opcode.arg);
-		tmp=(float)atof(ocn->node.opcode.arg);
+		printf("Float \t(%s)", ocn->arg);
+		tmp=(float)atof(ocn->arg);
 		arg=*(word_t*)(&tmp);
 		break;
 	case OpcodeArgString:
-		printf("String\t(%s)", ocn->node.opcode.arg);
-		arg = program_find_string(p, ocn->node.opcode.arg);
+		printf("String\t(%s)", ocn->arg);
+		arg = program_find_string(p, ocn->arg);
 		break;
 	case OpcodeArgLabel:
-		printf("Label \t(%s)", ocn->node.opcode.arg);
-		arg = opcode_label_to_ofs(oc,ocn->node.opcode.arg) - ip;
+		printf("Label \t(%s)", ocn->arg);
+		arg = opcode_label_to_ofs(oc,ocn->arg) - ip;
 		break;
 	case OpcodeArgOpcode:
-		printf("Opcode\t(%s)", ocn->node.opcode.arg);
+		printf("Opcode\t(%s)", ocn->arg);
 		/* TODO */
 		arg=(word_t)-1;
 		break;
 	default:;
-		printf("[ERROR:VM] Arg type not supported %X\n",ocn->node.opcode.arg_type);
+		printf("[ERROR:VM] Arg type not supported %X\n",ocn->arg_type);
 	};
 	printf("\tserialized %8.8lX : %8.8lX\n",op,arg);
 	program_write_code(p,op,arg);

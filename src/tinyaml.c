@@ -4,6 +4,8 @@
 
 #include "_impl.h"
 
+#include "fastmath.h"
+
 program_t compile_wast(wast_t node, vm_t vm);
 
 
@@ -40,12 +42,17 @@ int main(int argc, char** argv) {
 
 	p = vm_compile_file(vm,"tests/test.asm");
 
-	w = file_writer_new("test_asm.bin");
-	vm_serialize_program(vm,p,w);
-	writer_close(w);
+	if(p) {
+		w = file_writer_new("test_asm.bin");
+		printf("Parser output dump : \n%s\n====== END OF DUMP ======\n",tinyap_serialize_to_string(tinyap_get_output(vm->parser)));
+		vm_serialize_program(vm,p,w);
+		writer_close(w);
+	}
 
 	vm_set_engine(vm, &stub_engine);
 	vm_run_program(vm, p, 50);
+
+	printf("VM Runned for %lu cycles.\n",vm->cycles);
 
 	return 0;
 }
