@@ -2,11 +2,16 @@
 #include "_impl.h"
 #include <stdio.h>
 
+#include <math.h>
 #include "fastmath.h"
 
 void vm_op_nop(vm_t vm, word_t data) {
 	/* complex algorithmic device */
 }
+
+
+
+
 
 /* FIXME : have print take an Int and pop&print as many values */
 void vm_op_print_Int(vm_t vm, int n) {
@@ -61,13 +66,15 @@ void vm_op_pop_Int(vm_t vm, word_t data) {
 }
 
 void vm_op_dup_Int(vm_t vm, word_t data) {
-	word_t a,b;
+	vm_data_type_t a;
+	word_t b;
 	vm_peek_data(vm,(int)data,&a,&b);
 	vm_push_data(vm, a, b);
 }
 
-void vm_op_ST(vm_t vm, word_t data) {
-	word_t a,b;
+void vm_op_SNZ(vm_t vm, word_t data) {
+	vm_data_type_t a;
+	word_t b;
 	vm_peek_data(vm,(int)data,&a,&b);
 	vm_pop_data(vm,1);
 	if(b) {
@@ -75,8 +82,9 @@ void vm_op_ST(vm_t vm, word_t data) {
 	}
 }
 
-void vm_op_SF(vm_t vm, word_t data) {
-	word_t a,b;
+void vm_op_SZ(vm_t vm, word_t data) {
+	vm_data_type_t a;
+	word_t b;
 	vm_peek_data(vm,(int)data,&a,&b);
 	vm_pop_data(vm,1);
 	if(!b) {
@@ -105,15 +113,45 @@ void vm_op_call_Label(vm_t vm, word_t data) {
 
 void vm_op_lcall_Label(vm_t vm, word_t data) {
 	thread_t t=node_value(thread_t,vm->current_thread);
-	word_t a,b;
+	vm_data_type_t a;
+	word_t b;
 	vm_peek_data(vm,0,&a,&b);
 	vm_push_caller(vm, t->program, t->IP);
-	t->jmp_seg=b;
+	t->jmp_seg=(program_t)b;
 	/* FIXME : can resolve_label() set up correct data value ? */
 	t->jmp_ofs=data;
 }
 
-void vm_op_ret_Int(vm_t vm, word_t n) {
+
+void vm_op_enter_Int(vm_t vm, word_t size) {
+	thread_t t=node_value(thread_t,vm->current_thread);
+	gstack_grow(&t->locals_stack,size);
+}
+
+void vm_op_leave_Int(vm_t vm, word_t size) {
+	thread_t t=node_value(thread_t,vm->current_thread);
+	gstack_shrink(&t->locals_stack,size);
+}
+
+void vm_op_getLocal_Int(vm_t vm, int n) {
+	thread_t t=node_value(thread_t,vm->current_thread);
+	struct _data_stack_entry_t* local = _gpeek(&t->locals_stack,-n);
+	vm_push_data(vm,local->type,local->data);
+}
+
+void vm_op_setLocal_Int(vm_t vm, int n) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	generic_stack_t locstack = &node_value(thread_t,vm->current_thread)->locals_stack;
+	struct _data_stack_entry_t* top = gpeek( struct _data_stack_entry_t*, stack, 0 );
+	struct _data_stack_entry_t* local = gpeek( struct _data_stack_entry_t*, locstack, -n );
+	local->type=top->type;
+	local->data=top->data;
+	_gpop(stack);
+}
+
+
+
+void vm_op_retval_Int(vm_t vm, word_t n) {
 	program_t cs;
 	word_t ip;
 	vm_data_type_t dt;
@@ -128,7 +166,8 @@ void vm_op_ret_Int(vm_t vm, word_t n) {
 	t->jmp_ofs=ip+2;
 }
 
-void vm_op_leave_Int(vm_t vm, word_t n) {
+
+void vm_op_ret_Int(vm_t vm, word_t n) {
 	program_t cs;
 	word_t ip;
 	thread_t t=node_value(thread_t,vm->current_thread);

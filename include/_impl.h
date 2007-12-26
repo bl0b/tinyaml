@@ -101,11 +101,12 @@ struct _thread_t {
 	/* attached program */
 	program_t program;
 	/* execution context */
+	struct _generic_stack_t locals_stack;
 	struct _generic_stack_t data_stack;
 	struct _generic_stack_t call_stack;
 	struct _generic_stack_t catch_stack;
 	word_t IP;
-	code_seg_t jmp_seg;
+	program_t jmp_seg;
 	word_t jmp_ofs;
 	/* scheduling */
 	thread_state_t state;

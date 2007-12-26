@@ -24,6 +24,24 @@ word_t gstack_size(generic_stack_t s) {
 */	return s->sp+1;
 }
 
+/* this one will be used only with locals stack */
+void gstack_grow(generic_stack_t s, word_t count) {
+	assert(count<16384);
+	s->sp+=count;
+	s->tok_sp += s->token_size * count;
+	if(s->sz <= s->tok_sp) {
+		s->sz+=16384;
+		s->stack = (word_t*) realloc(s->stack, s->sz*s->token_size);
+	}
+}
+
+/* this one will be used only with locals stack */
+void gstack_shrink(generic_stack_t s, word_t count) {
+	assert(((long) s->sp) >= ((long) count-1));
+	s->sp-=count;
+	s->tok_sp -= s->token_size * count;
+}
+
 void gpush(generic_stack_t s, void* w) {
 	int i;
 /*	printf("gpush\n");

@@ -34,6 +34,9 @@ void free_gstack(generic_stack_t s);
 
 word_t gstack_size(generic_stack_t s);
 
+void gstack_grow(generic_stack_t s, word_t count);
+void gstack_shrink(generic_stack_t s, word_t count);
+
 #define gstack_is_empty(_s) (_s->sp==((word_t)-1))
 #define gstack_is_not_empty(_s) (_s->sp!=((word_t)-1))
 

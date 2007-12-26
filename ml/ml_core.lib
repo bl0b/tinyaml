@@ -9,16 +9,21 @@
         opcode pop:Int          # pop n values
         opcode dup:Int          # duplicate n-th value on top of stack
       # tests
-        opcode SF               # skip next instruction if (zero)
-        opcode ST               # skip next instruction if (non zero)
+        opcode SZ               # skip next instruction if zero
+        opcode SNZ              # skip next instruction if non zero
       # jumps
         opcode jmp:Label        # relative intra-segment jump
       # call stack
         opcode call:Label       # intra-segment call
         opcode lcall:Label      # pop segment then perform long call
-        opcode ret:Int          # copy stack top then pop out n values
+        opcode retval:Int       # copy stack top then pop out n values
                                 # then poke old stack top then return
-        opcode leave:Int        # pop out n values then return
+        opcode ret:Int          # pop out n values then return
+      # locals stack
+        opcode enter:Int        # reserve n local variables
+        opcode leave:Int        # undo previous enter
+        opcode getLocal:Int     # push local value #n onto data stack
+        opcode setLocal:Int     # pop local value #n from data stack
       # bin&arith
         opcode shr              # shift right
         opcode shr:Int          # shift right n bits
