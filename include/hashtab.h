@@ -1,4 +1,4 @@
-/* .
+/* TinyaML
  * Copyright (C) 2007 Damien Leroux
  *
  * This program is free software; you can redistribute it and/or

@@ -11,6 +11,7 @@ include_HEADERS =	code.h \
 			thread.h \
 			vm_engine.h \
 			vm.h \
+			abstract_io.h \
 			vm_types.h
 
 
