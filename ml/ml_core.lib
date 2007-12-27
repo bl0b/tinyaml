@@ -19,11 +19,14 @@
         opcode retval:Int       # copy stack top then pop out n values
                                 # then poke old stack top then return
         opcode ret:Int          # pop out n values then return
-      # locals stack
+      # address space management
         opcode enter:Int        # reserve n local variables
         opcode leave:Int        # undo previous enter
-        opcode getLocal:Int     # push local value #n onto data stack
-        opcode setLocal:Int     # pop local value #n from data stack
+        opcode getmem:Int       # n>0  : push n-th global data
+                                # n<=0 : push n-th local data
+        opcode setmem:Int       # pop data into mem cell #n (see above)
+        opcode getmem           # pop n from data stack then getmem n
+        opcode setmem           # pop n from data stack then setmem n
       # bin&arith
         opcode shr              # shift right
         opcode shr:Int          # shift right n bits

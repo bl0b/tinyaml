@@ -34,6 +34,20 @@ void dynarray_init(dynarray_t ret) {
 	memset(ret,0,sizeof(struct _dynarray_t));
 }
 
+
+void dynarray_deinit(dynarray_t zou,void(*callback)(word_t)) {
+	if(zou->data) {
+		if(callback) {
+			int i;
+			for(i=0;i<zou->size;i++) {
+				callback(zou->data[i]);
+			}
+		}
+		free(zou->data);
+	}
+}
+
+
 void dynarray_del(dynarray_t d) {
 	if(d->data) {
 		free(d->data);
@@ -42,10 +56,8 @@ void dynarray_del(dynarray_t d) {
 }
 
 void dynarray_reserve(dynarray_t d, word_t new_size) {
-	//printf("realloc'ing dynarray %p from %lu to %lu words\n",d, d->reserved, new_size);
+	/*printf("realloc'ing dynarray %p from %lu to %lu words\n",d, d->reserved, new_size);*/
 	d->data = realloc(d->data, new_size*sizeof(dynarray_value_t));
-	memset( d->data + d->size*sizeof(dynarray_value_t), 0,
-		(new_size - d->size)*sizeof(dynarray_value_t));
 	d->reserved = new_size;
 }
 
@@ -69,6 +81,10 @@ void dynarray_set(dynarray_t d, dynarray_index_t index, dynarray_value_t v) {
 	if(d->reserved <= index) {
 		word_t new_size = DYNARRAY_QUANTIZE(index);
 		dynarray_reserve(d,new_size);
+		if(d->size&&index>d->size) {
+			memset( d->data + d->size*sizeof(dynarray_value_t), 0,
+				(index - d->size)*sizeof(dynarray_value_t));
+		}
 	}
 	if(d->size<=index) {
 		d->size = index+1;

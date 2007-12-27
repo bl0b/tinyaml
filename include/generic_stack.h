@@ -23,6 +23,7 @@
 
 generic_stack_t new_gstack(word_t token_size);
 void gstack_init(generic_stack_t, word_t token_size);
+void gstack_deinit(generic_stack_t, void (*callback)(void*));
 
 void gpush(generic_stack_t s, void* w);
 

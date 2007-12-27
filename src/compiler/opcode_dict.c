@@ -55,14 +55,30 @@ void opcode_dict_init(opcode_dict_t od) {
 	init_hashtab(&od->name_by_stub, (hash_func) hash_ptr, (compare_func) cmp_ptr);
 }
 
+void htab_free_dict(htab_entry_t e) {
+	free(e->key);
+}
+
+void opcode_dict_deinit(opcode_dict_t od) {
+	int i;
+	for(i=0;i<OpcodeTypeMax;i+=1) {
+		dynarray_deinit(&od->stub_by_index[i],NULL);
+		clean_hashtab(&od->stub_by_name[i],htab_free_dict);
+	}
+	clean_hashtab(&od->wordcode_by_stub, NULL);
+	clean_hashtab(&od->name_by_stub, NULL);
+}
 
 
 void opcode_dict_add(opcode_dict_t od, opcode_arg_t arg_type, const char* name, opcode_stub_t stub) {
 	word_t ofs = dynarray_size(&od->stub_by_index[arg_type]);
 	/* should check for duplicates in arg_type:name AND in stub */
-	hash_addelem(&od->stub_by_name[arg_type], (hash_elem)name, (hash_elem)stub);
+
+	const char* common_key = strdup(name);
+
+	hash_addelem(&od->stub_by_name[arg_type], (hash_elem)common_key, (hash_elem)stub);
 	hash_addelem(&od->wordcode_by_stub, (hash_key)stub, (hash_elem) MAKE_WC(arg_type,ofs));
-	hash_addelem(&od->name_by_stub, (hash_key)stub, (hash_elem) name);
+	hash_addelem(&od->name_by_stub, (hash_key)stub, (hash_elem) common_key);
 	dynarray_set(&od->stub_by_index[arg_type],ofs,(word_t)stub);
 }
 

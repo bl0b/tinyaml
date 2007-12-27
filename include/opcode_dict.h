@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 void opcode_dict_init(opcode_dict_t);
+void opcode_dict_deinit(opcode_dict_t);
 
 void opcode_dict_add(opcode_dict_t, opcode_arg_t, const char*, opcode_stub_t);
 

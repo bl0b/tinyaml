@@ -112,6 +112,7 @@ struct _vm_t {
 
 struct _program_t {
 	struct _text_seg_t strings;
+	struct _dynarray_t data;
 	struct _dynarray_t code;
 };
 

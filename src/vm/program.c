@@ -28,12 +28,18 @@ program_t program_new() {
 	program_t ret = (program_t)malloc(sizeof(struct _program_t));
 	/*init_hashtab(&ret->labels, (hash_func) hash_str, (compare_func) strcmp);*/
 	text_seg_init(&ret->strings);
+	dynarray_init(&ret->data);
 	dynarray_init(&ret->code);
 	printf("PROGRAM NEW\n");
 	return ret;
 }
 
 void program_free(program_t p) {
+	printf("program_free\n");
+	text_seg_deinit(&p->strings);
+	dynarray_deinit(&p->data,NULL);
+	dynarray_deinit(&p->code,NULL);
+	free(p);
 }
 
 void program_fetch(program_t p, word_t ip, word_t* op, word_t* arg) {
@@ -45,6 +51,11 @@ void program_fetch(program_t p, word_t ip, word_t* op, word_t* arg) {
 void program_reserve_code(program_t p, word_t sz) {
 	sz+=dynarray_size(&p->code);
 	dynarray_reserve(&p->code,sz);
+}
+
+void program_reserve_data(program_t p, word_t sz) {
+	sz+=dynarray_size(&p->data);
+	dynarray_reserve(&p->data,sz);
 }
 
 void program_write_code(program_t p, word_t op, word_t arg) {

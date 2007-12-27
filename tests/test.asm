@@ -1,4 +1,41 @@
+data
+	0 rep 200		# 1
+	"Hello, world !"	# 201
+	"\n"			# 202
+end
+
 asm
+	enter 1			# counter
+	push 2 setmem -1
+	push 1
+	setmem 1
+	push 1
+	setmem 2
+	# fill fibonacci table
+fill_loop:
+	getmem -1 dec getmem
+	getmem -1 sub 2 getmem
+	add getmem -1 setmem
+	getmem -1 inc setmem -1
+	getmem -1 sub 200 SZ jmp @fill_loop
+
+	# dump table
+
+	push 1 setmem -1
+
+dump_loop:
+	push "Fibo("
+	getmem -1
+	push ") = "
+	getmem -1 getmem
+	push "\n"
+        print 5
+	getmem -1 inc setmem -1
+	getmem -1 sub 200 SZ jmp @dump_loop
+
+	jmp @_end
+
+
         push 5			# push the counter
 
 loop:
@@ -24,7 +61,7 @@ fibo_loop:
         print 5
 	inc
 	dup 0
-	sub 30
+	sub 37
 	SZ jmp @fibo_loop
 
         jmp @_end
@@ -42,15 +79,15 @@ fibo:				# stack : n,
         dec
 	dup 0			# stack : n-1, n-1
 	call @fibo		# stack : n-1, fibo(n-1)
-	setLocal 0		# stack : n-1
+	setmem -1		# stack : n-1
         dup 0 dec		# stack : n-1, n-2
 	call @fibo		# stack : n-1, fibo(n-2),
-	setLocal 1		# stack : n-1,
+	setmem -2		# stack : n-1,
 
 	#...
 
-	getLocal 1		# stack : n-1, fibo(n-2),
-	getLocal 0		# stack : n-1, fibo(n-1),
+	getmem -2		# stack : n-1, fibo(n-2),
+	getmem -1		# stack : n-1, fibo(n-2), fibo(n-1),
         add			# stack : n-1, fibo(n-1)+fibo(n-2),
 
 	leave 2
@@ -61,5 +98,19 @@ fibo_ret_1:
 
 #
 _end:nop
+end
+
+
+language
+	foobar ::= <prout> <pouet>.
+end
+
+plug foobar into p_coin
+asm
+  enter 3
+  leave 3
+  nop
+ nop
+nop
 end
 

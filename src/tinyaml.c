@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "program.h"
 #include <tinyap.h>
 #include <stdio.h>
 
@@ -31,28 +32,31 @@ struct _vm_engine_t stub_engine = {
 
 int main(int argc, char** argv) {
 	vm_t vm;
-	tinyap_t parser;
 	program_t p;
 	writer_t w;
 
 	tinyap_init();
 
-	parser = tinyap_new();
 	vm = vm_new();
 
 	p = vm_compile_file(vm,"tests/test.asm");
 
 	if(p) {
+		const char*s;
 		w = file_writer_new("test_asm.bin");
-		printf("Parser output dump : \n%s\n====== END OF DUMP ======\n",tinyap_serialize_to_string(tinyap_get_output(vm->parser)));
+		printf("Parser output dump : \n%s\n====== END OF DUMP ======\n",s=tinyap_serialize_to_string(tinyap_get_output(vm->parser)));
+		free((char*)s);
 		vm_serialize_program(vm,p,w);
 		writer_close(w);
+
+		vm_set_engine(vm, &stub_engine);
+		vm_run_program(vm, p, 50);
+		program_free(p);
 	}
 
-	vm_set_engine(vm, &stub_engine);
-	vm_run_program(vm, p, 50);
-
 	printf("VM Runned for %lu cycles.\n",vm->cycles);
+
+	vm_del(vm);
 
 	return 0;
 }

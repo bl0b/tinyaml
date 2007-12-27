@@ -30,6 +30,12 @@
 #include "program.h"
 #include "_impl.h"
 
+/* hidden tinyap feature */
+ast_node_t newAtom(const char*data,int row,int col);
+ast_node_t newPair(const ast_node_t a,const ast_node_t d,const int row,const int col);
+
+
+
 typedef struct _env_t {
 	vm_t vm;
 	opcode_chain_t result;
@@ -39,7 +45,9 @@ program_t compile_wast(wast_t node, vm_t vm) {
 	opcode_chain_t result = (opcode_chain_t)tinyap_walk(node, "compiler", vm);
 	if(result) {
 		program_t ret = program_new();
-		opcode_chain_serialize(result, vm_get_dict(vm), ret);
+		opcode_chain_serialize(result, vm_get_dict(vm), ret, vm->dl_handle);
+		opcode_chain_delete(result);
+		printf("\n-- New program compiled.\n-- Data size : %lu\n-- Code size : %lu\n\n",ret->data.size,ret->code.size);
 		return ret;
 	}
 	return NULL;
@@ -76,8 +84,8 @@ WalkDirection ape_compiler_default(wast_t node, env_t env) {
 		fprintf(stderr,"Node is not known '%s'\n",wa_op(node));
 		return Error;
 	}
-	fprintf(stderr,"Node is not known '%s'\n",wa_op(node));
 */
+	fprintf(stderr,"Node is not known '%s'\n",wa_op(node));
 	return Error;
 }
 
@@ -104,9 +112,17 @@ WalkDirection ocao(wast_t node, env_t env, opcode_arg_t t) {
 	const char*op = wa_op(wa_opd(node,0));
 	if(t==OpcodeNoArg) {
 		opcode_chain_add_opcode(env->result,t,op,NULL);
+	} else if(t==OpcodeArgOpcode) {
+		const char*type = wa_op(wa_opd(node,1))+strlen("DeclOpcode_");
+		const char*name = wa_op(wa_opd(wa_opd(node,1),0));
+		char*arg = (char*)malloc(strlen(type)+strlen(name)+2);
+		sprintf(arg,"%s_%s",name,type);
+		printf("ocao::opcode with arg\t\t%s %s\n",op,arg);
+		opcode_chain_add_opcode(env->result,t,op,arg);
+		free(arg);
 	} else {
 		const char*arg = wa_op(wa_opd(node,1));
-		printf("ocao::opcode with arg\t\t%s %s\n",op,arg);
+		/*printf("ocao::opcode with arg\t\t%s %s\n",op,arg);*/
 		opcode_chain_add_opcode(env->result,t,op,arg);
 	}
 	return Next;
@@ -252,4 +268,44 @@ WalkDirection ape_compiler_DeclOpcode_NoArg(wast_t node, env_t env) {
 	return Next;
 }
 
+
+
+WalkDirection ape_compiler_DataBloc(wast_t node, env_t env) {
+	return Down;
+}
+
+
+WalkDirection ape_compiler_DataInt(wast_t node, env_t env) {
+	const char*rep=NULL;
+	if(wa_opd_count(node)==2) {
+		rep=wa_op(wa_opd(node,1));
+	}
+	opcode_chain_add_data(env->result,DataInt,wa_op(wa_opd(node,0)),rep);
+	return Next;
+}
+
+
+WalkDirection ape_compiler_DataFloat(wast_t node, env_t env) {
+	const char*rep=NULL;
+	if(wa_opd_count(node)==2) {
+		rep=wa_op(wa_opd(node,1));
+	}
+	opcode_chain_add_data(env->result,DataFloat,wa_op(wa_opd(node,0)),rep);
+	return Next;
+}
+
+
+WalkDirection ape_compiler_DataString(wast_t node, env_t env) {
+	opcode_chain_add_data(env->result,DataString,wa_op(wa_opd(node,0)),NULL);
+	return Next;
+}
+
+
+WalkDirection ape_compiler_LangDef(wast_t node, env_t env) {
+	return Next;
+}
+
+WalkDirection ape_compiler_LangPlug(wast_t node, env_t env) {
+	return Next;
+}
 

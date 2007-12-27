@@ -39,5 +39,11 @@ thread_t thread_new(word_t prio, program_t p, word_t ip) {
 }
 
 void thread_delete(thread_t t) {
+	printf("\tdel thread\n");
+	gstack_deinit(&t->locals_stack,NULL);
+	gstack_deinit(&t->data_stack,NULL);
+	gstack_deinit(&t->call_stack,NULL);
+	gstack_deinit(&t->catch_stack,NULL);
+	free(t);
 }
 

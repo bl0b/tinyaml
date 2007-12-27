@@ -21,15 +21,13 @@
 #define _BML_CODE_H_
 
 
-typedef void (*opcode_noarg_t) (vm_t);
-typedef void (*opcode_int_t) (vm_t, int);
-typedef void (*opcode_float_t) (vm_t, float);
-typedef void (*opcode_ptr_t) (vm_t, void*);
-typedef void (*opcode_label_t) (vm_t, int);
-typedef void (*opcode_string_t) (vm_t, const char*);
-typedef void (*opcode_opcode_t) (vm_t, word_t);
-
-typedef void (*opcode_stub_t) (vm_t, word_t t);
+typedef void _VM_CALL (*opcode_noarg_t) (vm_t);
+typedef void _VM_CALL (*opcode_int_t) (vm_t, int);
+typedef void _VM_CALL (*opcode_float_t) (vm_t, float);
+typedef void _VM_CALL (*opcode_ptr_t) (vm_t, void*);
+typedef void _VM_CALL (*opcode_label_t) (vm_t, int);
+typedef void _VM_CALL (*opcode_string_t) (vm_t, const char*);
+typedef void _VM_CALL (*opcode_opcode_t) (vm_t, word_t);
 
 void vm_compile_noarg(vm_t, opcode_t);
 void vm_compile_int(vm_t, opcode_t);

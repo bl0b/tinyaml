@@ -27,6 +27,11 @@ void text_seg_init(text_seg_t seg) {
 	text_seg_find_by_text(seg,"");
 }
 
+void text_seg_deinit(text_seg_t seg) {
+	dynarray_deinit(&seg->by_index,(void(*)(word_t))free);
+	clean_hashtab(&seg->by_text,NULL);
+}
+
 const char* text_seg_find_by_text(text_seg_t ts, const char* str) {
 	const char* ret;
 	word_t ofs = (word_t)hash_find(&ts->by_text, (hash_key)str);

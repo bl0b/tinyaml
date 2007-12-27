@@ -20,6 +20,15 @@
 #ifndef _BML_VM_TYPES_H_
 #define _BML_VM_TYPES_H_
 
+#if defined(__GNUC__)
+#define _VM_CALL __attribute__((fastcall))
+#elif defined(WIN32)||defined(__MSVC__)
+#define _VM_CALL __fastcall
+#else
+#warning "using cdecl"
+#define _VM_CALL
+#endif
+
 typedef unsigned long int word_t;
 
 typedef word_t value_t;
@@ -89,12 +98,15 @@ typedef struct _opcode_chain_node_t* opcode_chain_node_t;
 
 typedef enum {
 	NodeOpcode,
+	NodeData,
 	NodeLabel
 } opcode_chain_node_type_t;
 
 
 typedef struct _call_stack_entry_t* call_stack_entry_t;
 typedef struct _call_stack_entry_t* catch_stack_entry_t;
+
+typedef void _VM_CALL (*opcode_stub_t) (vm_t, word_t t);
 
 #define _WC_ARGTYPE_BSZ 4
 

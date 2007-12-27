@@ -23,6 +23,7 @@
 #include "program.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include <dlfcn.h>
 
 #include "bml_ops.h"
@@ -64,7 +65,17 @@ vm_t vm_new() {
 	return ret;
 }
 
-void vm_del(vm_t vm) {
+void vm_del(vm_t ret) {
+	printf("delete vm\n");
+	dlist_forward(&ret->ready_threads,thread_t,thread_delete);
+	dlist_forward(&ret->running_threads,thread_t,thread_delete);
+	dlist_forward(&ret->yielded_threads,thread_t,thread_delete);
+	dlist_flush(&ret->ready_threads);
+	dlist_flush(&ret->running_threads);
+	dlist_flush(&ret->yielded_threads);
+	tinyap_delete(ret->parser);
+	opcode_dict_deinit(&ret->opcodes);
+	free(ret);
 }
 
 
@@ -74,7 +85,6 @@ int comp_prio(dlist_node_t a, dlist_node_t b) {
 
 
 vm_t vm_set_lib_file(vm_t vm, const char*fname) {
-	void* hnd;
 	vm->dl_handle = dlopen(fname, RTLD_LAZY);
 	return vm;
 }
@@ -141,6 +151,7 @@ vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
 
 
 program_t compile_wast(wast_t, vm_t);
+void wa_del(wast_t w);
 
 program_t vm_compile_file(vm_t vm, const char* fname) {
 	program_t p=NULL;
@@ -150,8 +161,9 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
 		p = compile_wast(wa, vm);
+		wa_del(wa);
 	} else {
-		fprintf(stderr,tinyap_get_error(vm->parser));
+		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
 	return p;
 }
@@ -165,6 +177,7 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
 		p = compile_wast(wa, vm);
+		wa_del(wa);
 	} else {
 		fprintf(stderr,tinyap_get_error(vm->parser));
 	}
@@ -179,40 +192,6 @@ vm_t vm_run_program(vm_t vm, program_t p, word_t prio) {
 }
 
 
-void vm_exec_cycle(vm_t vm, thread_t t) {
-	opcode_stub_t op;
-	word_t arg;
-	if(t->IP>=t->program->code.size) {
-		t->state=ThreadDying;
-		return;
-	}
-	/* fetch */
-	program_fetch(t->program, t->IP, (word_t*)&op, &arg);
-	/* reset registers */
-	t->jmp_seg=NULL;
-	t->jmp_ofs=0;
-	/* decode */
-	op(vm,arg);
-	/* iterate */
-	if(t->jmp_seg) {
-		/* it's a (long) call */
-		/* assume call stack is already filled */
-		//t->program = (program_t)t->jmp_seg;
-		t->IP=t->jmp_ofs;
-	} else if(t->jmp_ofs) {
-		/* it's a (short) jump or call */
-		/* assume call stack is already filled */
-		t->IP=t->jmp_ofs;
-	} else if(t->IP==t->program->code.size-1) {
-		/* we are at the end of the segment, thread should die. */
-		t->state=ThreadDying;
-	} else {
-		/* hop to next instruction */
-		t->IP+=2;
-	}
-}
-
-
 vm_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
 	thread_t t;
 	dlist_node_t dn;
@@ -220,6 +199,9 @@ vm_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
 		return vm;
 	}
 	t = thread_new(prio,p,ip);
+	/* FIXME : this should go into thread_new() */
+	t->jmp_seg=NULL;
+	t->jmp_ofs=0;
 	vm->threads_count += 1;
 	if(vm->threads_count==1) {
 		vm->scheduler = SchedulerMonoThread;
@@ -270,7 +252,7 @@ void vm_dump_data_stack(vm_t vm) {
 	printf("sz = %i\n",sz);
 	for(i=0;i<sz;i+=1) {
 		e = (struct _data_stack_entry_t*) gpeek(struct _data_stack_entry_t*,stack,-i);
-		printf("#%i : %8.8lX %8.8lX\n",i,e->type, e->data);
+		printf("#%i : %4.4X %8.8lX\n",i,e->type, e->data);
 	}
 }
 
@@ -330,7 +312,7 @@ vm_t vm_peek_caller(vm_t vm, program_t* cs, word_t* ip) {
 
 vm_t vm_peek_catcher(vm_t vm, program_t* cs, word_t* ip) {
 	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->catch_stack;
-	struct _call_stack_entry_t* top = gpeek( struct _catch_stack_entry_t*, stack, 0 );
+	struct _call_stack_entry_t* top = gpeek( struct _call_stack_entry_t*, stack, 0 );
 	*cs = top->cs;
 	*ip = top->ip;
 	return vm;
@@ -364,17 +346,61 @@ vm_t vm_pop_catcher(vm_t vm, word_t count) {
 	return vm;
 }
 
+
+
+
+
+void vm_exec_cycle(vm_t vm, thread_t t) {
+	opcode_stub_t op;
+	word_t arg;
+	word_t*array;
+/*
+	if(t->IP>=t->program->code.size) {
+		t->state=ThreadDying;
+		return;
+	}
+*/
+	/* fetch */
+	/*program_fetch(t->program, t->IP, (word_t*)&op, &arg);*/
+	array = t->program->code.data+t->IP;
+	op = (opcode_stub_t) *array;
+	arg = *(array+1);
+	/* decode */
+	op(vm,arg);
+	/* iterate */
+	if(t->jmp_seg) {
+		/* it's a (long) call */
+		/* assume call stack is already filled */
+		t->program = (program_t)t->jmp_seg;
+		t->IP=t->jmp_ofs;
+		t->jmp_seg=NULL;
+		t->jmp_ofs=0;
+	} else if(t->jmp_ofs) {
+		/* it's a (short) jump or call */
+		/* assume call stack is already filled */
+		t->IP=t->jmp_ofs;
+		t->jmp_ofs=0;
+	} else if(t->IP==t->program->code.size-2) {
+		/* we are at the end of the segment, thread should die. */
+		t->state=ThreadDying;
+	} else {
+		/* hop to next instruction */
+		t->IP+=2;
+	}
+}
+
+
+
+
 thread_t vm_select_thread(vm_t vm) {
 	thread_t current;
 	if(vm->current_thread) {
 		current = node_value(thread_t,vm->current_thread);
-	} else {
-		current = NULL;
-	}
-	/* quick pass if current meets conditions */
-	if(current&&current->state==ThreadRunning&&current->remaining!=0&&current->remaining<vm->timeslice) {
-		current->remaining -= 1;
-		return current;
+		/* quick pass if current meets conditions */
+		if(current->state==ThreadRunning&&current->remaining!=0&&current->remaining<vm->timeslice) {
+			current->remaining -= 1;
+			return current;
+		}
 	}
 
 	if(vm->current_thread&&vm->current_thread->next) {
@@ -405,36 +431,49 @@ thread_t vm_select_thread(vm_t vm) {
 	}
 }
 
+
+
 /* if has no thread, do nothing.
  * if has one thread, execute it.
  * if has many threads, time-slice round-robin them.
  */
 vm_t vm_schedule_cycle(vm_t vm) {
 	thread_t current;
-	if(vm->current_thread) {
-		current = node_value(thread_t,vm->current_thread);
-	} else {
-		current = NULL;
-	}
+
 	switch(vm->scheduler) {
 	case SchedulerRoundRobin:
-	case SchedulerMonoThread:
 		current = vm_select_thread(vm);
-		if(current) {
-/*			printf("CURRENT THREAD %p\n",current);
-			printf("CURRENT PROGRAM %p\n",current->program);
-*/			vm_exec_cycle(vm,current);
-			if(current->state==ThreadDying) {
-				vm_dump_data_stack(vm);
-				dlist_remove(&vm->running_threads,vm->current_thread);
-				vm->current_thread=NULL;
-				vm->threads_count-=1;
+		break;
+	case SchedulerMonoThread:
+		if((!vm->current_thread)&&vm->ready_threads.head) {
+			vm->current_thread=vm->ready_threads.head;
+			vm->ready_threads.head=vm->ready_threads.head->next;
+			if(!vm->ready_threads.head) {
+				vm->ready_threads.tail=NULL;
 			}
+			vm->running_threads.head=vm->current_thread;
+			vm->running_threads.tail=vm->current_thread;
+			node_value(thread_t,vm->current_thread)->state=ThreadRunning;
 		}
-		vm->cycles+=1;
-	case SchedulerIdle:;
+		if(!vm->current_thread) {
+			return vm;
+		}
+		current = node_value(thread_t,vm->current_thread);
+		break;
 	default:;
+		return vm;
 	};
+/*	printf("CURRENT THREAD %p\n",current);
+	printf("CURRENT PROGRAM %p\n",current->program);
+*/	vm_exec_cycle(vm,current);
+	if(current->state==ThreadDying) {
+		vm_dump_data_stack(vm);
+		thread_delete(node_value(thread_t,vm->current_thread));
+		dlist_remove(&vm->running_threads,vm->current_thread);
+		vm->current_thread=NULL;
+		vm->threads_count-=1;
+	}
+	vm->cycles+=1;
 	return vm;
 }
 

@@ -25,6 +25,7 @@
 
 dynarray_t dynarray_new();
 void dynarray_init(dynarray_t);
+void dynarray_deinit(dynarray_t,void(*)(word_t));
 void dynarray_del(dynarray_t);
 void dynarray_reserve(dynarray_t d, word_t new_size);
 /* enlarges array as necessary */

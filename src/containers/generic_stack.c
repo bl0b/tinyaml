@@ -37,6 +37,18 @@ void gstack_init(generic_stack_t ret, word_t token_size) {
 	assert(ret->token_size<1024);
 }
 
+void gstack_deinit(generic_stack_t s, void (*callback)(void*)) {
+	if(callback) {
+		while(s->sp!=-1) {
+			callback(_gpop(s));
+		}
+	}
+	if(s->stack) {
+		free(s->stack);
+	}
+}
+
+
 word_t gstack_size(generic_stack_t s) {
 /*	printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
 */	return s->sp+1;
@@ -61,7 +73,6 @@ void gstack_shrink(generic_stack_t s, word_t count) {
 }
 
 void gpush(generic_stack_t s, void* w) {
-	int i;
 /*	printf("gpush\n");
 */	s->sp += 1;
 	s->tok_sp += s->token_size;
