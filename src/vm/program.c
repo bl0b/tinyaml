@@ -59,7 +59,7 @@ word_t clean_data_seg[20] = {
 
 
 void program_free(vm_t vm, program_t p) {
-	printf("program_free\n");
+	/*printf("program_free\n");*/
 	text_seg_deinit(&p->strings);
 	dynarray_deinit(&p->code,NULL);
 	if(p->data.size) {
@@ -67,7 +67,7 @@ void program_free(vm_t vm, program_t p) {
 		p->code.reserved=0;
 		p->code.data=clean_data_seg;
 		clean_data_seg[1]=p->data.size>>1;
-		printf("cleaning %lu data items\n",clean_data_seg[1]);
+		/*printf("cleaning %lu data items\n",clean_data_seg[1]);*/
 		vm_run_program_fg(vm,p,0,99);
 	}
 	dynarray_deinit(&p->data,NULL);

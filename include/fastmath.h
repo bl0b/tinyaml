@@ -66,19 +66,23 @@ static inline float i2f(long int i) {
 
 
 #define fast_apply_bin_func(_ta,_a,_tb,_b,_opi,_opf,_ret,_ret_typ)	do {\
-		_IFC _R;\
+		_IFC _R,_X,_Y;\
 		switch((((word_t)_ta)<<1)|((word_t)_tb)) {\
 		case 0:\
 			_R.i = _opi((_a), (_b));\
 			break;\
 		case 1:\
-			_R.f = _opf(i2f(_a), (_b));\
+			_X.i = (_b);\
+			_R.f = _opf(i2f(_a), _X.f);\
 			break;\
 		case 2:\
-			_R.f = _opf((_a), i2f(_b));\
+			_X.i = (_a);\
+			_R.f = _opf(_X.f, i2f(_b));\
 			break;\
 		case 3:\
-			_R.f = _opf((_a), (_b));\
+			_X.i = (_a);\
+			_Y.i = (_b);\
+			_R.f = _opf(_X.f, _Y.f);\
 		};\
 		_ret_typ=(_ta|_tb);\
 		_ret=_R.i;\

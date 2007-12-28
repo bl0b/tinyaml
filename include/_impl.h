@@ -93,7 +93,8 @@ struct _call_stack_entry_t {
 
 struct _vm_obj_t {
 	long ref_count;
-	void (*_free)(void*);
+	void (*_free)(vm_t,void*);
+	void* (*_clone)(vm_t,void*);
 	word_t magic;
 };
 
@@ -106,6 +107,7 @@ struct _vm_t {
 	opcode_chain_t result;
 	WalkDirection compile_state;
 	wast_t current_node;
+	struct _generic_stack_t cn_stack;
 	/* known opcodes */
 	struct _opcode_dict_t opcodes;
 	/* library management */

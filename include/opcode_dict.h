@@ -21,6 +21,8 @@
 
 #include <stdio.h>
 
+opcode_dict_t opcode_dict_new();
+void opcode_dict_free(opcode_dict_t);
 void opcode_dict_init(opcode_dict_t);
 void opcode_dict_deinit(opcode_dict_t);
 

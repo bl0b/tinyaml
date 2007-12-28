@@ -45,6 +45,17 @@ int cmp_ptr(void* w, void* v) {
 	return (int)(w-v);
 }
 
+opcode_dict_t opcode_dict_new() {
+	opcode_dict_t od = (opcode_dict_t)malloc(sizeof(struct _opcode_dict_t));
+	opcode_dict_init(od);
+	return od;
+}
+
+void opcode_dict_free(opcode_dict_t od) {
+	opcode_dict_deinit(od);
+	free(od);
+}
+
 void opcode_dict_init(opcode_dict_t od) {
 	int i;
 	for(i=0;i<OpcodeTypeMax;i+=1) {
@@ -74,7 +85,12 @@ void opcode_dict_add(opcode_dict_t od, opcode_arg_t arg_type, const char* name, 
 	word_t ofs = dynarray_size(&od->stub_by_index[arg_type]);
 	/* should check for duplicates in arg_type:name AND in stub */
 
-	const char* common_key = strdup(name);
+	const char* common_key;
+
+	if(opcode_stub_by_name(od, arg_type, name)) {
+		return;
+	}
+	common_key = strdup(name);
 
 	hash_addelem(&od->stub_by_name[arg_type], (hash_elem)common_key, (hash_elem)stub);
 	hash_addelem(&od->wordcode_by_stub, (hash_key)stub, (hash_elem) MAKE_WC(arg_type,ofs));
@@ -183,7 +199,7 @@ void opcode_dict_unserialize(opcode_dict_t od, reader_t r, void* dl_handle) {
 			/* retrieve name */
 			typtot = read_word(r);
 			name = strdup(read_string(r));
-			assert(typtot == strlen(name));
+			assert(typtot == 1+strlen(name));
 			opcode_dict_add(od, i, name, opcode_stub_resolve(i,name,dl_handle));
 		}
 		/* read END OF RECORD */

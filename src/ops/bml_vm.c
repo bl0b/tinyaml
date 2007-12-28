@@ -174,11 +174,18 @@ void _VM_CALL vm_op_getmem_Int(vm_t vm, int n) {
 void _VM_CALL vm_op_setmem_Int(vm_t vm, int n) {
 	thread_t t=node_value(thread_t,vm->current_thread);
 	vm_data_t top = _vm_pop(vm);
-	vm_data_t var;
+	vm_data_t var=NULL;
 	if(n<0) {
+		assert(t->locals_stack.sp>=-1-n);
 		var = gpeek( vm_data_t , &t->locals_stack, 1+n );
 	} else {
-		var = (vm_data_t ) (t->program->data.data+(n<<1));
+		n<<=1;
+		/*printf("setmem at %lu of %lu/%lu\n",n,t->program->data.size,t->program->data.reserved);*/
+		assert(t->program->data.reserved>n);
+		if(n>t->program->data.size) {
+			t->program->data.size = n+2;
+		}
+		var = (vm_data_t ) (t->program->data.data+n);
 	}
 	if(var->type==DataObject) {
 		vm_obj_deref(vm,(void*)var->data);
@@ -252,6 +259,75 @@ void _VM_CALL vm_op_strcmp(vm_t vm, word_t n) {
 	assert(s1->type==DataString);
 	assert(s2->type==DataString);
 	vm_push_data(vm,DataInt,strcmp((const char*)s1->data, (const char*)s2->data));
+}
+
+
+
+void _VM_CALL vm_op_toI(vm_t vm, word_t n) {
+	_IFC conv;
+	vm_data_t d = _vm_pop(vm);
+	switch(d->type) {
+	case DataInt:
+		vm_push_data(vm,DataInt,d->data);
+		break;
+	case DataFloat:
+		conv.i=d->data;
+		vm_push_data(vm,DataInt,f2i(conv.f));
+		break;
+	case DataString:
+		printf("convert \"%s\" to int\n",(const char*)d->data);
+		vm_push_data(vm,DataInt,atoi((const char*)d->data));
+		break;
+	default:
+		printf("[VM:WRN] can't convert to int.\n");
+		vm_push_data(vm,DataInt,0);
+	};
+}
+
+
+void _VM_CALL vm_op_toF(vm_t vm, word_t n) {
+	_IFC conv;
+	vm_data_t d = _vm_pop(vm);
+	switch(d->type) {
+	case DataInt:
+		vm_push_data(vm,DataFloat,i2f(d->data));
+		break;
+	case DataFloat:
+		vm_push_data(vm,DataFloat,d->data);
+		break;
+	case DataString:
+		conv.f = atof((const char*)d->data);
+		vm_push_data(vm,DataFloat,conv.i);
+		break;
+	default:
+		vm_push_data(vm,DataFloat,0);
+	};
+}
+
+
+void _VM_CALL vm_op_toS(vm_t vm, word_t n) {
+	static char buf[40];
+	vm_data_t d = _vm_pop(vm);
+	_IFC conv;
+	char* str;
+	switch(d->type) {
+	case DataInt:
+		sprintf(buf,"%li",(long)d->data);
+		str=vm_string_new(buf);
+		vm_push_data(vm,DataString,(word_t)str);
+		break;
+	case DataFloat:
+		conv.i=d->data;
+		sprintf(buf,"%f",conv.f);
+		str=vm_string_new(buf);
+		vm_push_data(vm,DataString,(word_t)str);
+		break;
+	case DataString:
+		vm_push_data(vm,DataString,d->data);
+		break;
+	default:
+		vm_push_data(vm,DataString,0);
+	};
 }
 
 

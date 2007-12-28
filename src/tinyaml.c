@@ -20,10 +20,15 @@
 #include "program.h"
 #include <tinyap.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "_impl.h"
 
 #include "fastmath.h"
+
+
+#define TINYAML_ABOUT	"This is not yet another meta-language.\n" \
+			"(c) 2007-2008 Damien 'bl0b' Leroux\n\n"
 
 program_t compile_wast(wast_t node, vm_t vm);
 
@@ -32,9 +37,35 @@ void e_init(vm_engine_t e) {}
 void e_deinit(vm_engine_t e) {}
 void e_kill(vm_engine_t e) {}
 void e_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
-	vm_add_thread(e->vm,p,ip,prio);
-	while(e->vm->threads_count) {
-		vm_schedule_cycle(e->vm);
+	if(e->vm->current_thread) {
+		thread_t t = node_value(thread_t,e->vm->current_thread);
+		/* save some thread state */
+		program_t jmp_seg = t->jmp_seg;
+		word_t jmp_ofs = t->jmp_ofs;
+		word_t IP = t->IP;
+		program_t program = t->program;
+		/* hack new thread state */
+		word_t s_sz;
+		t->jmp_ofs=0;
+		t->jmp_seg=p;
+		vm_push_caller(e->vm,t->program,t->IP);
+		s_sz = t->call_stack.sp-1;
+		t->program=p;
+		t->IP=ip;
+		while(t->call_stack.sp!=s_sz) {
+			vm_schedule_cycle(e->vm);
+		}
+		printf("done with sub thread\n");
+		/* restore old state */
+		t->program=program;
+		t->IP=IP;
+		t->jmp_seg=jmp_seg;
+		t->jmp_ofs=jmp_ofs;
+	} else {
+		vm_add_thread(e->vm,p,ip,prio);
+		while(e->vm->threads_count) {
+			vm_schedule_cycle(e->vm);
+		}
 	}
 }
 
@@ -49,53 +80,77 @@ struct _vm_engine_t stub_engine = {
 
 
 
-int main(int argc, char** argv) {
-	vm_t vm;
-	program_t p;
-	writer_t w;
-	/*wast_t wa;*/
 
-	tinyap_init();
+#define cmp_param(_n,_arg_str_long,_arg_str_short) (i<(argc-_n) && (	\
+		(_arg_str_long && !strcmp(_arg_str_long,argv[i]))	\
+					||				\
+		(_arg_str_short && !strcmp(_arg_str_short,argv[i]))	\
+	))
 
-	vm = vm_new();
+int do_args(vm_t vm, int argc,char*argv[]) {
+	int i;
+	program_t p=NULL;
+	writer_t w=NULL;
+	reader_t r=NULL;
 
-	vm_set_engine(vm, &stub_engine);
-
-	p = vm_compile_file(vm,"tests/test_ml.asm");
-	if(p) {
-		w = file_writer_new("test_ml.bin");
-		vm_serialize_program(vm,p,w);
-		writer_close(w);
-/*		printf("Parser output dump : \n");
-		wa = tinyap_make_wast(tinyap_list_get_element(tinyap_get_output(vm->parser),0));
-		tinyap_walk(wa,"prettyprint",NULL);
-		tinyap_free_wast(wa);
-		printf("====== END OF DUMP ======\n");
-*/
-		vm_run_program_fg(vm, p, 0, 50);
-
-		/*p = vm_compile_buffer(vm,"Hello, world.");*/
-		p = vm_compile_file(vm,"tests/test2.asm");
-
-		if(p) {
-			w = file_writer_new("test_asm.bin");
-			printf("Parser output dump : \n");
-/*			wa = tinyap_make_wast(tinyap_list_get_element(tinyap_get_output(vm->parser),0));
-			tinyap_walk(wa,"prettyprint",NULL);
-			tinyap_free_wast(wa);
-			printf("====== END OF DUMP ======\n");
-*/
+	for(i=1;i<argc;i+=1) {
+		if(cmp_param(1,"--compile","-c")) {
+			i+=1;
+			p = vm_compile_file(vm,argv[i]);
+		} else if(cmp_param(1,"--save","-s")) {
+			i+=1;
+			w = file_writer_new(argv[i]);
 			vm_serialize_program(vm,p,w);
 			writer_close(w);
-
-			vm_run_program_fg(vm, p, 0, 50);
+		} else if(cmp_param(1,"--load","-l")) {
+			i+=1;
+			r = file_reader_new(argv[i]);
+			p=vm_unserialize_program(vm,r);
+			reader_close(r);
+		} else if(cmp_param(0,"--run-foreground","-f")) {
+			vm_run_program_fg(vm,p,0,50);
+		} else if(cmp_param(0,"--run-background","-b")) {
+			vm_run_program_bg(vm,p,0,50);
+		} else if(cmp_param(0,"--disasm","-d")) {
+			fputs("Disassembling not yet implemented.\n",stdout);
+		} else if(cmp_param(0,"--version","-v")) {
+			printf(TINYAML_ABOUT);
+			printf("version " TINYAML_VERSION "\n" );
+			exit(0);
+		} else if(cmp_param(0,"--help","-h")) {
+			printf(TINYAML_ABOUT);
+			printf("Usage : %s [--compile, -c [filename]] [--save, -s [filename]] [--load, -l [filename]] [--run-foreground, -f] [--run-background, -b] [--version, -v] [--help,-h]\n",argv[0]);
+			printf(	"Commands are executed on the fly.\n"
+				"\n\t--compile,-c [filename]\tcompile this file\n"
+				  "\t--save,-s [filename]\tsave the newest program into this file\n"
+				  "\t--load,-l [filename]\tload a serialized program from this file\n"
+				  "\t--run-foreground,-f \trun the newest program in foreground\n"
+				  "\t--run-background,-b \trun the newest program in background\n"
+				  "\t--version,-v \t\tdisplay program version\n"
+				"\n\t--help,-h\t\tdisplay this text\n\n");
+			exit(0);
 		}
 	}
 
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+int main(int argc, char** argv) {
+	vm_t vm;
+	vm = vm_new();
+	vm_set_engine(vm, &stub_engine);
+	do_args(vm,argc,argv);
 	printf("VM Runned for %lu cycles.\n",vm->cycles);
-
 	vm_del(vm);
-
 	return 0;
 }
 

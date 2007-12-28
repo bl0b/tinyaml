@@ -20,11 +20,21 @@
 #include "text_seg.h"
 
 #include <string.h>
+#include <stdio.h>
 
 void text_seg_init(text_seg_t seg) {
 	dynarray_init(&seg->by_index);
 	init_hashtab(&seg->by_text, (hash_func) hash_str, (compare_func) strcmp);
 	text_seg_find_by_text(seg,"");
+}
+
+void htab_free_dict(htab_entry_t);
+
+void symtab_deinit(vm_t vm, text_seg_t seg) {
+	if(seg->by_index.reserved) {
+		dynarray_deinit(&seg->by_index,NULL);
+	}
+	clean_hashtab(&seg->by_text,htab_free_dict);
 }
 
 void text_seg_deinit(text_seg_t seg) {
@@ -44,6 +54,7 @@ const char* text_seg_find_by_text(text_seg_t ts, const char* str) {
 		ret = strdup(str);
 		hash_addelem(&ts->by_text, (hash_key)ret, (hash_elem)dynarray_size(&ts->by_index));
 		dynarray_set(&ts->by_index, dynarray_size(&ts->by_index), (value_t)ret);
+		printf("added string %p:\"%s\" into seg %p at offset %lu\n",ret,ret,ts,dynarray_size(&ts->by_index)-1);
 	} else {
 		ret = (const char*)dynarray_get(&ts->by_index,ofs);
 	}
@@ -69,7 +80,7 @@ void text_seg_serialize(text_seg_t seg, writer_t w) {
 	write_string(w,"STRINGS");
 	tot = dynarray_size(&seg->by_index);
 	write_word(w,tot);
-	for(i=0;i<tot;i++) {
+	for(i=0;i<tot;i+=1) {
 		str = (const char*) dynarray_get(&seg->by_index,i);
 		write_word(w,1+strlen(str));
 		write_string(w,str);
@@ -78,7 +89,25 @@ void text_seg_serialize(text_seg_t seg, writer_t w) {
 }
 
 void text_seg_unserialize(text_seg_t seg, reader_t r) {
-
+	const char*str;
+	word_t w,tot;
+	int i;
+	str = read_string(r);
+	assert(!strcmp(str,"STRINGS"));
+	tot = read_word(r);
+	dynarray_reserve(&seg->by_index,tot);
+	w = read_word(r);
+	assert(w==1);
+	str = read_string(r);
+	assert(!*str);
+	for(i=1;i<tot;i+=1) {
+		w = read_word(r);
+		str = read_string(r);
+		assert(strlen(str)+1==w);
+		(void)text_seg_find_by_text(seg,str);
+	}
+	w = read_word(r);
+	assert(w==0xFFFFFFFF);
 }
 
 

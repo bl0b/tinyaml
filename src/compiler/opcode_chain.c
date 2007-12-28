@@ -237,7 +237,7 @@ void opcode_chain_serialize(opcode_chain_t oc, opcode_dict_t od, program_t p, vo
 	/* reserve segments sizes */
 
 	program_reserve_code(p, code_sz);
-	program_reserve_data(p, data_sz);
+	program_reserve_data(p, data_sz?2+data_sz:0);
 
 	/*
 	 * 2nd pass : serialize opcodes

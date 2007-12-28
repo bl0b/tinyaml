@@ -91,7 +91,7 @@ typedef struct _opcode_dict_t* opcode_dict_t;
 typedef enum {
 	DataInt=0,
 	DataFloat=1,
-	DataString,
+	DataString=OpcodeArgString,
 	DataObject
 } vm_data_type_t;
 

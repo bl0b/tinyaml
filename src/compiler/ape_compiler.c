@@ -34,51 +34,60 @@
 ast_node_t newAtom(const char*data,int row,int col);
 ast_node_t newPair(const ast_node_t a,const ast_node_t d,const int row,const int col);
 
+word_t	docn_dat=0,docn_cod=0;
+
 void dump_ocn(opcode_chain_node_t ocn) {
 	switch(ocn->type) {
 	case NodeData:
-		printf("data %i:%s [%s]\n",ocn->arg_type,ocn->name,ocn->arg);
+		printf("data_|%8.8lX\t%i:%s [%s]\n",docn_dat,ocn->arg_type,ocn->name,ocn->arg);
+		docn_dat+=1;
 		break;
 	case NodeOpcode:
 		switch(ocn->arg_type) {
 		case OpcodeArgString:
-			printf("asm       %s\t\"%s\"\n",ocn->name,ocn->arg);
+			printf("_asm_|%8.8lX\t%s\t\"%s\"\n",docn_cod,ocn->name,ocn->arg);
 			break;
 		case OpcodeArgLabel:
-			printf("asm       %s\t@%s\n",ocn->name,ocn->arg);
+			printf("_asm_|%8.8lX\t%s\t@%s\n",docn_cod,ocn->name,ocn->arg);
 			break;
 		default:
-			printf("asm       %s\t%s\n",ocn->name,ocn->arg?ocn->arg:"");
+			printf("_asm_|%8.8lX\t%s\t%s\n",docn_cod,ocn->name,ocn->arg?ocn->arg:"");
 			break;
 		};
+		docn_cod+=2;
 		break;
 	case NodeLabel:
-		printf("asm %s:\n",ocn->name);
+		printf("label|\t    %s:\n",ocn->name);
 		break;
 	};
 }
 
 program_t compile_wast(wast_t node, vm_t vm) {
+	gpush(&vm->cn_stack,&vm->current_node);
+	vm->current_node = node;
 	tinyap_walk(node, "compiler", vm);
-//	if(vm->result) {
-		program_t ret = program_new();
-		/*printf("now %p\n",vm->result);*/
-		opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0");
-		opcode_chain_apply(vm->result,dump_ocn);
-		opcode_chain_serialize(vm->result, vm_get_dict(vm), ret, vm->dl_handle);
-		opcode_chain_delete(vm->result);
-		vm->result=NULL;
-		/*printf("\n-- New program compiled.\n-- Data size : %lu\n-- Code size : %lu\n\n",ret->data.size,ret->code.size);*/
-		return ret;
-//	}
-//	return NULL;
+	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
+	program_t ret = program_new();
+	/*printf("now %p\n",vm->result);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0");
+	docn_dat=docn_cod=0;
+	/*opcode_chain_apply(vm->result,dump_ocn);*/
+	opcode_chain_serialize(vm->result, vm_get_dict(vm), ret, vm->dl_handle);
+	opcode_chain_delete(vm->result);
+	vm->result=NULL;
+	/*printf("\n-- New program compiled.\n-- Data size : %lu\n-- Code size : %lu\n\n",ret->data.size,ret->code.size);*/
+	return ret;
 }
 
 
 void* ape_compiler_init(vm_t vm) {
 	/* allow reentrant calls */
+	gpush(&vm->cn_stack,&vm->current_node);
 	if(vm->result==NULL) {
+		/*printf("###      NEW       top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 		vm->result = opcode_chain_new();
+	} else {
+		/*printf("###      NEW       sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 	}
 	/*printf("vm new ochain : %p\n",vm->result);*/
 	return vm;
@@ -98,12 +107,15 @@ WalkDirection ape_compiler_default(wast_t node, vm_t vm) {
 
 	if(vec_ofs) {
 		vm->compile_state = Error;
-		vm->current_node = node;
 		program_t p = (program_t)*(vm->compile_vectors.by_index.data+vec_ofs);
 		word_t ip = *(vm->compile_vectors.by_index.data+vec_ofs+1);
-		/*printf("compiler calling %p:%lu\n",p,ip);*/
+		printf("compiler calling %p:%lX (%s)\n",p,ip,wa_op(node));
+		gpush(&vm->cn_stack,&vm->current_node);
+		vm->current_node = node;
 		vm_run_program_fg(vm,p,ip,50);
+		vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 		free(vec_name);
+		/*printf("   vm return state : %i\n",vm->compile_state);*/
 		return vm->compile_state;
 	}
 
@@ -360,6 +372,10 @@ WalkDirection ape_compiler_LangComp(wast_t node, vm_t vm) {
 	const char* end = strdup(gen_unique_label());
 	const char* plugin = wa_op(wa_opd(node,0));
 	char* methname = (char*)malloc(strlen(plugin)+10);
+	char* tmp = (char*)malloc(strlen(start)+strlen(plugin)+2);
+	sprintf(tmp,"%s_%s",start,plugin);
+	free((char*)start);
+	start=tmp;
 
 	sprintf(methname,".compile_%s",plugin);
 
@@ -373,6 +389,7 @@ WalkDirection ape_compiler_LangComp(wast_t node, vm_t vm) {
 	
 	
 	/* plug compiling code */
+	/*opcode_chain_add_opcode(vm->result, OpcodeNoArg, "_pop_curNode",0);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0");
 	opcode_chain_add_label(vm->result, end);
 	opcode_chain_add_opcode(vm->result, OpcodeArgString, "push", methname);

@@ -67,12 +67,15 @@
         opcode div:Float
       # AST manipulation
         opcode astGetOp
+        opcode astGetChildString
+        opcode astGetChildString:Int
         opcode astGetChildrenCount
         opcode astCompileChild:Int
         opcode astCompileChild
 
       # compiler manipulation
         opcode __addCompileMethod:Label
+        opcode write_data               # pop data, pop rep, write
         opcode write_label:String
         opcode write_oc:String
         opcode write_oc_Int:String
@@ -85,6 +88,10 @@
         opcode compileStateUp
         opcode compileStateError
 
+        opcode pp_curNode
+
+        opcode _pop_curNode
+
       # handling symbol tables
         opcode newSymTab                # create a new sym tab and push
                                         # it onto data stack
@@ -94,6 +101,11 @@
 
       # string operations
         opcode strcmp                   # compare two strings
+
+      # basic conversions
+        opcode toS
+        opcode toI
+        opcode toF
 
       # FIXME: output and debug mechanisms
         opcode print:Int

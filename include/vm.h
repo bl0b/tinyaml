@@ -25,6 +25,8 @@
 #include "code.h"
 #include "thread.h"
 
+#define TINYAML_VERSION "0.1"
+
 vm_t vm_new();
 void vm_del(vm_t);
 
@@ -67,6 +69,9 @@ vm_t vm_pop_catcher(vm_t,word_t);
 vm_t vm_set_engine(vm_t, vm_engine_t);
 
 vm_t vm_schedule_cycle(vm_t);
+
+program_t _VM_CALL vm_get_CS(vm_t);
+word_t _VM_CALL vm_get_IP(vm_t);
 
 vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o);
 vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o);

@@ -280,7 +280,7 @@ void _VM_CALL vm_op_div_Int(vm_t vm, int b) {
 }
 
 
-void _VM_CALL vm_op_add_Float(vm_t vm, float b) {
+void _VM_CALL vm_op_add_Float(vm_t vm, word_t b) {
 	vm_data_type_t dta,dtb=DataFloat;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);
@@ -289,7 +289,7 @@ void _VM_CALL vm_op_add_Float(vm_t vm, float b) {
 }
 
 
-void _VM_CALL vm_op_sub_Float(vm_t vm, float b) {
+void _VM_CALL vm_op_sub_Float(vm_t vm, word_t b) {
 	vm_data_type_t dta,dtb=DataFloat;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);
@@ -298,7 +298,7 @@ void _VM_CALL vm_op_sub_Float(vm_t vm, float b) {
 }
 
 
-void _VM_CALL vm_op_mul_Float(vm_t vm, float b) {
+void _VM_CALL vm_op_mul_Float(vm_t vm, word_t b) {
 	vm_data_type_t dta,dtb=DataFloat;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);
@@ -307,7 +307,7 @@ void _VM_CALL vm_op_mul_Float(vm_t vm, float b) {
 }
 
 
-void _VM_CALL vm_op_div_Float(vm_t vm, float b) {
+void _VM_CALL vm_op_div_Float(vm_t vm, word_t b) {
 	vm_data_type_t dta,dtb=DataFloat;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);

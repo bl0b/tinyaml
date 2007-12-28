@@ -15,6 +15,8 @@ libtinyaml_la_SOURCES =	containers/generic_stack.c \
 			compiler/abstract_io.c \
 			 \
 			ml_core_gram.c \
+			 \
+			vm/objects.c \
 			vm/text_seg.c \
 			vm/vm.c \
 			vm/program.c \

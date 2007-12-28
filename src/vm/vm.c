@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <assert.h>
 
 #include "bml_ops.h"
 #include "object.h"
@@ -42,6 +43,8 @@ vm_t vm_new() {
 	ret->parser = tinyap_new();
 	tinyap_set_grammar_ast(ret->parser,ast_unserialize(ml_core_grammar));
 	opcode_dict_init(&ret->opcodes);
+	ret->current_node=NULL;
+	gstack_init(&ret->cn_stack,sizeof(wast_t));
 	ret->threads_count=0;
 	ret->current_thread=NULL;
 	ret->timeslice=100;
@@ -57,6 +60,7 @@ vm_t vm_new() {
 	ret->engine=NULL;
 
 	ret->dl_handle=NULL;
+
 
 	ret->cycles=0;
 
@@ -92,8 +96,11 @@ void vm_del(vm_t ret) {
 	slist_forward(&ret->all_programs,program_t,prg_free);
 	slist_flush(&ret->all_programs);
 	#undef prg_free
-	dlist_forward(&ret->gc_pending,void*,vm_obj_free);
+	#define obj_free(_x) vm_obj_free(ret,_x)
+	dlist_forward(&ret->gc_pending,void*,obj_free);
+	#undef obj_free
 	dlist_flush(&ret->gc_pending);
+	gstack_deinit(&ret->cn_stack,NULL);
 	free(ret);
 }
 
@@ -118,14 +125,9 @@ opcode_dict_t vm_get_dict(vm_t vm) {
 }
 
 
-#define PROG_FILE_MAGIC "BMLP"
-#define ENDIAN_TEST 0x01000000
 
 
-program_t vm_unserialize_program(vm_t vm, reader_t r) {
-	program_t p=NULL;
-	return p;
-}
+
 
 word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg) {
 	switch(arg_type) {
@@ -137,15 +139,103 @@ word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg) {
 	return arg;
 }
 
+
+word_t opcode_arg_unserialize(program_t p, opcode_arg_t arg_type, word_t arg) {
+	switch(arg_type) {
+	case OpcodeArgString:
+		arg = (word_t) text_seg_find_by_index(&p->strings,arg);
+		break;
+	default:;
+	};
+	return arg;
+}
+
+
+#define PROG_FILE_MAGIC "BMLP"
+#define ENDIAN_TEST 0x01000000
+
+
+program_t vm_unserialize_program(vm_t vm, reader_t r) {
+	program_t p=program_new();
+	opcode_dict_t od;
+	const char*str;
+	int i;
+	word_t endian;
+	word_t tot;
+	word_t op;
+	word_t wc;
+	word_t arg;
+
+	str = read_string(r);
+	if(strcmp(str,"BML_PRG")) {
+		return NULL;
+	}
+	endian = read_word(r);
+	/* FIXME : byte reversal is not yet implemented */
+	assert(ENDIAN_TEST==endian);
+
+	od = opcode_dict_new();
+	opcode_dict_unserialize(od,r,vm->dl_handle);
+
+	text_seg_unserialize(&p->strings,r);
+
+	str = read_string(r);
+	assert(!strcmp(str,"CODE---"));
+	tot = read_word(r);
+	dynarray_reserve(&p->code,tot+2);
+	for(i=0;i<tot;i+=2) {
+		wc = read_word(r);
+		op = (word_t) opcode_stub_by_code(od, wc);
+		arg = opcode_arg_unserialize(p, WC_GET_ARGTYPE(wc), read_word(r));
+		program_write_code(p,op,arg);
+	}
+	opcode_dict_free(od);
+	wc = read_word(r);
+	assert(wc==0xFFFFFFFF);
+	str = read_string(r);
+	assert(!strcmp(str,"DATA---"));
+	wc = read_word(r);
+	dynarray_reserve(&p->data,wc+2);
+	for(i=0;i<wc;i+=2) {
+		p->data.data[i] = read_word(r);
+		p->data.data[i+1] = opcode_arg_unserialize(p, p->data.data[i], read_word(r));
+	}
+	p->data.size=wc;
+	return p;
+}
+
+
+
+opcode_dict_t opcode_dict_optimize(vm_t vm, program_t prog) {
+	opcode_dict_t glob = vm_get_dict(vm);
+	opcode_dict_t od = opcode_dict_new();
+	const char* name;
+	opcode_arg_t arg_type;
+	opcode_stub_t stub;
+	int i;
+	for(i=0;i<prog->code.size;i+=2) {
+		stub = (opcode_stub_t)prog->code.data[i];
+		name = opcode_name_by_stub(glob,stub);
+		arg_type = WC_GET_ARGTYPE(opcode_code_by_stub(glob,stub));
+		opcode_dict_add(od, arg_type, name, stub);
+	}
+	return od;
+}
+
+
+
+
 vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
 	int i;
 	word_t op;
 	word_t arg;
+	/* optimize opcode dictionary */
+	opcode_dict_t odopt = opcode_dict_optimize(vm,p);
 	/* write header */
 	write_string(w,"BML_PRG");
 	write_word(w,ENDIAN_TEST);
 	/* write dict */
-	opcode_dict_serialize(vm_get_dict(vm),w);
+	opcode_dict_serialize(odopt,w);
 	/* write text segment */
 	text_seg_serialize(&p->strings,w);
 	/* write code segment */
@@ -159,8 +249,18 @@ vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
 	printf("\n");
 	/* write serialized word code */
 	for(i=0;i<dynarray_size(&p->code);i+=2) {
-		op = opcode_code_by_stub(vm_get_dict(vm), (opcode_stub_t)dynarray_get(&p->code,i));
+		op = opcode_code_by_stub(odopt, (opcode_stub_t)dynarray_get(&p->code,i));
 		arg = opcode_arg_serialize(p, WC_GET_ARGTYPE(op), dynarray_get(&p->code,i+1));
+		write_word(w,op);
+		write_word(w,arg);
+	}
+	opcode_dict_free(odopt);
+	write_word(w,0xFFFFFFFF);
+	write_string(w,"DATA---");
+	write_word(w,dynarray_size(&p->data));
+	for(i=0;i<dynarray_size(&p->data);i+=2) {
+		op = dynarray_get(&p->data,i);
+		arg = opcode_arg_serialize(p, op, dynarray_get(&p->data,i+1));
 		write_word(w,op);
 		write_word(w,arg);
 	}
@@ -252,9 +352,25 @@ word_t vm_get_current_thread_index(vm_t vm) {
 }
 
 thread_t vm_get_current_thread(vm_t vm) {
+	if(!vm->current_thread) {
+		return NULL;
+	}
 	return node_value(thread_t,vm->current_thread);
 }
 
+program_t _VM_CALL vm_get_CS(vm_t vm) {
+	if(!vm->current_thread) {
+		return NULL;
+	}
+	return node_value(thread_t,vm->current_thread)->program;
+}
+
+word_t _VM_CALL vm_get_IP(vm_t vm) {
+	if(!vm->current_thread) {
+		return 0;
+	}
+	return node_value(thread_t,vm->current_thread)->IP;
+}
 
 vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	vm->threads_count -= 1;
@@ -363,16 +479,16 @@ vm_data_t _VM_CALL _vm_pop(vm_t vm) {
 }
 
 vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o) {
-	printf("vm collect %p\n",o);
+	/*printf("vm collect %p\n",o);*/
 	dlist_insert_head(&vm->gc_pending,o);
 	return vm;
 }
 
 vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
 	dlist_node_t dn;
-	printf("vm uncollect %p\n",o);
+	/*printf("vm uncollect %p\n",o);*/
 	if(!vm->gc_pending.head) {
-		printf("   => failed.\n");
+		/*printf("   => failed.\n");*/
 		return vm;
 	}
 	dn = vm->gc_pending.head;
@@ -383,7 +499,7 @@ vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
 		}
 		dn = dn->next;
 	}
-	printf("   => failed.\n");
+	/*printf("   => failed.\n");*/
 	return vm;
 }
 
@@ -429,6 +545,8 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	/* fetch */
 	/*program_fetch(t->program, t->IP, (word_t*)&op, &arg);*/
 	array = t->program->code.data+t->IP;
+
+	/*printf("EXEC %p:%lX\n",t->program,t->IP);*/
 
 	/* decode */
 	((opcode_stub_t) *array) ( vm, *(array+1) );
