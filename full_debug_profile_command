@@ -1,0 +1,1 @@
+make -s clean &&CC=colorgcc CFLAGS=-Wall\ -pg\ -ggdb ./configure -C&&make -s&&./run.sh&&./run.sh gprof gmon.out > gprof_output.txt&&less gprof_output.txt

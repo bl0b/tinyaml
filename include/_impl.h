@@ -21,7 +21,8 @@
 
 #include "vm_types.h"
 #include "containers.h"
-#include <tinyap.h>
+#include <tinyape.h>
+
 
 struct _dynarray_t {
 	word_t reserved;
@@ -40,7 +41,8 @@ struct _generic_stack_t {
 struct _vm_engine_t {
 	void(*_init)(vm_engine_t);
 	void(*_deinit)(vm_engine_t);
-	void(*_run)(vm_engine_t, program_t, word_t);
+	void(*_run_sync)(vm_engine_t, program_t, word_t ip, word_t prio);
+	void(*_run_async)(vm_engine_t, program_t, word_t ip, word_t prio);
 	void(*_kill)(vm_engine_t);
 	vm_t vm;
 };
@@ -88,13 +90,28 @@ struct _call_stack_entry_t {
 	word_t ip;
 };
 
+
+struct _vm_obj_t {
+	long ref_count;
+	void (*_free)(void*);
+	word_t magic;
+};
+
+
 struct _vm_t {
 	/* embedded parser */
 	tinyap_t parser;
+	/* meta-compiler */
+	struct _text_seg_t compile_vectors;
+	opcode_chain_t result;
+	WalkDirection compile_state;
+	wast_t current_node;
 	/* known opcodes */
 	struct _opcode_dict_t opcodes;
 	/* library management */
 	void* dl_handle;
+	/* all programs */
+	struct _slist_t all_programs;
 	/* threads */
 	scheduler_algorithm_t scheduler;
 	word_t threads_count;
@@ -107,6 +124,8 @@ struct _vm_t {
 	vm_engine_t engine;
 	/* stats */
 	word_t cycles;
+	/* garbage collecting */
+	struct _dlist_t gc_pending;
 };
 
 

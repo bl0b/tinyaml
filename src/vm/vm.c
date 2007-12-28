@@ -8,12 +8,12 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #include "vm.h"
@@ -27,6 +27,7 @@
 #include <dlfcn.h>
 
 #include "bml_ops.h"
+#include "object.h"
 
 /* hidden feature in tinyap */
 ast_node_t ast_unserialize(const char*);
@@ -37,15 +38,22 @@ extern const char* ml_core_lib;
 vm_t vm_new() {
 	vm_t ret = (vm_t)malloc(sizeof(struct _vm_t));
 	tinyap_init();
+	ret->result=NULL;
 	ret->parser = tinyap_new();
 	tinyap_set_grammar_ast(ret->parser,ast_unserialize(ml_core_grammar));
 	opcode_dict_init(&ret->opcodes);
 	ret->threads_count=0;
 	ret->current_thread=NULL;
 	ret->timeslice=100;
+	dynarray_init(&ret->compile_vectors.by_index);
+	init_hashtab(&ret->compile_vectors.by_text, (hash_func) hash_str, (compare_func) strcmp);
+	dynarray_set(&ret->compile_vectors.by_index,1,0);
+	dynarray_set(&ret->compile_vectors.by_index,0,0);
+	slist_init(&ret->all_programs);
 	dlist_init(&ret->ready_threads);
 	dlist_init(&ret->running_threads);
 	dlist_init(&ret->yielded_threads);
+	dlist_init(&ret->gc_pending);
 	ret->engine=NULL;
 
 	ret->dl_handle=NULL;
@@ -65,16 +73,27 @@ vm_t vm_new() {
 	return ret;
 }
 
+void htab_free_dict(htab_entry_t);
+
+
 void vm_del(vm_t ret) {
-	printf("delete vm\n");
+	/*printf("delete vm\n");*/
 	dlist_forward(&ret->ready_threads,thread_t,thread_delete);
 	dlist_forward(&ret->running_threads,thread_t,thread_delete);
 	dlist_forward(&ret->yielded_threads,thread_t,thread_delete);
+	dynarray_deinit(&ret->compile_vectors.by_index,NULL);
+	clean_hashtab(&ret->compile_vectors.by_text,htab_free_dict);
 	dlist_flush(&ret->ready_threads);
 	dlist_flush(&ret->running_threads);
 	dlist_flush(&ret->yielded_threads);
 	tinyap_delete(ret->parser);
 	opcode_dict_deinit(&ret->opcodes);
+	#define prg_free(_x) program_free(ret,_x)
+	slist_forward(&ret->all_programs,program_t,prg_free);
+	slist_flush(&ret->all_programs);
+	#undef prg_free
+	dlist_forward(&ret->gc_pending,void*,vm_obj_free);
+	dlist_flush(&ret->gc_pending);
 	free(ret);
 }
 
@@ -134,7 +153,7 @@ vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
 	/* write code segment size */
 	write_word(w,dynarray_size(&p->code));
 	for(i=0;i<dynarray_size(&p->code);i+=2) {
-		printf("%8.8lX %8.8lX   ",dynarray_get(&p->code,i),dynarray_get(&p->code,i+1));
+		printf("%8.8lX %8.8lX  ",dynarray_get(&p->code,i),dynarray_get(&p->code,i+1));
 		if(i%8==6) printf("\n");
 	}
 	printf("\n");
@@ -162,6 +181,7 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
 		p = compile_wast(wa, vm);
 		wa_del(wa);
+		slist_insert_tail(&vm->all_programs,p);
 	} else {
 		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
@@ -178,6 +198,7 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
 		p = compile_wast(wa, vm);
 		wa_del(wa);
+		slist_insert_tail(&vm->all_programs,p);
 	} else {
 		fprintf(stderr,tinyap_get_error(vm->parser));
 	}
@@ -186,8 +207,14 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 
 
 
-vm_t vm_run_program(vm_t vm, program_t p, word_t prio) {
-	vm->engine->_run(vm->engine,p, prio);
+vm_t vm_run_program_bg(vm_t vm, program_t p, word_t ip, word_t prio) {
+	vm->engine->_run_async(vm->engine, p, ip, prio);
+	return vm;
+}
+
+
+vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio) {
+	vm->engine->_run_sync(vm->engine, p, ip, prio);
 	return vm;
 }
 
@@ -200,8 +227,6 @@ vm_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
 	}
 	t = thread_new(prio,p,ip);
 	/* FIXME : this should go into thread_new() */
-	t->jmp_seg=NULL;
-	t->jmp_ofs=0;
 	vm->threads_count += 1;
 	if(vm->threads_count==1) {
 		vm->scheduler = SchedulerMonoThread;
@@ -244,14 +269,14 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 
 
 void vm_dump_data_stack(vm_t vm) {
-	struct _data_stack_entry_t* e;
+	vm_data_t e;
 	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
 	int sz = gstack_size(stack);
 	int i;
 
 	printf("sz = %i\n",sz);
 	for(i=0;i<sz;i+=1) {
-		e = (struct _data_stack_entry_t*) gpeek(struct _data_stack_entry_t*,stack,-i);
+		e = (vm_data_t ) gpeek(vm_data_t ,stack,-i);
 		printf("#%i : %4.4X %8.8lX\n",i,e->type, e->data);
 	}
 }
@@ -262,6 +287,9 @@ vm_t vm_push_data(vm_t vm, vm_data_type_t type, word_t value) {
 	/*printf("vm push data : %lu %lu\n",type,value);*/
 	e.type = type;
 	e.data = value;
+	if(type==DataObject) {
+		vm_obj_ref(vm,(void*)value);
+	}
 	gpush( stack, &e );
 	/*vm_dump_data_stack(vm);*/
 	return vm;
@@ -288,7 +316,7 @@ vm_t vm_push_catcher(vm_t vm, program_t seg, word_t ofs) {
 
 vm_t vm_peek_data(vm_t vm, int rel_ofs, vm_data_type_t* type, word_t* value) {
 	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
-	struct _data_stack_entry_t* top = gpeek( struct _data_stack_entry_t*, stack, rel_ofs );
+	vm_data_t top = gpeek( vm_data_t , stack, rel_ofs );
 	*type = (vm_data_type_t) top->type;
 	*value = top->data;
 	return vm;
@@ -296,9 +324,15 @@ vm_t vm_peek_data(vm_t vm, int rel_ofs, vm_data_type_t* type, word_t* value) {
 
 vm_t vm_poke_data(vm_t vm, vm_data_type_t type, word_t value) {
 	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
-	struct _data_stack_entry_t* top = gpeek( struct _data_stack_entry_t*, stack, 0 );
+	vm_data_t top = gpeek( vm_data_t , stack, 0 );
+	if(top->type==DataObject) {
+		vm_obj_deref(vm,(void*)top->data);
+	}
 	top->type = type;
 	top->data = value;
+	if(top->type==DataObject) {
+		vm_obj_ref(vm,(void*)top->data);
+	}
 	return vm;
 }
 
@@ -318,6 +352,40 @@ vm_t vm_peek_catcher(vm_t vm, program_t* cs, word_t* ip) {
 	return vm;
 }
 
+
+vm_data_t _VM_CALL _vm_pop(vm_t vm) {
+	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	vm_data_t top = _gpop(stack);
+	if(top->type==DataObject) {
+		vm_obj_deref(vm,(void*)top->data);
+	}
+	return top;
+}
+
+vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o) {
+	printf("vm collect %p\n",o);
+	dlist_insert_head(&vm->gc_pending,o);
+	return vm;
+}
+
+vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
+	dlist_node_t dn;
+	printf("vm uncollect %p\n",o);
+	if(!vm->gc_pending.head) {
+		printf("   => failed.\n");
+		return vm;
+	}
+	dn = vm->gc_pending.head;
+	while(dn) {
+		if(dn->value==(word_t)o) {
+			dlist_remove(&vm->gc_pending,dn);
+			return vm;
+		}
+		dn = dn->next;
+	}
+	printf("   => failed.\n");
+	return vm;
+}
 
 vm_t vm_pop_data(vm_t vm, word_t count) {
 	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
@@ -350,10 +418,8 @@ vm_t vm_pop_catcher(vm_t vm, word_t count) {
 
 
 
-void vm_exec_cycle(vm_t vm, thread_t t) {
-	opcode_stub_t op;
-	word_t arg;
-	word_t*array;
+thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
+	register word_t*array;
 /*
 	if(t->IP>=t->program->code.size) {
 		t->state=ThreadDying;
@@ -363,21 +429,15 @@ void vm_exec_cycle(vm_t vm, thread_t t) {
 	/* fetch */
 	/*program_fetch(t->program, t->IP, (word_t*)&op, &arg);*/
 	array = t->program->code.data+t->IP;
-	op = (opcode_stub_t) *array;
-	arg = *(array+1);
+
 	/* decode */
-	op(vm,arg);
+	((opcode_stub_t) *array) ( vm, *(array+1) );
+
 	/* iterate */
-	if(t->jmp_seg) {
-		/* it's a (long) call */
+	if(t->jmp_ofs) {
+		/* it's a jump */
 		/* assume call stack is already filled */
-		t->program = (program_t)t->jmp_seg;
-		t->IP=t->jmp_ofs;
-		t->jmp_seg=NULL;
-		t->jmp_ofs=0;
-	} else if(t->jmp_ofs) {
-		/* it's a (short) jump or call */
-		/* assume call stack is already filled */
+		t->program = t->jmp_seg;
 		t->IP=t->jmp_ofs;
 		t->jmp_ofs=0;
 	} else if(t->IP==t->program->code.size-2) {
@@ -387,12 +447,61 @@ void vm_exec_cycle(vm_t vm, thread_t t) {
 		/* hop to next instruction */
 		t->IP+=2;
 	}
+	return t->state;
 }
 
 
 
 
-thread_t vm_select_thread(vm_t vm) {
+
+typedef thread_t (*_VM_CALL _sched_method_t) (vm_t);
+
+
+
+thread_t _VM_CALL _sched_idle(vm_t vm) {
+	return NULL;
+}
+
+
+
+thread_t _VM_CALL _sched_mono(vm_t vm) {
+	register thread_t current=NULL;
+	switch((word_t)vm->current_thread) {
+	case 0:
+		vm->current_thread=vm->ready_threads.head;
+		vm->ready_threads.head=vm->ready_threads.head->next;
+		if(!vm->ready_threads.head) {
+			vm->ready_threads.tail=NULL;
+		}
+		vm->running_threads.head=vm->current_thread;
+		vm->running_threads.tail=vm->current_thread;
+		current = node_value(thread_t,vm->current_thread);
+		current->state=ThreadRunning;
+		return current;
+	default:
+		return node_value(thread_t,vm->current_thread);
+	};
+/*	if(vm->current_thread) {
+		return node_value(thread_t,vm->current_thread);
+	} else if(vm->ready_threads.head) {
+		thread_t current=NULL;
+		vm->current_thread=vm->ready_threads.head;
+		vm->ready_threads.head=vm->ready_threads.head->next;
+		if(!vm->ready_threads.head) {
+			vm->ready_threads.tail=NULL;
+		}
+		vm->running_threads.head=vm->current_thread;
+		vm->running_threads.tail=vm->current_thread;
+		current = node_value(thread_t,vm->current_thread);
+		current->state=ThreadRunning;
+		return current;
+	}
+	return NULL;*/
+}
+
+
+
+thread_t _VM_CALL _sched_rr(vm_t vm) {
 	thread_t current;
 	if(vm->current_thread) {
 		current = node_value(thread_t,vm->current_thread);
@@ -433,48 +542,34 @@ thread_t vm_select_thread(vm_t vm) {
 
 
 
+_sched_method_t schedulers[SchedulerAlgoMax] = {
+	_sched_idle,
+	_sched_mono,
+	_sched_rr,
+};
+
 /* if has no thread, do nothing.
  * if has one thread, execute it.
  * if has many threads, time-slice round-robin them.
  */
 vm_t vm_schedule_cycle(vm_t vm) {
-	thread_t current;
+	thread_t current = schedulers[vm->scheduler](vm);
 
-	switch(vm->scheduler) {
-	case SchedulerRoundRobin:
-		current = vm_select_thread(vm);
-		break;
-	case SchedulerMonoThread:
-		if((!vm->current_thread)&&vm->ready_threads.head) {
-			vm->current_thread=vm->ready_threads.head;
-			vm->ready_threads.head=vm->ready_threads.head->next;
-			if(!vm->ready_threads.head) {
-				vm->ready_threads.tail=NULL;
-			}
-			vm->running_threads.head=vm->current_thread;
-			vm->running_threads.tail=vm->current_thread;
-			node_value(thread_t,vm->current_thread)->state=ThreadRunning;
-		}
-		if(!vm->current_thread) {
-			return vm;
-		}
-		current = node_value(thread_t,vm->current_thread);
-		break;
-	default:;
-		return vm;
-	};
 /*	printf("CURRENT THREAD %p\n",current);
 	printf("CURRENT PROGRAM %p\n",current->program);
-*/	vm_exec_cycle(vm,current);
-	if(current->state==ThreadDying) {
-		vm_dump_data_stack(vm);
+	if(current) {
+*/
+	switch(current?vm_exec_cycle(vm,current):ThreadDying+1) {
+	case ThreadDying:
+		/*vm_dump_data_stack(vm);*/
 		thread_delete(node_value(thread_t,vm->current_thread));
 		dlist_remove(&vm->running_threads,vm->current_thread);
 		vm->current_thread=NULL;
 		vm->threads_count-=1;
-	}
-	vm->cycles+=1;
-	return vm;
+	default:
+		vm->cycles+=1;
+		return vm;
+	};
 }
 
 vm_t vm_set_engine(vm_t vm, vm_engine_t e) {

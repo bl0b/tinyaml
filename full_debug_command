@@ -1,0 +1,1 @@
+make -s clean &&CC=colorgcc CFLAGS=-Wall\ -ggdb ./configure -C&&make -s&&./run.sh

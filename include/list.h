@@ -95,7 +95,9 @@ struct _dlist_t {
 		_snode_local_new(n);\
 		n->value=(word_t)(_v);\
 		n->next=(_l)->head;\
-		if((_l)->tail==NULL) (_l)->tail=n;\
+		if((_l)->tail==NULL) {\
+			(_l)->tail=n;\
+		}\
 		(_l)->head=n;\
 	} while(0)
 
@@ -119,32 +121,38 @@ struct _dlist_t {
 
 #define dlist_remove_head(_l)	do {\
 		dlist_node_t n=(_l)->head;\
-		(_l)->head = n->next;\
-		(_l)->head->prev = NULL;\
+		if((_l)->tail==(_l)->head) {\
+			(_l)->head=NULL;\
+			(_l)->tail=NULL;\
+		} else {\
+			(_l)->head = n->next;\
+			(_l)->head->prev = NULL;\
+		}\
 		snode_del(n);\
 	} while(0)
 
 #define dlist_remove_tail(_l)	do {\
 		dlist_node_t n=(_l)->tail;\
-		(_l)->tail = n->prev;\
-		(_l)->tail->next = NULL;\
+		if((_l)->tail==(_l)->head) {\
+			(_l)->head=NULL;\
+			(_l)->tail=NULL;\
+		} else {\
+			(_l)->tail = n->prev;\
+			(_l)->tail->next = NULL;\
+		}\
 		dnode_del(n);\
 	} while(0)
 
 #define dlist_remove(_l,_n)	do {\
-		if((_n)->next!=NULL) {\
+		if((_n)==(_l)->head) {\
+			dlist_remove_head(_l);\
+		} else if((_n)==(_l)->tail) {\
+			dlist_remove_tail(_l);\
+		} else {\
 			(_n)->next->prev=(_n)->prev;\
-		} else {\
-			assert((_l)->tail==(_n));\
-			(_l)->tail=(_l)->tail->prev;\
-		}\
-		if((_n)->prev!=NULL) {\
 			(_n)->prev->next=(_n)->next;\
-		} else {\
-			assert((_l)->head==(_n));\
-			(_l)->head=(_l)->head->next;\
+			dnode_del(_n);\
 		}\
-		dnode_del(_n);\
 	} while(0)
 /*
  * Iterating over a list

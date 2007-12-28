@@ -24,22 +24,24 @@
 
 thread_t thread_new(word_t prio, program_t p, word_t ip) {
 	thread_t ret = (thread_t)malloc(sizeof(struct _thread_t));
-	printf("NEW THREAD %p\n",ret);
+	/*printf("NEW THREAD %p\n",ret);*/
 	gstack_init(&ret->locals_stack,sizeof(struct _data_stack_entry_t));
 	gstack_init(&ret->data_stack,sizeof(struct _data_stack_entry_t));
 	gstack_init(&ret->call_stack,sizeof(struct _call_stack_entry_t));
 	gstack_init(&ret->catch_stack,sizeof(struct _call_stack_entry_t));
 	ret->program = p;
+	ret->jmp_seg = p;
+	ret->jmp_ofs = 0;
 	ret->IP = ip;
 	ret->prio = prio;
 	ret->state = ThreadReady;
 	ret->remaining = 0;
-	printf("\tPROGRAM %p\n",ret->program);
+	/*printf("\tPROGRAM %p\n",ret->program);*/
 	return ret;
 }
 
 void thread_delete(thread_t t) {
-	printf("\tdel thread\n");
+	/*printf("\tdel thread\n");*/
 	gstack_deinit(&t->locals_stack,NULL);
 	gstack_deinit(&t->data_stack,NULL);
 	gstack_deinit(&t->call_stack,NULL);

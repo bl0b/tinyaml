@@ -66,10 +66,14 @@ asm_statement = ( <DeclLabel> <Opcode> | <Opcode> ).
 
 Program ::= <program_bloc_loop>.
 
-p_ProgramTopLevel = ( <DataBloc> | <AsmBloc> | <LangDef> | <LangPlug> ).
+p_Code = ( <AsmBloc> ).
+
+p_ProgramTopLevel = ( <p_Data> | <p_Code> | <LangDef> | <LangPlug> | <LangComp> ).
 
 program_bloc_loop = ( <p_ProgramTopLevel> <program_bloc_loop> | <p_ProgramTopLevel> EOF ).
 
+
+p_Data = ( <DataBloc> ).
 
 DataBloc ::= "data" <data_loop>.
 
@@ -116,8 +120,8 @@ LibFile ::= "file" <string>.
 #
 
 LangDef ::= "language" <Grammar>.
-LangPlug ::= "plug" <sym> "into" <sym> <AsmBloc>.
-
+LangPlug ::= "plug" <sym> "into" <sym>.
+LangComp ::= "compile" <sym> <p_Code>.
 
 
 

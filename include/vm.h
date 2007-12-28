@@ -21,11 +21,8 @@
 
 #include "vm_types.h"
 #include "containers.h"
-
 #include "abstract_io.h"
-
 #include "code.h"
-
 #include "thread.h"
 
 vm_t vm_new();
@@ -37,7 +34,8 @@ program_t vm_unserialize_program(vm_t, reader_t);
 program_t vm_compile_file(vm_t, const char*);
 program_t vm_compile_buffer(vm_t, const char*);
 
-vm_t vm_run_program(vm_t, program_t, word_t);
+vm_t vm_run_program_fg(vm_t, program_t, word_t ip, word_t prio);
+vm_t vm_run_program_bg(vm_t, program_t, word_t ip, word_t prio);
 
 
 vm_t vm_set_lib_file(vm_t, const char*);
@@ -70,6 +68,10 @@ vm_t vm_set_engine(vm_t, vm_engine_t);
 
 vm_t vm_schedule_cycle(vm_t);
 
+vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o);
+vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o);
+
+vm_data_t _VM_CALL _vm_pop(vm_t vm);
 
 #endif
 

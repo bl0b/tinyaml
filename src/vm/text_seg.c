@@ -32,6 +32,11 @@ void text_seg_deinit(text_seg_t seg) {
 	clean_hashtab(&seg->by_text,NULL);
 }
 
+void text_seg_free(text_seg_t seg) {
+	text_seg_deinit(seg);
+	free(seg);
+}
+
 const char* text_seg_find_by_text(text_seg_t ts, const char* str) {
 	const char* ret;
 	word_t ofs = (word_t)hash_find(&ts->by_text, (hash_key)str);

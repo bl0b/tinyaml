@@ -33,6 +33,8 @@ typedef unsigned long int word_t;
 
 typedef word_t value_t;
 
+typedef struct _vm_obj_t* vm_obj_t;
+
 typedef struct _vm_t* vm_t;
 
 typedef struct _program_t* program_t;
@@ -103,6 +105,7 @@ typedef enum {
 } opcode_chain_node_type_t;
 
 
+typedef struct _data_stack_entry_t* vm_data_t;
 typedef struct _call_stack_entry_t* call_stack_entry_t;
 typedef struct _call_stack_entry_t* catch_stack_entry_t;
 

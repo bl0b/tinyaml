@@ -29,6 +29,7 @@
 opcode_chain_node_t ochain_new_opcode(opcode_arg_t arg_type, const char* opcode, const char* arg) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeOpcode;
+	ocn->arg=NULL;
 	//ocn->name=strdup(opcode);
 	ocn->arg_type=arg_type;
 	//ocn->arg=strdup(opcode);
@@ -38,12 +39,13 @@ opcode_chain_node_t ochain_new_opcode(opcode_arg_t arg_type, const char* opcode,
 opcode_chain_node_t ochain_new_label(const char* label) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeLabel;
+	ocn->arg=NULL;
 	ocn->name=strdup(label);
 	return ocn;
 }
 
 void opcode_chain_node_free(opcode_chain_node_t ocn) {
-	if(ocn->type==NodeOpcode&&ocn->arg) {
+	if(ocn->arg) {
 		free((char*)ocn->arg);
 	}
 	free((char*)ocn->name);	/* label is an alias for opcode.name */
@@ -139,6 +141,7 @@ word_t opcode_label_to_ofs(opcode_chain_t oc, const char* label) {
 }
 
 
+void _VM_CALL vm_op_nop(vm_t vm, word_t data);
 
 /*
  * transforms a symbolic opcode into raw executable wordcode
@@ -148,6 +151,10 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	word_t arg;
 	union { word_t i; float f; } conv;
 	char*str;
+	if(!op) {
+		fprintf(stderr,"Warning : opcode not found %s:%i\n",ocn->name,ocn->arg_type);
+		op=(word_t)vm_op_nop;
+	}
 	/*printf("got opcode %s.",ocn->name);*/
 	switch(ocn->arg_type) {
 	case OpcodeNoArg:

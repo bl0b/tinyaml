@@ -5,7 +5,9 @@ data
 end
 
 asm
-	enter 1			# counter
+	enter 2			# counters
+	push 5000 setmem -2
+mega_loop:
 	push 2 setmem -1
 	push 1
 	setmem 1
@@ -23,6 +25,10 @@ fill_loop:
 
 	push 1 setmem -1
 
+	# redo filling many times
+	getmem -2 dec setmem -2
+	getmem -2 SZ jmp @mega_loop
+
 dump_loop:
 	push "Fibo("
 	getmem -1
@@ -33,6 +39,7 @@ dump_loop:
 	getmem -1 inc setmem -1
 	getmem -1 sub 200 SZ jmp @dump_loop
 
+	leave 2
 	jmp @_end
 
 
@@ -98,19 +105,5 @@ fibo_ret_1:
 
 #
 _end:nop
-end
-
-
-language
-	foobar ::= <prout> <pouet>.
-end
-
-plug foobar into p_coin
-asm
-  enter 3
-  leave 3
-  nop
- nop
-nop
 end
 

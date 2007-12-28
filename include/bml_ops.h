@@ -20,6 +20,7 @@
 #define _BML_OPS_H_
 
 void _VM_CALL vm_op_nop(vm_t vm, word_t data);
+void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, word_t data);
 
 #endif
 

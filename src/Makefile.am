@@ -21,7 +21,9 @@ libtinyaml_la_SOURCES =	containers/generic_stack.c \
 			vm/thread.c \
 			vm/vm_engine.c \
 			 \
-			ops/bml_vm.c
+			ops/bml_vm.c \
+			ops/arithbin.c \
+			ops/compiler.c
 
 tinyaml_SOURCES = tinyaml.c $(libtinyaml_la_SOURCES)
 #tinyaml_LDADD = libtinyaml.la

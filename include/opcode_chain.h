@@ -29,5 +29,6 @@ void opcode_chain_delete(opcode_chain_t);
 
 void opcode_chain_serialize(opcode_chain_t, opcode_dict_t, program_t, void*);
 
+void opcode_chain_apply(opcode_chain_t oc, void(*fun)(opcode_chain_node_t));
 #endif
 

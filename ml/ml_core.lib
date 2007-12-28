@@ -65,8 +65,35 @@
         opcode sub:Float
         opcode mul:Float
         opcode div:Float
-      # TODO: AST manipulation
-      # TODO: compiler manipulation
+      # AST manipulation
+        opcode astGetOp
+        opcode astGetChildrenCount
+        opcode astCompileChild:Int
+        opcode astCompileChild
+
+      # compiler manipulation
+        opcode __addCompileMethod:Label
+        opcode write_label:String
+        opcode write_oc:String
+        opcode write_oc_Int:String
+        opcode write_oc_Float:String
+        opcode write_oc_Label:String
+        opcode write_oc_String:String
+
+        opcode compileStateNext
+        opcode compileStateDown
+        opcode compileStateUp
+        opcode compileStateError
+
+      # handling symbol tables
+        opcode newSymTab                # create a new sym tab and push
+                                        # it onto data stack
+        opcode symTabSz
+        opcode getSym                   # pop key, pop table, push result
+        opcode addSym                   # pop key, pop table
+
+      # string operations
+        opcode strcmp                   # compare two strings
 
       # FIXME: output and debug mechanisms
         opcode print:Int
