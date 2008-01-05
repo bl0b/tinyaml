@@ -113,6 +113,7 @@
       # threading
         opcode newThread:Label          # pop prio
         opcode getPid                   # push int
+        opcode yield                    # yield current thread
         opcode joinThread               # pop int thread pid
         opcode killThread               # pop int thread pid
 

@@ -29,5 +29,10 @@ vm_engine_t vm_engine_archetype_new(vm_engine_func_t _init, vm_engine_func_t _ru
 vm_engine_t vm_engine_new(vm_engine_t archetype, vm_t);
 void vm_engine_del(vm_engine_t);
 
+
+extern const vm_engine_t
+	stub_engine,
+	thread_engine;
+
 #endif
 

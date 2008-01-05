@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "_impl.h"
+#include "vm_engine.h"
 
 #include "fastmath.h"
 
@@ -32,51 +33,6 @@
 
 program_t compile_wast(wast_t node, vm_t vm);
 
-
-void e_init(vm_engine_t e) {}
-void e_deinit(vm_engine_t e) {}
-void e_kill(vm_engine_t e) {}
-void e_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
-	if(e->vm->current_thread) {
-		thread_t t = e->vm->current_thread;
-		/* save some thread state */
-		program_t jmp_seg = t->jmp_seg;
-		word_t jmp_ofs = t->jmp_ofs;
-		word_t IP = t->IP;
-		program_t program = t->program;
-		/* hack new thread state */
-		word_t s_sz;
-		t->jmp_ofs=0;
-		t->jmp_seg=p;
-		vm_push_caller(e->vm,t->program,t->IP);
-		s_sz = t->call_stack.sp-1;
-		t->program=p;
-		t->IP=ip;
-		while(t->call_stack.sp!=s_sz) {
-			vm_schedule_cycle(e->vm);
-		}
-		/*printf("done with sub thread\n");*/
-		/* restore old state */
-		t->program=program;
-		t->IP=IP;
-		t->jmp_seg=jmp_seg;
-		t->jmp_ofs=jmp_ofs;
-	} else {
-		vm_add_thread(e->vm,p,ip,prio);
-		while(e->vm->threads_count) {
-			vm_schedule_cycle(e->vm);
-		}
-	}
-}
-
-struct _vm_engine_t stub_engine = {
-	e_init,
-	e_deinit,
-	e_run,
-	e_run,
-	e_kill,
-	NULL
-};
 
 
 
@@ -160,7 +116,8 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 int main(int argc, char** argv) {
 	vm_t vm;
 	vm = vm_new();
-	vm_set_engine(vm, &stub_engine);
+	/*vm_set_engine(vm, stub_engine);*/
+	vm_set_engine(vm, thread_engine);
 	do_args(vm,argc,argv);
 	if(!tinyaml_quiet) {
 		printf("\nVM runned for %lu cycles.\n",vm->cycles);

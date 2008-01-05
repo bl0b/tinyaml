@@ -63,13 +63,13 @@ program_t program_new() {
 	dynarray_init(&ret->data);
 	dynarray_init(&ret->code);
 	/*program_write_code(ret, (word_t)vm_op_nop, 0);*/
-	printf("PROGRAM NEW %p\n",ret);
+	/*printf("PROGRAM NEW %p\n",ret);*/
 	return ret;
 }
 
 
 void program_free(vm_t vm, program_t p) {
-	printf("program_free %p\n",p);
+	/*printf("program_free %p\n",p);*/
 	text_seg_deinit(&p->strings);
 	dynarray_deinit(&p->code,NULL);
 	if(p->data.size) {
@@ -77,7 +77,7 @@ void program_free(vm_t vm, program_t p) {
 		p->code.reserved=0;
 		p->code.data=clean_data_seg;
 		clean_data_seg[1]=p->data.size>>1;
-		printf("cleaning %lu data items\n",clean_data_seg[1]);
+		/*printf("cleaning %lu data items\n",clean_data_seg[1]);*/
 		vm_run_program_fg(vm,p,0,99);
 	}
 	text_seg_deinit(&p->labels.labels);

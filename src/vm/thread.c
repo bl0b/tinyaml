@@ -66,7 +66,7 @@ void thread_deinit(vm_t vm, thread_t t) {
 		/*vm->zombie_threads.head=t->sched_data.next;*/
 	/*}*/
 
-	mutex_unlock(vm,&t->join_mutex,t);
+	/*mutex_unlock(vm,&t->join_mutex,t);*/
 	mutex_deinit(&t->join_mutex);
 	gstack_deinit(&t->locals_stack,NULL);
 	gstack_deinit(&t->data_stack,NULL);
@@ -108,9 +108,9 @@ const char* thread_state_to_str(thread_state_t ts) {
 void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 	assert(t->sched_data.value==(word_t)t);
 	/*assert(t->state!=state);*/
-	if(t->state==state) {
-		printf("thread_set_state does nothing ; %s\n",thread_state_to_str(state));
-	}
+	/*if(t->state==state) {*/
+		/*printf("thread_set_state does nothing ; %s\n",thread_state_to_str(state));*/
+	/*}*/
 	/*printf("thread_set_state %p : %s => %s\n",t,thread_state_to_str(t->state),thread_state_to_str(state));*/
 	switch(t->state) {
 	case ThreadBlocked:
@@ -141,6 +141,9 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 	case ThreadRunning:
 		t->remaining=vm->timeslice;
 		dlist_insert_sorted(&vm->running_threads,&t->sched_data,comp_prio);
+		break;
+	case ThreadDying:
+		/*mutex_unlock(vm,&t->join_mutex,t);*/
 		break;
 	default:;
 		
@@ -175,6 +178,7 @@ void mutex_deinit(mutex_t m) {
 }
 
 long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
+	/*printf("MUTEX LOCK :: thread %p attempts to lock mutex %p owned by %p\n",t,m,m->owner);*/
 	if(m->owner==NULL) {
 		/*printf("mutex is not owned.\n");*/
 		m->owner=t;
@@ -192,6 +196,7 @@ long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
 }
 
 long mutex_unlock(vm_t vm, mutex_t m, thread_t t) {
+	/*printf("MUTEX UNLOCK :: thread %p attempts to unlock mutex %p owned by %p\n",t,m,m->owner);*/
 	if(m->owner!=t) {
 		printf("VM::Error : trying to unlock a mutex that is owned by another thread (%p).\n",m->owner);
 		return 0;

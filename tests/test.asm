@@ -6,7 +6,7 @@ end
 
 asm
 	enter 2			# counters
-	push 5000 setmem -2
+	push 5 setmem -2
 mega_loop:
 	push 2 setmem -1
 	push 1
@@ -30,6 +30,7 @@ fill_loop:
 	getmem -2 SZ jmp @mega_loop
 
 dump_loop:
+	yield
 	push "Fibo("
 	getmem -1
 	push ") = "

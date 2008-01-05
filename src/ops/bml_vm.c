@@ -341,7 +341,7 @@ void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 	word_t ofs = t->IP+rel_ofs;
 	assert(d->type==DataInt);
 	t = vm_add_thread(vm,t->program, ofs, d->data);
-	printf("new thread has handle %p\n",t);
+	/*printf("new thread has handle %p\n",t);*/
 	vm_push_data(vm,DataObject,(word_t)t);
 }
 
@@ -410,6 +410,8 @@ void _VM_CALL vm_op_unlockMtx(vm_t vm, word_t unused) {
 	mutex_unlock(vm,m,t);
 }
 
+/* dirty hack : compute thread_t address from thread->join_mutex address. requires a local thread_t variable. */
+#define join_lock_to_thread(_t,_m) ((thread_t) (((char*)(_m)) - ( ((char*)&(_t)->join_mutex) - ((char*)(_t)) ) ))
 
 void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 	vm_data_t d;
@@ -421,11 +423,14 @@ void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 		assert(((thread_t)joinee->sched_data.value) == joinee /* check that it's really a thread */);
 		t->pending_lock = &joinee->join_mutex;
 		vm_obj_ref(vm,joinee);
+	} else {
+		joinee = join_lock_to_thread(t,t->pending_lock);
+		/*printf("pending_lock %p => thread should be %p\n",t->pending_lock,joinee);*/
 	}
 	if(mutex_lock(vm,t->pending_lock,t)) {
+		mutex_unlock(vm,t->pending_lock,t);
 		t->pending_lock=NULL;
 		vm_obj_deref(vm,joinee);
-		mutex_unlock(vm,t->pending_lock,t);
 	}
 }
 
@@ -438,6 +443,16 @@ void _VM_CALL vm_op_killThread(vm_t vm, word_t unused) {
 	vm_obj_deref(vm,victim);
 	vm_kill_thread(vm,victim);
 	/*thread_set_state(vm,victim,ThreadDying);*/
+}
+
+
+
+void _VM_CALL vm_op_yield(vm_t vm, word_t unused) {
+	/* skip yield when thread resumes */
+	/*vm->current_thread->IP+=2;*/
+	/*thread_set_state(vm,vm->current_thread,ThreadReady);*/
+	vm->current_thread->remaining=0;
+	/*printf("YIELD %p\n",vm->current_thread);*/
 }
 
 

@@ -3,7 +3,7 @@ bin_PROGRAMS = tinyaml
 #lib_LTLIBRARIES = libtinyaml.la
 
 libtinyaml_la_CFLAGS = -I ../include
-libtinyaml_la_LIBADD = -ldl -ltinyap -lm
+libtinyaml_la_LIBADD = -ldl -ltinyap -lm -lpthread
 
 libtinyaml_la_SOURCES =	containers/generic_stack.c \
 			containers/list.c \
