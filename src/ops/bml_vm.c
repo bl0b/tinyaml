@@ -98,7 +98,7 @@ void _VM_CALL vm_op_SNZ(vm_t vm, int data) {
 	vm_peek_data(vm,data,&a,&b);
 	vm_pop_data(vm,1);
 	if(b) {
-		node_value(thread_t,vm->current_thread)->IP+=2;
+		vm->current_thread->IP+=2;
 	}
 }
 
@@ -108,7 +108,7 @@ void _VM_CALL vm_op_SZ(vm_t vm, int data) {
 	vm_peek_data(vm,data,&a,&b);
 	vm_pop_data(vm,1);
 	if(!b) {
-		node_value(thread_t,vm->current_thread)->IP+=2;
+		vm->current_thread->IP+=2;
 	}
 }
 
@@ -117,7 +117,7 @@ void _VM_CALL vm_op_SZ(vm_t vm, int data) {
  */
 
 void _VM_CALL vm_op_jmp_Label(vm_t vm, word_t data) {
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	t->jmp_ofs=t->IP+data;
 }
 
@@ -126,13 +126,13 @@ void _VM_CALL vm_op_jmp_Label(vm_t vm, word_t data) {
  */
 
 void _VM_CALL vm_op_call_Label(vm_t vm, word_t data) {
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	vm_push_caller(vm, t->program, t->IP);
 	t->jmp_ofs=t->IP+data;
 }
 
 void _VM_CALL vm_op_lcall_Label(vm_t vm, word_t data) {
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	vm_data_type_t a;
 	word_t b;
 	vm_peek_data(vm,0,&a,&b);
@@ -144,12 +144,12 @@ void _VM_CALL vm_op_lcall_Label(vm_t vm, word_t data) {
 
 
 void _VM_CALL vm_op_enter_Int(vm_t vm, word_t size) {
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	gstack_grow(&t->locals_stack,size);
 }
 
 void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	gstack_shrink(&t->locals_stack,size);
 }
 
@@ -157,7 +157,7 @@ void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
 
 
 void _VM_CALL vm_op_getmem_Int(vm_t vm, int n) {
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	vm_data_t var;
 	if(n<0) {
 		vm_data_t local = _gpeek(&t->locals_stack,1+n);	/* -1 becomes 0 */
@@ -172,7 +172,7 @@ void _VM_CALL vm_op_getmem_Int(vm_t vm, int n) {
 
 
 void _VM_CALL vm_op_setmem_Int(vm_t vm, int n) {
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	vm_data_t top = _vm_pop(vm);
 	vm_data_t var=NULL;
 	if(n<0) {
@@ -187,6 +187,7 @@ void _VM_CALL vm_op_setmem_Int(vm_t vm, int n) {
 		}
 		var = (vm_data_t ) (t->program->data.data+n);
 	}
+	/* tests for valgrind's sake */
 	if(var->type==DataObject) {
 		vm_obj_deref(vm,(void*)var->data);
 	}
@@ -222,7 +223,7 @@ void _VM_CALL vm_op_retval_Int(vm_t vm, word_t n) {
 	word_t ip;
 	vm_data_type_t dt;
 	word_t d;
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	if(t->call_stack.sp!=(word_t)-1) {
 		vm_peek_data(vm,0,&dt,&d);
 		vm_pop_data(vm,n);
@@ -241,7 +242,7 @@ void _VM_CALL vm_op_retval_Int(vm_t vm, word_t n) {
 void _VM_CALL vm_op_ret_Int(vm_t vm, word_t n) {
 	program_t cs;
 	word_t ip;
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	if(t->call_stack.sp!=(word_t)-1) {
 		vm_pop_data(vm,n);
 		vm_peek_caller(vm,&cs,&ip);
@@ -336,15 +337,16 @@ void _VM_CALL vm_op_toS(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 	vm_data_t d = _vm_pop(vm);
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	word_t ofs = t->IP+rel_ofs;
 	assert(d->type==DataInt);
 	t = vm_add_thread(vm,t->program, ofs, d->data);
-	vm_push_data(vm,DataInt,(word_t)t);
+	printf("new thread has handle %p\n",t);
+	vm_push_data(vm,DataObject,(word_t)t);
 }
 
 void _VM_CALL vm_op_getPid(vm_t vm, word_t unused) {
-	vm_push_data(vm,DataInt,(word_t) vm->current_thread->value);
+	vm_push_data(vm,DataObject,(word_t) vm->current_thread);
 }
 
 
@@ -357,7 +359,7 @@ void _VM_CALL vm_op_newMtx(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_lockMtx_Int(vm_t vm, long memcell) {
 	vm_data_t d;
-	thread_t t = node_value(thread_t,vm->current_thread);
+	thread_t t = vm->current_thread;
 	mutex_t m;
 	vm_op_getmem_Int(vm,memcell);
 	d = _vm_pop(vm);
@@ -370,7 +372,7 @@ void _VM_CALL vm_op_lockMtx_Int(vm_t vm, long memcell) {
 
 void _VM_CALL vm_op_unlockMtx_Int(vm_t vm, long memcell) {
 	vm_data_t d;
-	thread_t t = node_value(thread_t,vm->current_thread);
+	thread_t t = vm->current_thread;
 	mutex_t m;
 	vm_op_getmem_Int(vm,memcell);
 	d = _vm_pop(vm);
@@ -384,7 +386,7 @@ void _VM_CALL vm_op_unlockMtx_Int(vm_t vm, long memcell) {
 
 void _VM_CALL vm_op_lockMtx(vm_t vm, word_t unused) {
 	vm_data_t d;
-	thread_t t = node_value(thread_t,vm->current_thread);
+	thread_t t = vm->current_thread;
 	if(!t->pending_lock) {
 		d = _vm_pop(vm);
 		assert(d->type==DataObject);
@@ -399,7 +401,7 @@ void _VM_CALL vm_op_lockMtx(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_unlockMtx(vm_t vm, word_t unused) {
 	vm_data_t d;
-	thread_t t = node_value(thread_t,vm->current_thread);
+	thread_t t = vm->current_thread;
 	mutex_t m;
 	d = _vm_pop(vm);
 	assert(d->type==DataObject);
@@ -411,16 +413,19 @@ void _VM_CALL vm_op_unlockMtx(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 	vm_data_t d;
-	thread_t t = node_value(thread_t,vm->current_thread),joinee;
+	thread_t t = vm->current_thread,joinee;
 	if(!t->pending_lock) {
 		d=_vm_pop(vm);
-		assert(d->type==DataInt);
+		assert(d->type==DataObject);
 		joinee = (thread_t)d->data;
 		assert(((thread_t)joinee->sched_data.value) == joinee /* check that it's really a thread */);
 		t->pending_lock = &joinee->join_mutex;
+		vm_obj_ref(vm,joinee);
 	}
 	if(mutex_lock(vm,t->pending_lock,t)) {
 		t->pending_lock=NULL;
+		vm_obj_deref(vm,joinee);
+		mutex_unlock(vm,t->pending_lock,t);
 	}
 }
 
@@ -428,8 +433,9 @@ void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_killThread(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	thread_t victim = (thread_t)d->data;
-	assert(d->type==DataInt);
+	assert(d->type==DataObject);
 	assert(((thread_t)victim->sched_data.value) == victim /* check that it's really a thread */);
+	vm_obj_deref(vm,victim);
 	vm_kill_thread(vm,victim);
 	/*thread_set_state(vm,victim,ThreadDying);*/
 }

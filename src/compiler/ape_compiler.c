@@ -70,6 +70,7 @@ void dump_ocn(opcode_chain_node_t ocn) {
 }
 
 program_t compile_wast(wast_t node, vm_t vm) {
+	printf("compile_wast\n");
 	gpush(&vm->cn_stack,&vm->current_node);
 	vm->current_node = node;
 	tinyap_walk(node, "compiler", vm);

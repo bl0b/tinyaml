@@ -57,6 +57,7 @@ vm_t vm_new() {
 	dlist_init(&ret->ready_threads);
 	dlist_init(&ret->running_threads);
 	dlist_init(&ret->yielded_threads);
+	dlist_init(&ret->zombie_threads);
 	dlist_init(&ret->gc_pending);
 	ret->engine=NULL;
 
@@ -83,13 +84,14 @@ void htab_free_dict(htab_entry_t);
 
 void vm_del(vm_t ret) {
 	/*printf("delete vm\n");*/
-	#define thd_del(_x) thread_delete(ret,_x)
+	#define thd_del(_x) vm_kill_thread(ret,_x)
 	dlist_forward(&ret->ready_threads,thread_t,thd_del);
 	dlist_forward(&ret->running_threads,thread_t,thd_del);
 	dlist_forward(&ret->yielded_threads,thread_t,thd_del);
 	#undef thd_del
 
 	#define prg_free(_x) program_free(ret,_x)
+	slist_forward(&ret->all_programs,program_t,program_dump_stats);
 	slist_forward(&ret->all_programs,program_t,prg_free);
 	slist_flush(&ret->all_programs);
 	#undef prg_free
@@ -97,13 +99,14 @@ void vm_del(vm_t ret) {
 	dynarray_deinit(&ret->compile_vectors.by_index,NULL);
 	clean_hashtab(&ret->compile_vectors.by_text,htab_free_dict);
 
-	dlist_flush(&ret->ready_threads);
-	dlist_flush(&ret->running_threads);
-	dlist_flush(&ret->yielded_threads);
-
 	tinyap_delete(ret->parser);
 	opcode_dict_deinit(&ret->opcodes);
 	text_seg_deinit(&ret->gram_nodes);
+
+	#define thd_del(_x) vm_collect(ret,PTR_TO_OBJ(_x))
+	dlist_forward(&ret->zombie_threads,thread_t,thd_del);
+	#undef thd_del
+
 	#define obj_free(_x) vm_obj_free(ret,_x)
 	dlist_forward(&ret->gc_pending,void*,obj_free);
 	#undef obj_free
@@ -143,6 +146,7 @@ opcode_dict_t vm_get_dict(vm_t vm) {
 
 
 program_t vm_unserialize_program(vm_t vm, reader_t r) {
+	program_t ret;
 	if(strcmp(read_string(r),"BML_PRG")) {
 		return NULL;
 	}
@@ -151,7 +155,12 @@ program_t vm_unserialize_program(vm_t vm, reader_t r) {
 		reader_swap_endian(r);
 	}
 
-	return program_unserialize(vm,r);
+	ret = program_unserialize(vm,r);
+	if(ret) {
+		slist_insert_tail(&vm->all_programs,ret);
+		slist_forward(&vm->all_programs,program_t,program_dump_stats);
+	}
+	return ret;
 }
 
 
@@ -171,6 +180,9 @@ void wa_del(wast_t w);
 
 program_t vm_compile_file(vm_t vm, const char* fname) {
 	program_t p=NULL;
+
+	printf("vm_compile_file(%s)\n",fname);
+
 	tinyap_set_source_file(vm->parser,fname);
 	tinyap_parse(vm->parser);
 
@@ -179,6 +191,7 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 		p = compile_wast(wa, vm);
 		wa_del(wa);
 		slist_insert_tail(&vm->all_programs,p);
+		slist_forward(&vm->all_programs,program_t,program_dump_stats);
 	} else {
 		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
@@ -188,6 +201,7 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 
 program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 	program_t p=NULL;
+	printf("vm_compile_buffer(%s)\n",buffer);
 	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
 	tinyap_parse(vm->parser);
 
@@ -196,6 +210,7 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 		p = compile_wast(wa, vm);
 		wa_del(wa);
 		slist_insert_tail(&vm->all_programs,p);
+		slist_forward(&vm->all_programs,program_t,program_dump_stats);
 	} else {
 		fprintf(stderr,tinyap_get_error(vm->parser));
 	}
@@ -222,7 +237,7 @@ thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
 	if(!p) {
 		return NULL;
 	}
-	t = thread_new(prio,p,ip);
+	t = vm_thread_new(vm,prio,p,ip);
 	t->state=ThreadStateMax;
 	mutex_lock(vm,&t->join_mutex,t);
 	/* FIXME : this should go into thread_new() */
@@ -257,27 +272,27 @@ thread_t vm_get_current_thread(vm_t vm) {
 	if(!vm->current_thread) {
 		return NULL;
 	}
-	return node_value(thread_t,vm->current_thread);
+	return vm->current_thread;
 }
 
 program_t _VM_CALL vm_get_CS(vm_t vm) {
 	if(!vm->current_thread) {
 		return NULL;
 	}
-	return node_value(thread_t,vm->current_thread)->program;
+	return vm->current_thread->program;
 }
 
 word_t _VM_CALL vm_get_IP(vm_t vm) {
 	if(!vm->current_thread) {
 		return 0;
 	}
-	return node_value(thread_t,vm->current_thread)->IP;
+	return vm->current_thread->IP;
 }
 
 vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	/*printf("KILLing thread %p\n",t);*/
 	vm->threads_count-=1;
-	if(vm->current_thread&&t==node_value(thread_t,vm->current_thread)) {
+	if(vm->current_thread&&t==vm->current_thread) {
 		vm->current_thread=NULL;
 	}
 	thread_set_state(vm, t, ThreadZombie);
@@ -295,7 +310,7 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 
 void vm_dump_data_stack(vm_t vm) {
 	vm_data_t e;
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	generic_stack_t stack = &vm->current_thread->data_stack;
 	int sz = gstack_size(stack);
 	int i;
 
@@ -308,7 +323,7 @@ void vm_dump_data_stack(vm_t vm) {
 
 vm_t vm_push_data(vm_t vm, vm_data_type_t type, word_t value) {
 	struct _data_stack_entry_t e;
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	generic_stack_t stack = &vm->current_thread->data_stack;
 	/*printf("vm push data : %lu %lu\n",type,value);*/
 	e.type = type;
 	e.data = value;
@@ -322,7 +337,7 @@ vm_t vm_push_data(vm_t vm, vm_data_type_t type, word_t value) {
 
 vm_t vm_push_caller(vm_t vm, program_t seg, word_t ofs) {
 	struct _call_stack_entry_t e;
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->call_stack;
+	generic_stack_t stack = &vm->current_thread->call_stack;
 	e.cs = seg;
 	e.ip = ofs;
 	gpush( stack, &e );
@@ -331,7 +346,7 @@ vm_t vm_push_caller(vm_t vm, program_t seg, word_t ofs) {
 
 vm_t vm_push_catcher(vm_t vm, program_t seg, word_t ofs) {
 	struct _call_stack_entry_t e;
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->catch_stack;
+	generic_stack_t stack = &vm->current_thread->catch_stack;
 	e.cs = seg;
 	e.ip = ofs;
 	gpush( stack, &e );
@@ -340,7 +355,7 @@ vm_t vm_push_catcher(vm_t vm, program_t seg, word_t ofs) {
 
 
 vm_t vm_peek_data(vm_t vm, int rel_ofs, vm_data_type_t* type, word_t* value) {
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	generic_stack_t stack = &vm->current_thread->data_stack;
 	vm_data_t top = gpeek( vm_data_t , stack, rel_ofs );
 	*type = (vm_data_type_t) top->type;
 	*value = top->data;
@@ -348,7 +363,7 @@ vm_t vm_peek_data(vm_t vm, int rel_ofs, vm_data_type_t* type, word_t* value) {
 }
 
 vm_t vm_poke_data(vm_t vm, vm_data_type_t type, word_t value) {
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	generic_stack_t stack = &vm->current_thread->data_stack;
 	vm_data_t top = gpeek( vm_data_t , stack, 0 );
 	if(top->type==DataObject) {
 		vm_obj_deref(vm,(void*)top->data);
@@ -362,7 +377,7 @@ vm_t vm_poke_data(vm_t vm, vm_data_type_t type, word_t value) {
 }
 
 vm_t vm_peek_caller(vm_t vm, program_t* cs, word_t* ip) {
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->call_stack;
+	generic_stack_t stack = &vm->current_thread->call_stack;
 	struct _call_stack_entry_t* top = gpeek( struct _call_stack_entry_t*, stack, 0 );
 	*cs = top->cs;
 	*ip = top->ip;
@@ -370,7 +385,7 @@ vm_t vm_peek_caller(vm_t vm, program_t* cs, word_t* ip) {
 }
 
 vm_t vm_peek_catcher(vm_t vm, program_t* cs, word_t* ip) {
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->catch_stack;
+	generic_stack_t stack = &vm->current_thread->catch_stack;
 	struct _call_stack_entry_t* top = gpeek( struct _call_stack_entry_t*, stack, 0 );
 	*cs = top->cs;
 	*ip = top->ip;
@@ -379,7 +394,7 @@ vm_t vm_peek_catcher(vm_t vm, program_t* cs, word_t* ip) {
 
 
 vm_data_t _VM_CALL _vm_pop(vm_t vm) {
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	generic_stack_t stack = &vm->current_thread->data_stack;
 	vm_data_t top = _gpop(stack);
 	if(top->type==DataObject) {
 		vm_obj_deref(vm,(void*)top->data);
@@ -388,16 +403,16 @@ vm_data_t _VM_CALL _vm_pop(vm_t vm) {
 }
 
 vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o) {
-	/*printf("vm collect %p\n",o);*/
+	printf("vm collect %p\n",o);
 	dlist_insert_head(&vm->gc_pending,o);
 	return vm;
 }
 
 vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
 	dlist_node_t dn;
-	/*printf("vm uncollect %p\n",o);*/
+	printf("vm uncollect %p\n",o);
 	if(!vm->gc_pending.head) {
-		/*printf("   => failed.\n");*/
+		printf("   => failed.\n");
 		return vm;
 	}
 	dn = vm->gc_pending.head;
@@ -408,12 +423,12 @@ vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
 		}
 		dn = dn->next;
 	}
-	/*printf("   => failed.\n");*/
+	printf("   => failed.\n");
 	return vm;
 }
 
 vm_t vm_pop_data(vm_t vm, word_t count) {
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->data_stack;
+	generic_stack_t stack = &vm->current_thread->data_stack;
 	while(count>0) {
 		_gpop(stack);
 		count-=1;
@@ -422,7 +437,7 @@ vm_t vm_pop_data(vm_t vm, word_t count) {
 }
 
 vm_t vm_pop_caller(vm_t vm, word_t count) {
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->call_stack;
+	generic_stack_t stack = &vm->current_thread->call_stack;
 	while(count>0) {
 		_gpop(stack);
 		count-=1;
@@ -431,7 +446,7 @@ vm_t vm_pop_caller(vm_t vm, word_t count) {
 }
 
 vm_t vm_pop_catcher(vm_t vm, word_t count) {
-	generic_stack_t stack = &node_value(thread_t,vm->current_thread)->catch_stack;
+	generic_stack_t stack = &vm->current_thread->catch_stack;
 	while(count>0) {
 		_gpop(stack);
 		count-=1;
@@ -444,7 +459,7 @@ vm_t vm_pop_catcher(vm_t vm, word_t count) {
 
 
 thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
-	register word_t*array;
+	word_t*array;
 /*
 	if(t->IP>=t->program->code.size) {
 		t->state=ThreadDying;
@@ -509,102 +524,62 @@ thread_t _VM_CALL _sched_mono(vm_t vm) {
 	switch((word_t)vm->current_thread) {
 	case 0:
 		if(vm->running_threads.head) {
-			vm->current_thread=vm->running_threads.head;
-			current = node_value(thread_t,vm->current_thread);
-			/*thread_set_state(vm,current,ThreadRunning);*/
-			return current;
+			vm->current_thread=(thread_t)vm->running_threads.head;
+			return vm->current_thread;
 		} else if(vm->ready_threads.head) {
-			vm->current_thread=vm->ready_threads.head;
-			current = node_value(thread_t,vm->current_thread);
-			thread_set_state(vm,current,ThreadRunning);
+			vm->current_thread=(thread_t)vm->ready_threads.head;
+			thread_set_state(vm,vm->current_thread,ThreadRunning);
 			return current;
 		} else {
 			return NULL;
 		}
-		/*vm->ready_threads.head=vm->ready_threads.head->next;*/
-		/*if(!vm->ready_threads.head) {*/
-			/*vm->ready_threads.tail=NULL;*/
-		/*}*/
-		/*vm->running_threads.head=vm->current_thread;*/
-		/*vm->running_threads.tail=vm->current_thread;*/
-		/*current->state=ThreadRunning;*/
 	default:
-		return node_value(thread_t,vm->current_thread);
+		return vm->current_thread;
 	};
-/*	if(vm->current_thread) {
-		return node_value(thread_t,vm->current_thread);
-	} else if(vm->ready_threads.head) {
-		thread_t current=NULL;
-		vm->current_thread=vm->ready_threads.head;
-		vm->ready_threads.head=vm->ready_threads.head->next;
-		if(!vm->ready_threads.head) {
-			vm->ready_threads.tail=NULL;
-		}
-		vm->running_threads.head=vm->current_thread;
-		vm->running_threads.tail=vm->current_thread;
-		current = node_value(thread_t,vm->current_thread);
-		current->state=ThreadRunning;
-		return current;
-	}
-	return NULL;*/
 }
 
 
 
 thread_t _VM_CALL _sched_rr(vm_t vm) {
-	thread_t current;
+	register thread_t current;
 	if(vm->current_thread) {
-		current = node_value(thread_t,vm->current_thread);
+		current = vm->current_thread;
 		/* quick pass if current meets conditions */
 		/*printf("\thave current thread %p, state=%i, remaining=%li\n",current,current->state,current->remaining);*/
-		if(current->state==ThreadRunning&&current->remaining!=0&&current->remaining<vm->timeslice) {
+		if(/*current->state==ThreadRunning&&*/current->remaining!=0/*&&current->remaining<vm->timeslice*/) {
 			/*printf("\tcurrent still running for %lu more cycles\n",current->remaining);*/
 			return current;
 		}
 	}
 
 	if(vm->current_thread) {
-		if(vm->current_thread->next) {
-			vm->current_thread = vm->current_thread->next;
+		if(vm->current_thread->sched_data.next) {
+			vm->current_thread = (thread_t)vm->current_thread->sched_data.next;
 			/*printf("\tnext thread\n");*/
 		} else {
 			vm->current_thread = NULL;
 		}
 	} else if(vm->running_threads.head) {
-		vm->current_thread = vm->running_threads.head;
+		vm->current_thread = (thread_t)vm->running_threads.head;
 		/*printf("\tnext thread (looped back to head)\n");*/
 	}
-	/*} else if(vm->running_threads.head) {*/
-		/*vm->current_thread = vm->running_threads.head;*/
-		/*printf("\tnext thread (looped back to head)\n");*/
-
 	/* solve the conflict between next ready and next running threads, if any */
 	if(vm->ready_threads.head) {
-		dlist_node_t a = vm->current_thread;
+		dlist_node_t a = &vm->current_thread->sched_data;
 		dlist_node_t b = vm->ready_threads.head;
 		thread_t tb = node_value(thread_t,b);
 		if((!a)||node_value(thread_t,a)->prio <= tb->prio) {
 			/* thread is no more ready */
-			/*vm->ready_threads.head = vm->ready_threads.head->next;*/
-			/*tb->state=ThreadRunning;*/
-			/*dlist_insert_sorted(&vm->running_threads,b,comp_prio);*/
-			/*tb->remaining = vm->timeslice;*/
 			thread_set_state(vm,tb,ThreadRunning);
-			vm->current_thread = b;
+			vm->current_thread = (thread_t)b;
 			/*printf("\trunning next ready thread\n");*/
 		}
-	/*} else {*/
 	}
 
-	/*if((!vm->current_thread)&&vm->running_threads.head) {*/
-		/*vm->current_thread = vm->running_threads.head;*/
-		/*printf("\tnext thread (looped back to head)\n");*/
-	/*}*/
-
 	if(vm->current_thread) {
-		node_value(thread_t,vm->current_thread)->remaining=vm->timeslice;
-		/*printf("\tthread %p restarts for %li cycles\n",node_value(thread_t,vm->current_thread),node_value(thread_t,vm->current_thread)->remaining);*/
-		return node_value(thread_t,vm->current_thread);
+		vm->current_thread->remaining=vm->timeslice;
+		/*printf("\tthread %p restarts for %li cycles\n",vm->current_thread,vm->current_thread->remaining);*/
+		return vm->current_thread;
 	} else {
 		return NULL;
 	}
@@ -622,7 +597,7 @@ _sched_method_t schedulers[SchedulerAlgoMax] = {
  * if has one thread, execute it.
  * if has many threads, time-slice round-robin them.
  */
-vm_t vm_schedule_cycle(vm_t vm) {
+void _VM_CALL vm_schedule_cycle(vm_t vm) {
 	thread_t current = schedulers[vm->scheduler](vm);
 
 /*	printf("CURRENT THREAD %p\n",current);
@@ -631,18 +606,23 @@ vm_t vm_schedule_cycle(vm_t vm) {
 */
 	if(current) {
 		current->remaining -= 1;
-		switch(current?vm_exec_cycle(vm,current):ThreadStateMax) {
-		case ThreadDying:
+		if(current&&vm_exec_cycle(vm,current)==ThreadDying) {
+			/* current thread may be already dead */
 			if(vm->current_thread) {
 				/*printf("Dead zombie\n");*/
 				vm_kill_thread(vm, current);
 			}
-		default:
-			vm->cycles+=1;
-			return vm;
-		};
+			if(vm->zombie_threads.head) {
+				dlist_node_t tmp=vm->zombie_threads.head;
+				do {
+					if(vm_obj_refcount(tmp)==0) {
+					}
+					tmp = tmp->next;
+				} while(tmp);
+			}
+		}
+		vm->cycles+=1;
 	}
-	return vm;
 }
 
 vm_t vm_set_engine(vm_t vm, vm_engine_t e) {

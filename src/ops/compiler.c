@@ -125,7 +125,7 @@ void _VM_CALL vm_op_write_oc_Float_String(vm_t vm, const char* name) {
 
 
 void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, int rel_ofs) {
-	thread_t t=node_value(thread_t,vm->current_thread);
+	thread_t t=vm->current_thread;
 	vm_data_t local = _vm_pop(vm);	/* -1 becomes 0 */
 	word_t ofs = t->IP+rel_ofs;
 	word_t vec_ofs;
@@ -231,10 +231,10 @@ void _VM_CALL vm_op__pop_curNode(vm_t vm, word_t x) {
 
 
 void _VM_CALL vm_op_astGetChildString_Int(vm_t vm, word_t x) {
-	/*printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),node_value(thread_t,vm->current_thread)->IP);*/
-	/*printf("stack size %lu\n",node_value(thread_t,vm->current_thread)->data_stack.sp);*/
+	/*printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),vm->current_thread->IP);*/
+	/*printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
 	vm_push_data(vm,DataString,(word_t)wa_op(wa_opd(vm->current_node,x)));
-	/*printf("stack size %lu\n",node_value(thread_t,vm->current_thread)->data_stack.sp);*/
+	/*printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
 }
 
 void _VM_CALL vm_op_astGetChildString(vm_t vm, word_t x) {

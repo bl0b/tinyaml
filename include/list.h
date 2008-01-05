@@ -75,14 +75,14 @@ struct _dlist_t {
 	} while(0)
 
 #define dlist_insert_tail_node(_l,_n)	do {\
-		_n->next=NULL;\
-		_n->prev=(_l)->tail;\
+		(_n)->next=NULL;\
+		(_n)->prev=(_l)->tail;\
 		if((_l)->head==NULL) {\
-			(_l)->head=_n;\
+			(_l)->head=(_n);\
 		} else {\
-			(_l)->tail->next=_n;\
+			(_l)->tail->next=(_n);\
 		}\
-		(_l)->tail=_n;\
+		(_l)->tail=(_n);\
 	} while(0)
 
 #define dlist_insert_tail(_l,_v)	do {\

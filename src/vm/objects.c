@@ -2,6 +2,7 @@
 #include "_impl.h"
 #include "object.h"
 #include "text_seg.h"
+#include "thread.h"
 
 #include <string.h>
 
@@ -44,5 +45,21 @@ mutex_t vm_mutex_new() {
 	mutex_init(handle);
 	/*printf("new mutex => %p\n",handle);*/
 	return handle;
+}
+
+
+thread_t thread_clone(thread_t in) {
+	/* FIXME : shouldn't be such a semi-singleton */
+	return in;
+}
+
+
+thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip) {
+	thread_t ret = (thread_t)vm_obj_new(sizeof(struct _thread_t),
+			(void (*)(vm_t,void*)) thread_deinit,
+			(void*(*)(vm_t,void*)) thread_clone);
+	thread_init(ret,prio,p,ip);
+	vm_obj_ref(vm,ret);
+	return ret;
 }
 

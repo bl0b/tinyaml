@@ -68,7 +68,7 @@ vm_t vm_pop_catcher(vm_t,word_t);
 
 vm_t vm_set_engine(vm_t, vm_engine_t);
 
-vm_t vm_schedule_cycle(vm_t);
+void _VM_CALL vm_schedule_cycle(vm_t);
 
 program_t _VM_CALL vm_get_CS(vm_t);
 word_t _VM_CALL vm_get_IP(vm_t);

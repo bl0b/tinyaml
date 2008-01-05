@@ -223,7 +223,7 @@ void opcode_dict_unserialize(opcode_dict_t od, reader_t r, void* dl_handle) {
 		for(j=0;j<tot;j+=1) {
 			/* retrieve name */
 			typtot = read_word(r);
-			name = strdup(read_string(r));
+			name = read_string(r);
 			assert(typtot == 1+strlen(name));
 			opcode_dict_add(od, i, name, opcode_stub_resolve(i,name,dl_handle));
 		}

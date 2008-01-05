@@ -26,6 +26,13 @@
 thread_t thread_new(word_t prio, program_t p, word_t ip) {
 	thread_t ret = (thread_t)malloc(sizeof(struct _thread_t));
 	/*printf("NEW THREAD %p\n",ret);*/
+	/*printf("\tPROGRAM %p\n",ret->program);*/
+	thread_init(ret,prio,p,ip);
+	/* FIXME : deprecated */
+	return NULL;
+}
+
+void thread_init(thread_t ret, word_t prio, program_t p, word_t ip) {
 	gstack_init(&ret->locals_stack,sizeof(struct _data_stack_entry_t));
 	gstack_init(&ret->data_stack,sizeof(struct _data_stack_entry_t));
 	gstack_init(&ret->call_stack,sizeof(struct _call_stack_entry_t));
@@ -42,21 +49,34 @@ thread_t thread_new(word_t prio, program_t p, word_t ip) {
 	ret->sched_data.next=NULL;
 	ret->sched_data.prev=NULL;
 	ret->sched_data.value=(word_t)ret;
-	/*printf("\tPROGRAM %p\n",ret->program);*/
-	return ret;
 }
 
-void thread_delete(vm_t vm, thread_t t) {
-	/*printf("\tdel thread\n");*/
-	if(t->pending_lock) {
-		dlist_remove(&t->pending_lock->pending,&t->sched_data);
-	}
+void thread_deinit(vm_t vm, thread_t t) {
+	/*if(t->pending_lock) {*/
+		/*dlist_remove(&t->pending_lock->pending,&t->sched_data);*/
+	/*}*/
+	/*if(t->sched_data.next) {*/
+		/*t->sched_data.next->prev = t->sched_data.prev;*/
+	/*} else {*/
+		/*vm->zombie_threads.tail=t->sched_data.prev;*/
+	/*}*/
+	/*if(t->sched_data.prev) {*/
+		/*t->sched_data.prev->next = t->sched_data.next;*/
+	/*} else {*/
+		/*vm->zombie_threads.head=t->sched_data.next;*/
+	/*}*/
+
 	mutex_unlock(vm,&t->join_mutex,t);
 	mutex_deinit(&t->join_mutex);
 	gstack_deinit(&t->locals_stack,NULL);
 	gstack_deinit(&t->data_stack,NULL);
 	gstack_deinit(&t->call_stack,NULL);
 	gstack_deinit(&t->catch_stack,NULL);
+}
+
+void thread_delete(vm_t vm, thread_t t) {
+	/*printf("\tdel thread\n");*/
+	thread_deinit(vm,t);
 	free(t);
 }
 
@@ -87,7 +107,10 @@ const char* thread_state_to_str(thread_state_t ts) {
 
 void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 	assert(t->sched_data.value==(word_t)t);
-	assert(t->state!=state);
+	/*assert(t->state!=state);*/
+	if(t->state==state) {
+		printf("thread_set_state does nothing ; %s\n",thread_state_to_str(state));
+	}
 	/*printf("thread_set_state %p : %s => %s\n",t,thread_state_to_str(t->state),thread_state_to_str(state));*/
 	switch(t->state) {
 	case ThreadBlocked:
@@ -106,7 +129,8 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 	t->state=state;
 	switch(state) {
 	case ThreadZombie:
-		thread_delete(vm,t);
+		/*thread_delete(vm,t);*/
+		dlist_insert_tail_node(&vm->zombie_threads,&t->sched_data);
 		break;
 	case ThreadReady:
 		dlist_insert_sorted(&vm->ready_threads,&t->sched_data,comp_prio);

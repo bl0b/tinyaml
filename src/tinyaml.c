@@ -38,7 +38,7 @@ void e_deinit(vm_engine_t e) {}
 void e_kill(vm_engine_t e) {}
 void e_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
 	if(e->vm->current_thread) {
-		thread_t t = node_value(thread_t,e->vm->current_thread);
+		thread_t t = e->vm->current_thread;
 		/* save some thread state */
 		program_t jmp_seg = t->jmp_seg;
 		word_t jmp_ofs = t->jmp_ofs;

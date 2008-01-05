@@ -122,8 +122,9 @@ struct _vm_t {
 	word_t threads_count;
 	struct _dlist_t ready_threads;
 	struct _dlist_t running_threads;
-	dlist_node_t current_thread;
+	thread_t current_thread;
 	struct _dlist_t yielded_threads;
+	struct _dlist_t zombie_threads;
 	word_t timeslice;
 	/* runtime engine */
 	vm_engine_t engine;

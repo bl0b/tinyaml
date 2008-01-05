@@ -28,6 +28,8 @@
 
 #define is_reffed(_o) (((vm_obj_t)o)->ref_count>0)
 
+#define PTR_TO_OBJ(_x) ((vm_obj_t)(((char*)(_x))-VM_OBJ_OFS))
+#define OBJ_TO_PTR(_x) ((void*)(((char*)(_x))+VM_OBJ_OFS))
 
 #include <stdio.h>
 
@@ -42,7 +44,11 @@ static inline void* vm_obj_new(word_t struc_size, void(*_free)(vm_t,void*), void
 }
 
 static inline void vm_obj_free(vm_t vm, vm_obj_t o) {
-	assert(o->magic==VM_OBJ_MAGIC);
+	if(o->magic!=VM_OBJ_MAGIC) {
+		printf("[VM:ERR] trying to free something not a managed object (%p).\n",o);
+		return;
+	}
+	/*assert(o->magic==VM_OBJ_MAGIC);*/
 	/*printf("obj free %p\n",o);*/
 	if(o->_free) {
 		o->_free(vm, (void*)(((char*)o)+VM_OBJ_OFS));
@@ -92,6 +98,7 @@ static inline void vm_obj_deref(vm_t vm, void* ptr) {
 char* vm_string_new(const char*src);
 text_seg_t vm_symtab_new();
 mutex_t vm_mutex_new();
+thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip);
 
 #endif
 

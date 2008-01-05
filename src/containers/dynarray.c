@@ -58,6 +58,9 @@ void dynarray_del(dynarray_t d) {
 void dynarray_reserve(dynarray_t d, word_t new_size) {
 	/*printf("realloc'ing dynarray %p from %lu to %lu words\n",d, d->reserved, new_size);*/
 	d->data = realloc(d->data, new_size*sizeof(dynarray_value_t));
+	if(new_size>d->reserved) {
+		memset(d->data+d->reserved,0,(new_size-d->reserved)*sizeof(dynarray_value_t));
+	}
 	d->reserved = new_size;
 }
 

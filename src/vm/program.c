@@ -63,13 +63,13 @@ program_t program_new() {
 	dynarray_init(&ret->data);
 	dynarray_init(&ret->code);
 	/*program_write_code(ret, (word_t)vm_op_nop, 0);*/
-	//printf("PROGRAM NEW\n");
+	printf("PROGRAM NEW %p\n",ret);
 	return ret;
 }
 
 
 void program_free(vm_t vm, program_t p) {
-	/*printf("program_free\n");*/
+	printf("program_free %p\n",p);
 	text_seg_deinit(&p->strings);
 	dynarray_deinit(&p->code,NULL);
 	if(p->data.size) {
@@ -77,7 +77,7 @@ void program_free(vm_t vm, program_t p) {
 		p->code.reserved=0;
 		p->code.data=clean_data_seg;
 		clean_data_seg[1]=p->data.size>>1;
-		/*printf("cleaning %lu data items\n",clean_data_seg[1]);*/
+		printf("cleaning %lu data items\n",clean_data_seg[1]);
 		vm_run_program_fg(vm,p,0,99);
 	}
 	text_seg_deinit(&p->labels.labels);
@@ -173,12 +173,14 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	int i;
 	const char*str;
 	opcode_dict_t od;
-	program_t p=program_new();
+	program_t p;
 	word_t tot;
 	word_t op;
 	word_t wc;
 	word_t arg;
 
+	printf("program_unserialize\n");
+	p=program_new();
 	od = opcode_dict_new();
 	opcode_dict_unserialize(od,r,vm->dl_handle);
 
@@ -398,7 +400,7 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 
 void program_dump_stats(program_t p) {
 	word_t sz=0,i;
-	printf("Program statistics :\n");
+	printf("Program statistics for %p :\n",p);
 	printf("    Data size : %lu (%lX)\n",p->data.size,p->data.size);
 	printf("    Code size : %lu (%lX)\n",p->code.size,p->code.size);
 	for(i=1;i<p->strings.by_index.size;i+=1) {

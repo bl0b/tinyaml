@@ -60,8 +60,9 @@ void gstack_grow(generic_stack_t s, word_t count) {
 	s->sp+=count;
 	s->tok_sp += s->token_size * count;
 	if(s->sz <= s->tok_sp) {
+		s->stack = (word_t*) realloc(s->stack, (s->sz+16384)*s->token_size);
+		memset(s->stack+s->sz*s->token_size, 0, 16384*s->token_size);
 		s->sz+=16384;
-		s->stack = (word_t*) realloc(s->stack, s->sz*s->token_size);
 	}
 }
 

@@ -21,7 +21,9 @@
 #define _BML_THREAD_H_
 
 thread_t thread_new(word_t prio, program_t p, word_t ip);
+void thread_init(thread_t,word_t prio, program_t p, word_t ip);
 void thread_delete(vm_t,thread_t);
+void thread_deinit(vm_t vm, thread_t t);
 
 void thread_set_state(vm_t, thread_t, thread_state_t);
 
