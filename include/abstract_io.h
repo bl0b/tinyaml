@@ -28,6 +28,7 @@ void writer_close(writer_t);
 
 reader_t file_reader_new(const char*);
 reader_t buffer_reader_new(const char*, word_t);
+void reader_swap_endian(reader_t);
 void reader_close(reader_t);
 
 word_t write_word(writer_t, word_t);

@@ -44,6 +44,22 @@ opcode_chain_node_t ochain_new_label(const char* label) {
 	return ocn;
 }
 
+opcode_chain_node_t ochain_new_langdef(const char* nodestr) {
+	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
+	ocn->type=NodeLangDef;
+	ocn->arg=NULL;
+	ocn->name=nodestr;
+	return ocn;
+}
+
+opcode_chain_node_t ochain_new_langplug(const char* plugin, const char* plug) {
+	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
+	ocn->type=NodeLangPlug;
+	ocn->arg=strdup(plug);
+	ocn->name=strdup(plugin);
+	return ocn;
+}
+
 void opcode_chain_node_free(opcode_chain_node_t ocn) {
 	if(ocn->arg) {
 		free((char*)ocn->arg);
@@ -61,6 +77,23 @@ opcode_chain_t opcode_chain_new() {
 
 opcode_chain_t opcode_chain_add_label(opcode_chain_t oc, const char*label) {
 	opcode_chain_node_t ocn = ochain_new_label(label);
+	slist_insert_tail(oc, ocn);
+	return oc;
+}
+
+void delete_node(ast_node_t);
+
+opcode_chain_t opcode_chain_add_langdef(opcode_chain_t oc, wast_t node) {
+	ast_node_t n = make_ast(node);
+	const char* str = tinyap_serialize_to_string(n);
+	opcode_chain_node_t ocn = ochain_new_langdef(str);
+	delete_node(n);
+	slist_insert_tail(oc, ocn);
+	return oc;
+}
+
+opcode_chain_t opcode_chain_add_langplug(opcode_chain_t oc, const char* plugin, const char*plug) {
+	opcode_chain_node_t ocn = ochain_new_langplug(plugin,plug);
 	slist_insert_tail(oc, ocn);
 	return oc;
 }
@@ -176,7 +209,11 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 		break;
 	case OpcodeArgLabel:
 		/*printf("Label \t(%s)", ocn->arg);*/
-		arg = opcode_label_to_ofs(oc,ocn->arg) - ip;
+		if(ocn->arg[0]=='+'||ocn->arg[0]=='-') {
+			arg = atoi(ocn->arg);
+		} else {
+			arg = opcode_label_to_ofs(oc,ocn->arg) - ip;
+		}
 		break;
 	case OpcodeArgOpcode:
 		/*printf("Opcode\t(%s)", ocn->arg);*/
@@ -222,15 +259,23 @@ void opcode_chain_serialize(opcode_chain_t oc, opcode_dict_t od, program_t p, vo
 	sn = list_head(oc);
 	while(sn!=NULL) {
 		ocn = node_value(opcode_chain_node_t,sn);
-		if(ocn->type==NodeLabel) {
+		switch(ocn->type) {
+		case NodeLabel:
 			ocn->lofs=ofs;
-		} else if(ocn->type==NodeData) {
+			program_add_label(p,ofs,ocn->name);
+			break;
+		case NodeData:
 			data_sz+= 2*atoi(ocn->arg);
-			printf("data rep %i\n",atoi(ocn->arg));
-		} else {
+			/*printf("data rep %i\n",atoi(ocn->arg));*/
+			break;
+		case NodeOpcode:
 			ofs+=2;	/* two words per instruction */
 			code_sz+=2;
-		}
+			break;
+		case NodeLangPlug:
+		case NodeLangDef:
+		default:;
+		};
 		sn=sn->next;
 	}
 

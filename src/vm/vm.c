@@ -48,6 +48,7 @@ vm_t vm_new() {
 	ret->threads_count=0;
 	ret->current_thread=NULL;
 	ret->timeslice=100;
+	text_seg_init(&ret->gram_nodes);
 	dynarray_init(&ret->compile_vectors.by_index);
 	init_hashtab(&ret->compile_vectors.by_text, (hash_func) hash_str, (compare_func) strcmp);
 	dynarray_set(&ret->compile_vectors.by_index,1,0);
@@ -82,20 +83,27 @@ void htab_free_dict(htab_entry_t);
 
 void vm_del(vm_t ret) {
 	/*printf("delete vm\n");*/
-	dlist_forward(&ret->ready_threads,thread_t,thread_delete);
-	dlist_forward(&ret->running_threads,thread_t,thread_delete);
-	dlist_forward(&ret->yielded_threads,thread_t,thread_delete);
-	dynarray_deinit(&ret->compile_vectors.by_index,NULL);
-	clean_hashtab(&ret->compile_vectors.by_text,htab_free_dict);
-	dlist_flush(&ret->ready_threads);
-	dlist_flush(&ret->running_threads);
-	dlist_flush(&ret->yielded_threads);
-	tinyap_delete(ret->parser);
-	opcode_dict_deinit(&ret->opcodes);
+	#define thd_del(_x) thread_delete(ret,_x)
+	dlist_forward(&ret->ready_threads,thread_t,thd_del);
+	dlist_forward(&ret->running_threads,thread_t,thd_del);
+	dlist_forward(&ret->yielded_threads,thread_t,thd_del);
+	#undef thd_del
+
 	#define prg_free(_x) program_free(ret,_x)
 	slist_forward(&ret->all_programs,program_t,prg_free);
 	slist_flush(&ret->all_programs);
 	#undef prg_free
+
+	dynarray_deinit(&ret->compile_vectors.by_index,NULL);
+	clean_hashtab(&ret->compile_vectors.by_text,htab_free_dict);
+
+	dlist_flush(&ret->ready_threads);
+	dlist_flush(&ret->running_threads);
+	dlist_flush(&ret->yielded_threads);
+
+	tinyap_delete(ret->parser);
+	opcode_dict_deinit(&ret->opcodes);
+	text_seg_deinit(&ret->gram_nodes);
 	#define obj_free(_x) vm_obj_free(ret,_x)
 	dlist_forward(&ret->gc_pending,void*,obj_free);
 	#undef obj_free
@@ -129,141 +137,30 @@ opcode_dict_t vm_get_dict(vm_t vm) {
 
 
 
-word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg) {
-	switch(arg_type) {
-	case OpcodeArgString:
-		arg = text_seg_text_to_index(&p->strings,(const char*)arg);
-		break;
-	default:;
-	};
-	return arg;
-}
-
-
-word_t opcode_arg_unserialize(program_t p, opcode_arg_t arg_type, word_t arg) {
-	switch(arg_type) {
-	case OpcodeArgString:
-		arg = (word_t) text_seg_find_by_index(&p->strings,arg);
-		break;
-	default:;
-	};
-	return arg;
-}
-
 
 #define PROG_FILE_MAGIC "BMLP"
 #define ENDIAN_TEST 0x01000000
 
 
 program_t vm_unserialize_program(vm_t vm, reader_t r) {
-	program_t p=program_new();
-	opcode_dict_t od;
-	const char*str;
-	int i;
-	word_t endian;
-	word_t tot;
-	word_t op;
-	word_t wc;
-	word_t arg;
-
-	str = read_string(r);
-	if(strcmp(str,"BML_PRG")) {
+	if(strcmp(read_string(r),"BML_PRG")) {
 		return NULL;
 	}
-	endian = read_word(r);
-	/* FIXME : byte reversal is not yet implemented */
-	assert(ENDIAN_TEST==endian);
 
-	od = opcode_dict_new();
-	opcode_dict_unserialize(od,r,vm->dl_handle);
-
-	text_seg_unserialize(&p->strings,r);
-
-	str = read_string(r);
-	assert(!strcmp(str,"CODE---"));
-	tot = read_word(r);
-	dynarray_reserve(&p->code,tot+2);
-	for(i=0;i<tot;i+=2) {
-		wc = read_word(r);
-		op = (word_t) opcode_stub_by_code(od, wc);
-		arg = opcode_arg_unserialize(p, WC_GET_ARGTYPE(wc), read_word(r));
-		program_write_code(p,op,arg);
+	if(ENDIAN_TEST!=read_word(r)) {
+		reader_swap_endian(r);
 	}
-	opcode_dict_free(od);
-	wc = read_word(r);
-	assert(wc==0xFFFFFFFF);
-	str = read_string(r);
-	assert(!strcmp(str,"DATA---"));
-	wc = read_word(r);
-	dynarray_reserve(&p->data,wc+2);
-	for(i=0;i<wc;i+=2) {
-		p->data.data[i] = read_word(r);
-		p->data.data[i+1] = opcode_arg_unserialize(p, p->data.data[i], read_word(r));
-	}
-	p->data.size=wc;
-	return p;
+
+	return program_unserialize(vm,r);
 }
-
-
-
-opcode_dict_t opcode_dict_optimize(vm_t vm, program_t prog) {
-	opcode_dict_t glob = vm_get_dict(vm);
-	opcode_dict_t od = opcode_dict_new();
-	const char* name;
-	opcode_arg_t arg_type;
-	opcode_stub_t stub;
-	int i;
-	for(i=0;i<prog->code.size;i+=2) {
-		stub = (opcode_stub_t)prog->code.data[i];
-		name = opcode_name_by_stub(glob,stub);
-		arg_type = WC_GET_ARGTYPE(opcode_code_by_stub(glob,stub));
-		opcode_dict_add(od, arg_type, name, stub);
-	}
-	return od;
-}
-
 
 
 
 vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
-	int i;
-	word_t op;
-	word_t arg;
-	/* optimize opcode dictionary */
-	opcode_dict_t odopt = opcode_dict_optimize(vm,p);
 	/* write header */
 	write_string(w,"BML_PRG");
 	write_word(w,ENDIAN_TEST);
-	/* write dict */
-	opcode_dict_serialize(odopt,w);
-	/* write text segment */
-	text_seg_serialize(&p->strings,w);
-	/* write code segment */
-	write_string(w,"CODE---");
-	/* write code segment size */
-	write_word(w,dynarray_size(&p->code));
-	for(i=0;i<dynarray_size(&p->code);i+=2) {
-		printf("%8.8lX %8.8lX  ",dynarray_get(&p->code,i),dynarray_get(&p->code,i+1));
-		if(i%8==6) printf("\n");
-	}
-	printf("\n");
-	/* write serialized word code */
-	for(i=0;i<dynarray_size(&p->code);i+=2) {
-		op = opcode_code_by_stub(odopt, (opcode_stub_t)dynarray_get(&p->code,i));
-		arg = opcode_arg_serialize(p, WC_GET_ARGTYPE(op), dynarray_get(&p->code,i+1));
-		write_word(w,op);
-		write_word(w,arg);
-	}
-	opcode_dict_free(odopt);
-	write_word(w,0xFFFFFFFF);
-	write_string(w,"DATA---");
-	write_word(w,dynarray_size(&p->data));
-	for(i=0;i<dynarray_size(&p->data);i+=2) {
-		op = dynarray_get(&p->data,i);
-		arg = opcode_arg_serialize(p, op, dynarray_get(&p->data,i+1));
-		write_word(w,op);
-		write_word(w,arg);
-	}
+	program_serialize(vm,p,w);
 	return vm;
 }
 
@@ -319,27 +216,32 @@ vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio) {
 }
 
 
-vm_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
+thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
 	thread_t t;
-	dlist_node_t dn;
+	/*dlist_node_t dn;*/
 	if(!p) {
-		return vm;
+		return NULL;
 	}
 	t = thread_new(prio,p,ip);
+	t->state=ThreadStateMax;
+	mutex_lock(vm,&t->join_mutex,t);
 	/* FIXME : this should go into thread_new() */
 	vm->threads_count += 1;
 	if(vm->threads_count==1) {
+		/*printf("SchedulerMonoThread\n");*/
 		vm->scheduler = SchedulerMonoThread;
-	} else if(vm->threads_count==1) {
+	} else if(vm->threads_count==2) {
+		/*printf("SchedulerRoundRobin\n");*/
 		vm->scheduler = SchedulerRoundRobin;
 	}
 
-	dn = (dlist_node_t) malloc(sizeof(struct _dlist_node_t));
-	dn->value=(word_t)t;
+	/*dn = (dlist_node_t) malloc(sizeof(struct _dlist_node_t));*/
+	/*dn->value=(word_t)t;*/
 
-	dlist_insert_sorted(&vm->ready_threads,dn,comp_prio);
+	/*dlist_insert_sorted(&vm->ready_threads,dn,comp_prio);*/
+	thread_set_state(vm,t,ThreadReady);
 
-	return vm;
+	return t;
 }
 
 
@@ -373,10 +275,17 @@ word_t _VM_CALL vm_get_IP(vm_t vm) {
 }
 
 vm_t vm_kill_thread(vm_t vm, thread_t t) {
-	vm->threads_count -= 1;
+	/*printf("KILLing thread %p\n",t);*/
+	vm->threads_count-=1;
+	if(vm->current_thread&&t==node_value(thread_t,vm->current_thread)) {
+		vm->current_thread=NULL;
+	}
+	thread_set_state(vm, t, ThreadZombie);
 	if(vm->threads_count==1) {
+		/*printf("SchedulerMonoThread\n");*/
 		vm->scheduler = SchedulerMonoThread;
 	} else if(vm->threads_count==0) {
+		/*printf("SchedulerIdle\n");*/
 		vm->scheduler = SchedulerIdle;
 	}
 
@@ -546,26 +455,39 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	/*program_fetch(t->program, t->IP, (word_t*)&op, &arg);*/
 	array = t->program->code.data+t->IP;
 
-	/*printf("EXEC %p:%lX\n",t->program,t->IP);*/
+	/*{*/
+		/*const char* label = program_lookup_label(t->program,t->IP);*/
+		/*const char* disasm = program_disassemble(vm,t->program,t->IP);*/
+		/*printf("\nEXEC:%p (%lX)\t%-15.15s %-40.40s | ",t,t->IP,label?label:"",disasm);*/
+		/*free((char*)disasm);*/
+	/*}*/
 
 	/* decode */
-	((opcode_stub_t) *array) ( vm, *(array+1) );
-
-	/* iterate */
-	if(t->jmp_ofs) {
-		/* it's a jump */
-		/* assume call stack is already filled */
-		t->program = t->jmp_seg;
-		t->IP=t->jmp_ofs;
-		t->jmp_ofs=0;
-	} else if(t->IP==t->program->code.size-2) {
-		/* we are at the end of the segment, thread should die. */
-		t->state=ThreadDying;
-	} else {
-		/* hop to next instruction */
-		t->IP+=2;
+	if(*array) {
+		((opcode_stub_t) *array) ( vm, *(array+1) );
 	}
-	return t->state;
+
+	if(vm->current_thread) {
+		/* iterate */
+		if(t->jmp_ofs) {
+			/* it's a jump */
+			/* assume call stack is already filled */
+			t->program = t->jmp_seg;
+			t->IP=t->jmp_ofs;
+			t->jmp_ofs=0;
+		} else if(t->IP==t->program->code.size-2) {
+			/* we are at the end of the segment, thread should die. */
+			if(t->state!=ThreadDying) {
+				thread_set_state(vm,t,ThreadDying);
+			}
+		} else {
+			/* hop to next instruction */
+			t->IP+=2;
+		}
+		return t->state;
+	} else {
+		return ThreadZombie;
+	}
 }
 
 
@@ -586,16 +508,26 @@ thread_t _VM_CALL _sched_mono(vm_t vm) {
 	register thread_t current=NULL;
 	switch((word_t)vm->current_thread) {
 	case 0:
-		vm->current_thread=vm->ready_threads.head;
-		vm->ready_threads.head=vm->ready_threads.head->next;
-		if(!vm->ready_threads.head) {
-			vm->ready_threads.tail=NULL;
+		if(vm->running_threads.head) {
+			vm->current_thread=vm->running_threads.head;
+			current = node_value(thread_t,vm->current_thread);
+			/*thread_set_state(vm,current,ThreadRunning);*/
+			return current;
+		} else if(vm->ready_threads.head) {
+			vm->current_thread=vm->ready_threads.head;
+			current = node_value(thread_t,vm->current_thread);
+			thread_set_state(vm,current,ThreadRunning);
+			return current;
+		} else {
+			return NULL;
 		}
-		vm->running_threads.head=vm->current_thread;
-		vm->running_threads.tail=vm->current_thread;
-		current = node_value(thread_t,vm->current_thread);
-		current->state=ThreadRunning;
-		return current;
+		/*vm->ready_threads.head=vm->ready_threads.head->next;*/
+		/*if(!vm->ready_threads.head) {*/
+			/*vm->ready_threads.tail=NULL;*/
+		/*}*/
+		/*vm->running_threads.head=vm->current_thread;*/
+		/*vm->running_threads.tail=vm->current_thread;*/
+		/*current->state=ThreadRunning;*/
 	default:
 		return node_value(thread_t,vm->current_thread);
 	};
@@ -624,34 +556,54 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 	if(vm->current_thread) {
 		current = node_value(thread_t,vm->current_thread);
 		/* quick pass if current meets conditions */
+		/*printf("\thave current thread %p, state=%i, remaining=%li\n",current,current->state,current->remaining);*/
 		if(current->state==ThreadRunning&&current->remaining!=0&&current->remaining<vm->timeslice) {
-			current->remaining -= 1;
+			/*printf("\tcurrent still running for %lu more cycles\n",current->remaining);*/
 			return current;
 		}
 	}
 
-	if(vm->current_thread&&vm->current_thread->next) {
-		vm->current_thread = vm->current_thread->next;
+	if(vm->current_thread) {
+		if(vm->current_thread->next) {
+			vm->current_thread = vm->current_thread->next;
+			/*printf("\tnext thread\n");*/
+		} else {
+			vm->current_thread = NULL;
+		}
 	} else if(vm->running_threads.head) {
 		vm->current_thread = vm->running_threads.head;
+		/*printf("\tnext thread (looped back to head)\n");*/
 	}
+	/*} else if(vm->running_threads.head) {*/
+		/*vm->current_thread = vm->running_threads.head;*/
+		/*printf("\tnext thread (looped back to head)\n");*/
 
 	/* solve the conflict between next ready and next running threads, if any */
 	if(vm->ready_threads.head) {
 		dlist_node_t a = vm->current_thread;
 		dlist_node_t b = vm->ready_threads.head;
 		thread_t tb = node_value(thread_t,b);
-		if((!a)||node_value(thread_t,a)->prio < tb->prio) {
+		if((!a)||node_value(thread_t,a)->prio <= tb->prio) {
 			/* thread is no more ready */
-			vm->ready_threads.head = vm->ready_threads.head->next;
-			tb->state=ThreadRunning;
-			dlist_insert_sorted(&vm->running_threads,b,comp_prio);
-			tb->remaining = vm->timeslice;
+			/*vm->ready_threads.head = vm->ready_threads.head->next;*/
+			/*tb->state=ThreadRunning;*/
+			/*dlist_insert_sorted(&vm->running_threads,b,comp_prio);*/
+			/*tb->remaining = vm->timeslice;*/
+			thread_set_state(vm,tb,ThreadRunning);
 			vm->current_thread = b;
+			/*printf("\trunning next ready thread\n");*/
 		}
+	/*} else {*/
 	}
 
+	/*if((!vm->current_thread)&&vm->running_threads.head) {*/
+		/*vm->current_thread = vm->running_threads.head;*/
+		/*printf("\tnext thread (looped back to head)\n");*/
+	/*}*/
+
 	if(vm->current_thread) {
+		node_value(thread_t,vm->current_thread)->remaining=vm->timeslice;
+		/*printf("\tthread %p restarts for %li cycles\n",node_value(thread_t,vm->current_thread),node_value(thread_t,vm->current_thread)->remaining);*/
 		return node_value(thread_t,vm->current_thread);
 	} else {
 		return NULL;
@@ -677,17 +629,20 @@ vm_t vm_schedule_cycle(vm_t vm) {
 	printf("CURRENT PROGRAM %p\n",current->program);
 	if(current) {
 */
-	switch(current?vm_exec_cycle(vm,current):ThreadDying+1) {
-	case ThreadDying:
-		/*vm_dump_data_stack(vm);*/
-		thread_delete(node_value(thread_t,vm->current_thread));
-		dlist_remove(&vm->running_threads,vm->current_thread);
-		vm->current_thread=NULL;
-		vm->threads_count-=1;
-	default:
-		vm->cycles+=1;
-		return vm;
-	};
+	if(current) {
+		current->remaining -= 1;
+		switch(current?vm_exec_cycle(vm,current):ThreadStateMax) {
+		case ThreadDying:
+			if(vm->current_thread) {
+				/*printf("Dead zombie\n");*/
+				vm_kill_thread(vm, current);
+			}
+		default:
+			vm->cycles+=1;
+			return vm;
+		};
+	}
+	return vm;
 }
 
 vm_t vm_set_engine(vm_t vm, vm_engine_t e) {

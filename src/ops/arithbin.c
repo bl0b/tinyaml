@@ -170,8 +170,8 @@ void _VM_CALL vm_op_dec(vm_t vm, word_t immed) {
 void _VM_CALL vm_op_mod(vm_t vm, word_t immed) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
-	vm_peek_data(vm,0,&dta,&a);
-	vm_peek_data(vm,-1,&dtb,&b);
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
 	fast_apply_bin_func(dta,a,dtb,b,m_mod,fmod,a,dta);
 	vm_poke_data(vm,dta,a);
@@ -203,8 +203,8 @@ void _VM_CALL vm_op_mod_Float(vm_t vm, int b) {
 void _VM_CALL vm_op_add(vm_t vm, word_t immed) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
-	vm_peek_data(vm,0,&dta,&a);
-	vm_peek_data(vm,-1,&dtb,&b);
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
 	fast_apply_bin_func(dta,a,dtb,b,_add,_add,a,dta);
 	vm_poke_data(vm,dta,a);
@@ -214,8 +214,8 @@ void _VM_CALL vm_op_add(vm_t vm, word_t immed) {
 void _VM_CALL vm_op_sub(vm_t vm, word_t immed) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
-	vm_peek_data(vm,0,&dta,&a);
-	vm_peek_data(vm,-1,&dtb,&b);
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
 	fast_apply_bin_func(dta,a,dtb,b,_sub,_sub,a,dta);
 	vm_poke_data(vm,dta,a);
@@ -225,8 +225,8 @@ void _VM_CALL vm_op_sub(vm_t vm, word_t immed) {
 void _VM_CALL vm_op_mul(vm_t vm, word_t immed) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
-	vm_peek_data(vm,0,&dta,&a);
-	vm_peek_data(vm,-1,&dtb,&b);
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
 	fast_apply_bin_func(dta,a,dtb,b,_mul,_mul,a,dta);
 	vm_poke_data(vm,dta,a);
@@ -236,8 +236,8 @@ void _VM_CALL vm_op_mul(vm_t vm, word_t immed) {
 void _VM_CALL vm_op_div(vm_t vm, word_t immed) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
-	vm_peek_data(vm,0,&dta,&a);
-	vm_peek_data(vm,-1,&dtb,&b);
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
 	fast_apply_bin_func(dta,a,dtb,b,_div,_div,a,dta);
 	vm_poke_data(vm,dta,a);

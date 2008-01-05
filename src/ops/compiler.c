@@ -27,6 +27,27 @@
 #include "opcode_chain.h"
 #include "object.h"
 
+ast_node_t ast_unserialize(const char*);
+
+void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
+	word_t test = text_seg_text_to_index(&vm->gram_nodes,sernode);
+	if(!test) {
+		printf("ML::appending new grammar rules\n");
+		ast_node_t n = ast_unserialize(text_seg_find_by_text(&vm->gram_nodes,sernode));
+		tinyap_append_grammar(vm->parser,n);
+	}
+}
+
+void _VM_CALL vm_op__langPlug_String(vm_t vm, const char* plugin) {
+	vm_data_t arg = _vm_pop(vm);
+	const char* plug = (const char*) arg->data;
+	assert(arg->type==DataString);
+	printf("ML::plugging %s into %s\n",plugin,plug);
+	tinyap_plug(vm->parser,plugin,plug);
+}
+
+
+
 void _VM_CALL vm_op_write_data(vm_t vm, word_t x) {
 	char tmp_r[20], tmp_d[20];
 	_IFC conv;
@@ -197,6 +218,7 @@ void _VM_CALL vm_op_astCompileChild_Int(vm_t vm, word_t x) {
 void _VM_CALL vm_op_astCompileChild(vm_t vm, word_t x) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataInt);
+	/*tinyap_walk(vm->current_node, "prettyprint", vm);*/
 	assert(d->data<wa_opd_count(vm->current_node));
 	vm_op_astCompileChild_Int(vm,d->data);
 }
@@ -223,7 +245,7 @@ void _VM_CALL vm_op_astGetChildString(vm_t vm, word_t x) {
 
 
 void _VM_CALL vm_op_pp_curNode(vm_t vm, word_t x) {
-	tinyap_walk(vm->current_node,"prettyprint",NULL);
+	/*tinyap_walk(vm->current_node,"prettyprint",NULL);*/
 }
 
 

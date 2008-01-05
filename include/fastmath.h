@@ -30,15 +30,19 @@ static inline float i2f(long int i) {
 		_IFC _R;\
 		switch((((word_t)_ta)<<1)|((word_t)_tb)) {\
 		case 0:\
+			printf("int int\n");\
 			_R.i = (_a) _op (_b);\
 			break;\
 		case 1:\
+			printf("int float\n");\
 			_R.f = i2f(_a) _op (_b);\
 			break;\
 		case 2:\
+			printf("float int\n");\
 			_R.f = (_a) _op i2f(_b);\
 			break;\
 		case 3:\
+			printf("float float\n");\
 			_R.f = (_a) _op (_b);\
 		};\
 		_ret_typ=(_ta|_tb);\

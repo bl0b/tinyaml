@@ -40,6 +40,7 @@ int opcode_dict_resolve_stubs(opcode_dict_t src);
 void opcode_dict_serialize(opcode_dict_t od, writer_t);
 void opcode_dict_unserialize(opcode_dict_t od, reader_t, void*);
 
+opcode_dict_t opcode_dict_optimize(vm_t vm, program_t prog);
 
 
 #endif

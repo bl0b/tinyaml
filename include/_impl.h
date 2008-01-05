@@ -76,7 +76,8 @@ struct _text_seg_t {
 };
 
 struct _mutex_t {
-	struct _slist_t pending;
+	struct _dlist_t pending;
+	long int count;
 	thread_t owner;
 };
 
@@ -108,6 +109,8 @@ struct _vm_t {
 	WalkDirection compile_state;
 	wast_t current_node;
 	struct _generic_stack_t cn_stack;
+	/* meta-language serialized state */
+	struct _text_seg_t gram_nodes;
 	/* known opcodes */
 	struct _opcode_dict_t opcodes;
 	/* library management */
@@ -131,13 +134,24 @@ struct _vm_t {
 };
 
 
+
+struct _label_tab_t {
+	struct _text_seg_t labels;
+	struct _dynarray_t offsets;
+};
+
+
 struct _program_t {
 	struct _text_seg_t strings;
+	struct _label_tab_t labels;
+	struct _dynarray_t gram_nodes_indexes;
 	struct _dynarray_t data;
 	struct _dynarray_t code;
 };
 
 struct _thread_t {
+	/* thread is aliased to a dlist_node */
+	struct _dlist_node_t sched_data;
 	/* attached program */
 	program_t program;
 	/* execution context */
@@ -154,6 +168,7 @@ struct _thread_t {
 	word_t prio;
 	word_t remaining;
 	mutex_t pending_lock;
+	struct _mutex_t join_mutex;
 };
 
 

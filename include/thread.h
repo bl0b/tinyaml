@@ -21,13 +21,18 @@
 #define _BML_THREAD_H_
 
 thread_t thread_new(word_t prio, program_t p, word_t ip);
-void thread_delete(thread_t);
+void thread_delete(vm_t,thread_t);
 
-void thread_start(vm_t, thread_t);
-void thread_yield(vm_t, thread_t);
-void thread_resume(vm_t, thread_t);
-void thread_stop(vm_t, thread_t);
+void thread_set_state(vm_t, thread_t, thread_state_t);
 
+
+mutex_t mutex_new();
+void mutex_init(mutex_t);
+void mutex_delete(vm_t,mutex_t);
+void mutex_deinit(mutex_t);
+
+long mutex_lock(vm_t, mutex_t, thread_t);
+long mutex_unlock(vm_t, mutex_t, thread_t);
 
 
 

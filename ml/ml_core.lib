@@ -92,11 +92,14 @@
 
         opcode _pop_curNode
 
+        opcode _langDef:String
+        opcode _langPlug:String         # pop plug
+
       # handling symbol tables
         opcode newSymTab                # create a new sym tab and push
                                         # it onto data stack
         opcode symTabSz
-        opcode getSym                   # pop key, pop table, push result
+        opcode getSym                   #pop key, pop table, push result
         opcode addSym                   # pop key, pop table
 
       # string operations
@@ -107,7 +110,25 @@
         opcode toI
         opcode toF
 
+      # threading
+        opcode newThread:Label          # pop prio
+        opcode getPid                   # push int
+        opcode joinThread               # pop int thread pid
+        opcode killThread               # pop int thread pid
+
+        opcode newMtx
+        opcode lockMtx:Int              # ref a memcell
+        opcode unlockMtx:Int            # same
+        opcode lockMtx                  # pop int memcell
+        opcode unlockMtx                # same
+
+
       # FIXME: output and debug mechanisms
         opcode print:Int
+
+
+
+
+
         end
 

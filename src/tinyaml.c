@@ -55,7 +55,7 @@ void e_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
 		while(t->call_stack.sp!=s_sz) {
 			vm_schedule_cycle(e->vm);
 		}
-		printf("done with sub thread\n");
+		/*printf("done with sub thread\n");*/
 		/* restore old state */
 		t->program=program;
 		t->IP=IP;
@@ -87,6 +87,8 @@ struct _vm_engine_t stub_engine = {
 		(_arg_str_short && !strcmp(_arg_str_short,argv[i]))	\
 	))
 
+static int tinyaml_quiet=0;
+
 int do_args(vm_t vm, int argc,char*argv[]) {
 	int i;
 	program_t p=NULL;
@@ -107,12 +109,23 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			r = file_reader_new(argv[i]);
 			p=vm_unserialize_program(vm,r);
 			reader_close(r);
+		} else if(cmp_param(0,"--quiet","-q")) {
+			tinyaml_quiet = 1;
+		} else if(cmp_param(0,"--properties","-p")) {
+			program_dump_stats(p);
 		} else if(cmp_param(0,"--run-foreground","-f")) {
 			vm_run_program_fg(vm,p,0,50);
 		} else if(cmp_param(0,"--run-background","-b")) {
 			vm_run_program_bg(vm,p,0,50);
 		} else if(cmp_param(0,"--disasm","-d")) {
-			fputs("Disassembling not yet implemented.\n",stdout);
+			/*fputs("Disassembling not yet implemented.\n",stdout);*/
+			for(i=0;i<p->code.size;i+=2) {
+				const char* label = program_lookup_label(p,i);
+				const char* disasm = program_disassemble(vm,p,i);
+				printf("%8.8lX %-20.20s%s %-50.50s\n",(long)i,label?label:"",label&&*label?":":" ",disasm);
+				free((char*)disasm);
+	
+			}
 		} else if(cmp_param(0,"--version","-v")) {
 			printf(TINYAML_ABOUT);
 			printf("version " TINYAML_VERSION "\n" );
@@ -149,7 +162,9 @@ int main(int argc, char** argv) {
 	vm = vm_new();
 	vm_set_engine(vm, &stub_engine);
 	do_args(vm,argc,argv);
-	printf("VM Runned for %lu cycles.\n",vm->cycles);
+	if(!tinyaml_quiet) {
+		printf("\nVM runned for %lu cycles.\n",vm->cycles);
+	}
 	vm_del(vm);
 	return 0;
 }

@@ -59,6 +59,13 @@ void dump_ocn(opcode_chain_node_t ocn) {
 	case NodeLabel:
 		printf("label|\t    %s:\n",ocn->name);
 		break;
+	case NodeLangPlug:
+		printf("plug_| %s -> %s\n",ocn->name,ocn->arg);
+		break;
+	case NodeLangDef:
+		printf("gram_| (%i chars)\n",strlen(ocn->name));
+		break;
+	default:;
 	};
 }
 
@@ -337,8 +344,15 @@ WalkDirection ape_compiler_DataString(wast_t node, vm_t vm) {
 }
 
 
+void delete_node(ast_node_t);
+
 WalkDirection ape_compiler_LangDef(wast_t node, vm_t vm) {
-	tinyap_append_grammar(vm->parser,make_ast(wa_opd(node,0)));
+	/*tinyap_append_grammar(vm->parser,make_ast(wa_opd(node,0)));*/
+	/*opcode_chain_add_langdef(vm->result,node);*/
+	ast_node_t n = make_ast(wa_opd(node,0));
+	const char* str = tinyap_serialize_to_string(n);
+	delete_node(n);
+	opcode_chain_add_opcode(vm->result, OpcodeArgString, "_langDef", str);
 	return Next;
 }
 
@@ -359,9 +373,12 @@ WalkDirection ape_compiler_LangPlug(wast_t node, vm_t vm) {
 	sprintf(methname,".compile_%s",plugin);
 
 	/*printf("%p plugging %s into %s\n",vm->result,methname,plug);*/
+	/*opcode_chain_add_langplug(vm->result,plugin,plug);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgString, "push", plug);
+	opcode_chain_add_opcode(vm->result, OpcodeArgString, "_langPlug", plugin);
 
 	/* plug grammar */
-	tinyap_plug(vm->parser, plugin, plug);
+	/*tinyap_plug(vm->parser, plugin, plug);*/
 
 	free(methname);
 	return Next;
@@ -400,3 +417,6 @@ WalkDirection ape_compiler_LangComp(wast_t node, vm_t vm) {
 	free(methname);
 	return Next;
 }
+
+
+

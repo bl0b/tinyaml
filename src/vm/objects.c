@@ -33,3 +33,16 @@ text_seg_t vm_symtab_new() {
 	return handle;
 }
 
+mutex_t mutex_clone(mutex_t in) {
+	return in;
+}
+
+mutex_t vm_mutex_new() {
+	mutex_t handle = (mutex_t) vm_obj_new(sizeof(struct _mutex_t),
+			(void (*)(vm_t,void*)) mutex_deinit,
+			(void*(*)(vm_t,void*)) mutex_clone);
+	mutex_init(handle);
+	/*printf("new mutex => %p\n",handle);*/
+	return handle;
+}
+

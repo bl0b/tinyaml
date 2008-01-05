@@ -26,7 +26,7 @@
 #include "opcode_chain.h"
 #include "object.h"
 
-void _VM_CALL vm_op_nop(vm_t vm, word_t data) {
+void _VM_CALL vm_op_nop(vm_t vm, word_t unused) {
 	/* mimics /bin/true's behaviour */
 }
 
@@ -77,7 +77,7 @@ void _VM_CALL vm_op_push_Opcode(vm_t vm, word_t data) {
 	vm_push_data(vm, DataInt, data);
 }
 
-void _VM_CALL vm_op_pop(vm_t vm, word_t data) {
+void _VM_CALL vm_op_pop(vm_t vm, word_t unused) {
 	vm_pop_data(vm,1);
 }
 
@@ -85,27 +85,27 @@ void _VM_CALL vm_op_pop_Int(vm_t vm, word_t data) {
 	vm_pop_data(vm,data);
 }
 
-void _VM_CALL vm_op_dup_Int(vm_t vm, word_t data) {
+void _VM_CALL vm_op_dup_Int(vm_t vm, int data) {
 	vm_data_type_t a;
 	word_t b;
-	vm_peek_data(vm,(int)data,&a,&b);
+	vm_peek_data(vm,data,&a,&b);
 	vm_push_data(vm, a, b);
 }
 
-void _VM_CALL vm_op_SNZ(vm_t vm, word_t data) {
+void _VM_CALL vm_op_SNZ(vm_t vm, int data) {
 	vm_data_type_t a;
 	word_t b;
-	vm_peek_data(vm,(int)data,&a,&b);
+	vm_peek_data(vm,data,&a,&b);
 	vm_pop_data(vm,1);
 	if(b) {
 		node_value(thread_t,vm->current_thread)->IP+=2;
 	}
 }
 
-void _VM_CALL vm_op_SZ(vm_t vm, word_t data) {
+void _VM_CALL vm_op_SZ(vm_t vm, int data) {
 	vm_data_type_t a;
 	word_t b;
-	vm_peek_data(vm,(int)data,&a,&b);
+	vm_peek_data(vm,data,&a,&b);
 	vm_pop_data(vm,1);
 	if(!b) {
 		node_value(thread_t,vm->current_thread)->IP+=2;
@@ -232,7 +232,8 @@ void _VM_CALL vm_op_retval_Int(vm_t vm, word_t n) {
 		t->jmp_seg=cs;
 		t->jmp_ofs=ip+2;
 	} else {
-		t->state=ThreadDying;
+		/*t->state=ThreadDying;*/
+		thread_set_state(vm,t,ThreadDying);
 	}
 }
 
@@ -248,12 +249,13 @@ void _VM_CALL vm_op_ret_Int(vm_t vm, word_t n) {
 		t->jmp_seg=cs;
 		t->jmp_ofs=ip+2;
 	} else {
-		t->state=ThreadDying;
+		/*t->state=ThreadDying;*/
+		thread_set_state(vm,t,ThreadDying);
 	}
 }
 
 
-void _VM_CALL vm_op_strcmp(vm_t vm, word_t n) {
+void _VM_CALL vm_op_strcmp(vm_t vm, word_t unused) {
 	vm_data_t s2 = _vm_pop(vm);
 	vm_data_t s1 = _vm_pop(vm);
 	assert(s1->type==DataString);
@@ -263,7 +265,7 @@ void _VM_CALL vm_op_strcmp(vm_t vm, word_t n) {
 
 
 
-void _VM_CALL vm_op_toI(vm_t vm, word_t n) {
+void _VM_CALL vm_op_toI(vm_t vm, word_t unused) {
 	_IFC conv;
 	vm_data_t d = _vm_pop(vm);
 	switch(d->type) {
@@ -275,7 +277,7 @@ void _VM_CALL vm_op_toI(vm_t vm, word_t n) {
 		vm_push_data(vm,DataInt,f2i(conv.f));
 		break;
 	case DataString:
-		printf("convert \"%s\" to int\n",(const char*)d->data);
+		/*printf("convert \"%s\" to int\n",(const char*)d->data);*/
 		vm_push_data(vm,DataInt,atoi((const char*)d->data));
 		break;
 	default:
@@ -285,7 +287,7 @@ void _VM_CALL vm_op_toI(vm_t vm, word_t n) {
 }
 
 
-void _VM_CALL vm_op_toF(vm_t vm, word_t n) {
+void _VM_CALL vm_op_toF(vm_t vm, word_t unused) {
 	_IFC conv;
 	vm_data_t d = _vm_pop(vm);
 	switch(d->type) {
@@ -305,7 +307,7 @@ void _VM_CALL vm_op_toF(vm_t vm, word_t n) {
 }
 
 
-void _VM_CALL vm_op_toS(vm_t vm, word_t n) {
+void _VM_CALL vm_op_toS(vm_t vm, word_t unused) {
 	static char buf[40];
 	vm_data_t d = _vm_pop(vm);
 	_IFC conv;
@@ -329,6 +331,110 @@ void _VM_CALL vm_op_toS(vm_t vm, word_t n) {
 		vm_push_data(vm,DataString,0);
 	};
 }
+
+
+
+void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
+	vm_data_t d = _vm_pop(vm);
+	thread_t t=node_value(thread_t,vm->current_thread);
+	word_t ofs = t->IP+rel_ofs;
+	assert(d->type==DataInt);
+	t = vm_add_thread(vm,t->program, ofs, d->data);
+	vm_push_data(vm,DataInt,(word_t)t);
+}
+
+void _VM_CALL vm_op_getPid(vm_t vm, word_t unused) {
+	vm_push_data(vm,DataInt,(word_t) vm->current_thread->value);
+}
+
+
+void _VM_CALL vm_op_newMtx(vm_t vm, word_t unused) {
+	word_t handle = (word_t) vm_mutex_new();
+	/*printf("push new mutex %lx\n",handle);*/
+	vm_push_data(vm, DataObject, handle);
+}
+
+
+void _VM_CALL vm_op_lockMtx_Int(vm_t vm, long memcell) {
+	vm_data_t d;
+	thread_t t = node_value(thread_t,vm->current_thread);
+	mutex_t m;
+	vm_op_getmem_Int(vm,memcell);
+	d = _vm_pop(vm);
+	assert(d->type==DataObject);
+	m = (mutex_t)d->data;
+	assert_ptr_is_obj(m);
+	mutex_lock(vm,m,t);
+}
+
+
+void _VM_CALL vm_op_unlockMtx_Int(vm_t vm, long memcell) {
+	vm_data_t d;
+	thread_t t = node_value(thread_t,vm->current_thread);
+	mutex_t m;
+	vm_op_getmem_Int(vm,memcell);
+	d = _vm_pop(vm);
+	assert(d->type==DataObject);
+	m = (mutex_t)d->data;
+	assert_ptr_is_obj(m);
+	mutex_unlock(vm,m,t);
+}
+
+
+
+void _VM_CALL vm_op_lockMtx(vm_t vm, word_t unused) {
+	vm_data_t d;
+	thread_t t = node_value(thread_t,vm->current_thread);
+	if(!t->pending_lock) {
+		d = _vm_pop(vm);
+		assert(d->type==DataObject);
+		t->pending_lock = (mutex_t)d->data;
+		assert_ptr_is_obj(t->pending_lock);
+	}
+	if(mutex_lock(vm,t->pending_lock,t)) {
+		t->pending_lock=NULL;
+	}
+}
+
+
+void _VM_CALL vm_op_unlockMtx(vm_t vm, word_t unused) {
+	vm_data_t d;
+	thread_t t = node_value(thread_t,vm->current_thread);
+	mutex_t m;
+	d = _vm_pop(vm);
+	assert(d->type==DataObject);
+	m = (mutex_t)d->data;
+	assert_ptr_is_obj(m);
+	mutex_unlock(vm,m,t);
+}
+
+
+void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
+	vm_data_t d;
+	thread_t t = node_value(thread_t,vm->current_thread),joinee;
+	if(!t->pending_lock) {
+		d=_vm_pop(vm);
+		assert(d->type==DataInt);
+		joinee = (thread_t)d->data;
+		assert(((thread_t)joinee->sched_data.value) == joinee /* check that it's really a thread */);
+		t->pending_lock = &joinee->join_mutex;
+	}
+	if(mutex_lock(vm,t->pending_lock,t)) {
+		t->pending_lock=NULL;
+	}
+}
+
+
+void _VM_CALL vm_op_killThread(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	thread_t victim = (thread_t)d->data;
+	assert(d->type==DataInt);
+	assert(((thread_t)victim->sched_data.value) == victim /* check that it's really a thread */);
+	vm_kill_thread(vm,victim);
+	/*thread_set_state(vm,victim,ThreadDying);*/
+}
+
+
 
 
 

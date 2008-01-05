@@ -54,7 +54,7 @@ const char* text_seg_find_by_text(text_seg_t ts, const char* str) {
 		ret = strdup(str);
 		hash_addelem(&ts->by_text, (hash_key)ret, (hash_elem)dynarray_size(&ts->by_index));
 		dynarray_set(&ts->by_index, dynarray_size(&ts->by_index), (value_t)ret);
-		printf("added string %p:\"%s\" into seg %p at offset %lu\n",ret,ret,ts,dynarray_size(&ts->by_index)-1);
+		/*printf("added string %p:\"%s\" into seg %p at offset %lu\n",ret,ret,ts,dynarray_size(&ts->by_index)-1);*/
 	} else {
 		ret = (const char*)dynarray_get(&ts->by_index,ofs);
 	}

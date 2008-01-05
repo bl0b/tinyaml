@@ -24,12 +24,14 @@
 
 
 struct _reader_t {
+	int swap_endian;
 	word_t (*read_word)(reader_t);
 	const char* (*read_string)(reader_t);
 	void (*close)(reader_t);
 };
 
 struct _writer_t {
+	int __dummy__;	/* preserve aliasing between _reader_t and _writer_t */
 	int (*write_word)(writer_t, word_t);
 	int (*write_string)(writer_t, const char*);
 	void (*close)(writer_t);
@@ -89,20 +91,23 @@ word_t buffer_read_word(reader_t r) {
 	return w;
 }
 
+#define BUFFY_SZ 65536
+static char _rdr_buffy[BUFFY_SZ];
+
 const char* file_read_string(reader_t r) {
-	static char buffy[1024];
 	char c=1;
 	int i=0;
 	_(file,reader,fr,r);
-	memset(buffy,0,1024);
-	while(i<1024&&c!=0) {
-		fread(buffy+i,1,1,fr->f);
-		c=*(buffy+i);
+	memset(_rdr_buffy,0,BUFFY_SZ);
+	while(i<BUFFY_SZ&&c!=0) {
+		fread(_rdr_buffy+i,1,1,fr->f);
+		c=*(_rdr_buffy+i);
 		i+=1;
 	}
 	/*printf("file_reader read string (%i) \"%s\"\n",i,buffy);*/
-	return buffy;
+	return _rdr_buffy;
 }
+#undef BUFFY_SZ
 
 const char* buffer_read_string(reader_t r) {
 	_(buffer,reader,br,r);
@@ -172,6 +177,7 @@ reader_t file_reader_new(const char*fname) {
 	w->reader.read_word = file_read_word;
 	w->reader.read_string = file_read_string;
 	w->reader.close = file_close;
+	w->reader.swap_endian=0;
 	return (reader_t)w;
 }
 
@@ -183,7 +189,12 @@ reader_t buffer_reader_new(const char*buffer, word_t sz) {
 	w->reader.read_word = buffer_read_word;
 	w->reader.read_string = buffer_read_string;
 	w->reader.close = NULL;
+	w->reader.swap_endian=0;
 	return (reader_t)w;
+}
+
+void reader_swap_endian(reader_t r) {
+	r->swap_endian=1;
 }
 
 void reader_close(reader_t r) {
@@ -202,8 +213,16 @@ word_t write_string(writer_t w, const char* data) {
 	return w->write_string(w,data);
 }
 
+#define _swap(_x,_y) do { _x^=_y; _y^=_x; _x^=_y; } while(0)
+
 word_t read_word(reader_t w) {
-	return w->read_word(w);
+	union { word_t w; char c[4]; } ret;
+	ret.w = w->read_word(w);
+	if(w->swap_endian) {
+		_swap(ret.c[0],ret.c[3]);
+		_swap(ret.c[1],ret.c[2]);
+	}
+	return ret.w;
 }
 
 const char* read_string(reader_t w) {

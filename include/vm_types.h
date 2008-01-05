@@ -100,6 +100,8 @@ typedef struct _opcode_chain_node_t* opcode_chain_node_t;
 
 typedef enum {
 	NodeOpcode,
+	NodeLangDef,
+	NodeLangPlug,
 	NodeData,
 	NodeLabel
 } opcode_chain_node_type_t;

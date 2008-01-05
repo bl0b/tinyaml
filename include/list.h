@@ -131,6 +131,17 @@ struct _dlist_t {
 		snode_del(n);\
 	} while(0)
 
+#define dlist_remove_head_no_free(_l)	do {\
+		dlist_node_t n=(_l)->head;\
+		if((_l)->tail==(_l)->head) {\
+			(_l)->head=NULL;\
+			(_l)->tail=NULL;\
+		} else {\
+			(_l)->head = n->next;\
+			(_l)->head->prev = NULL;\
+		}\
+	} while(0)
+
 #define dlist_remove_tail(_l)	do {\
 		dlist_node_t n=(_l)->tail;\
 		if((_l)->tail==(_l)->head) {\
@@ -143,6 +154,17 @@ struct _dlist_t {
 		dnode_del(n);\
 	} while(0)
 
+#define dlist_remove_tail_no_free(_l)	do {\
+		dlist_node_t n=(_l)->tail;\
+		if((_l)->tail==(_l)->head) {\
+			(_l)->head=NULL;\
+			(_l)->tail=NULL;\
+		} else {\
+			(_l)->tail = n->prev;\
+			(_l)->tail->next = NULL;\
+		}\
+	} while(0)
+
 #define dlist_remove(_l,_n)	do {\
 		if((_n)==(_l)->head) {\
 			dlist_remove_head(_l);\
@@ -152,6 +174,17 @@ struct _dlist_t {
 			(_n)->next->prev=(_n)->prev;\
 			(_n)->prev->next=(_n)->next;\
 			dnode_del(_n);\
+		}\
+	} while(0)
+
+#define dlist_remove_no_free(_l,_n)	do {\
+		if((_n)==(_l)->head) {\
+			dlist_remove_head_no_free(_l);\
+		} else if((_n)==(_l)->tail) {\
+			dlist_remove_tail_no_free(_l);\
+		} else {\
+			(_n)->next->prev=(_n)->prev;\
+			(_n)->prev->next=(_n)->next;\
 		}\
 	} while(0)
 /*
@@ -247,15 +280,20 @@ struct _dlist_t {
 		}\
 	} while(0)
 
+#define debug(_n) printf("[%p]<- %p -> [%p]\n",(_n)->sched_data.prev,(_n),(_n)->sched_data.next)
 #define dlist_insert_sorted(_l,_n,_cmp)	do {\
 		dlist_node_t r=(_l)->head;\
-		if(r==NULL) {\
-			dlist_insert_head_node(_l,_n);\
-		} else if(_cmp((_l)->tail,_n)<=0) {\
-			dlist_insert_tail_node(_l,_n);\
+		if(r==NULL||_cmp(_n,r)<=0) {\
+			dlist_insert_head_node(_l,(_n));\
+		} else if(_cmp((_l)->tail,(_n))<=0) {\
+			dlist_insert_tail_node(_l,(_n));\
 		} else {\
-			while(_cmp(_n,r)<0) {\
+			while(r&&_cmp((_n),r)<0) {\
 				r=r->next;\
+			}\
+			if(!r) {\
+				printf("PROUUUUUUUT\n");\
+				dlist_forward(_l,thread_t,debug);\
 			}\
 			(_n)->next=r->next;\
 			(_n)->prev=r;\

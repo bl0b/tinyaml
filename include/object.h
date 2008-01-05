@@ -87,8 +87,11 @@ static inline void vm_obj_deref(vm_t vm, void* ptr) {
 	}
 }
 
+#define assert_ptr_is_obj(_x) assert(((vm_obj_t)(((char*)(_x))-VM_OBJ_OFS))->magic==VM_OBJ_MAGIC)
+
 char* vm_string_new(const char*src);
 text_seg_t vm_symtab_new();
+mutex_t vm_mutex_new();
 
 #endif
 
