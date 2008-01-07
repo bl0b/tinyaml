@@ -99,6 +99,7 @@ char* vm_string_new(const char*src);
 text_seg_t vm_symtab_new();
 mutex_t vm_mutex_new();
 thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip);
+dynarray_t vm_array_new();
 
 #endif
 

@@ -46,7 +46,7 @@ opcode_dict_t vm_get_dict(vm_t);
 
 opcode_t vm_get_opcode_by_name(vm_t, const char*);
 
-thread_t vm_add_thread(vm_t, program_t, word_t ip, word_t prio);
+thread_t vm_add_thread(vm_t, program_t, word_t ip, word_t prio, int fg);
 
 thread_t vm_get_thread(vm_t, word_t);
 word_t vm_get_current_thread_index(vm_t);

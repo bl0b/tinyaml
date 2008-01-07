@@ -1,12 +1,22 @@
-data
-	0 rep 200		# 1
-	"Hello, world !"	# 201
-	"\n"			# 202
-end
+#data
+#	0 rep 200		# 1
+#	"Hello, world !"	# 201
+#	"\n"			# 202
+#end
 
 asm
+	push 1
+	push "\t"
+	arrayNew
+	dup -1
+	dup -1
+	push "\n"
+	print 6
+	ret 0
+
+
 	enter 2			# counters
-	push 5 setmem -2
+	push 500 setmem -2
 mega_loop:
 	push 2 setmem -1
 	push 1

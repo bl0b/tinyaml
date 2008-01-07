@@ -29,6 +29,7 @@
 
 #include "bml_ops.h"
 #include "object.h"
+#include "vm_engine.h"
 
 /* hidden feature in tinyap */
 ast_node_t ast_unserialize(const char*);
@@ -39,6 +40,8 @@ extern const char* ml_core_lib;
 vm_t vm_new() {
 	vm_t ret = (vm_t)malloc(sizeof(struct _vm_t));
 	tinyap_init();
+	ret->engine=stub_engine;
+	ret->engine->vm=ret;
 	ret->result=NULL;
 	ret->parser = tinyap_new();
 	tinyap_set_grammar_ast(ret->parser,ast_unserialize(ml_core_grammar));
@@ -59,7 +62,6 @@ vm_t vm_new() {
 	dlist_init(&ret->yielded_threads);
 	dlist_init(&ret->zombie_threads);
 	dlist_init(&ret->gc_pending);
-	ret->engine=NULL;
 
 	ret->dl_handle=NULL;
 
@@ -83,12 +85,18 @@ void htab_free_dict(htab_entry_t);
 
 
 void vm_del(vm_t ret) {
+	ret->engine->_kill(ret->engine);
+	ret->engine=stub_engine;
+	ret->engine->vm=ret;
 	/*printf("delete vm\n");*/
+	ret->engine->_vm_lock(ret->engine);
 	#define thd_del(_x) vm_kill_thread(ret,_x)
 	dlist_forward(&ret->ready_threads,thread_t,thd_del);
 	dlist_forward(&ret->running_threads,thread_t,thd_del);
 	dlist_forward(&ret->yielded_threads,thread_t,thd_del);
 	#undef thd_del
+
+	ret->current_thread=NULL;
 
 	#define prg_free(_x) program_free(ret,_x)
 	/*slist_forward(&ret->all_programs,program_t,program_dump_stats);*/
@@ -112,6 +120,7 @@ void vm_del(vm_t ret) {
 	#undef obj_free
 	dlist_flush(&ret->gc_pending);
 	gstack_deinit(&ret->cn_stack,NULL);
+	ret->engine->_vm_unlock(ret->engine);
 	free(ret);
 }
 
@@ -127,7 +136,9 @@ vm_t vm_set_lib_file(vm_t vm, const char*fname) {
 }
 
 vm_t vm_add_opcode(vm_t vm, const char*name, opcode_arg_t arg_type, opcode_stub_t stub) {
+	vm->engine->_client_lock(vm->engine);
 	opcode_dict_add(&vm->opcodes,arg_type,name,stub);
+	vm->engine->_client_unlock(vm->engine);
 	return vm;
 }
 
@@ -157,7 +168,9 @@ program_t vm_unserialize_program(vm_t vm, reader_t r) {
 
 	ret = program_unserialize(vm,r);
 	if(ret) {
+		vm->engine->_client_lock(vm->engine);
 		slist_insert_tail(&vm->all_programs,ret);
+		vm->engine->_client_unlock(vm->engine);
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	}
 	return ret;
@@ -190,7 +203,9 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
 		p = compile_wast(wa, vm);
 		wa_del(wa);
+		vm->engine->_client_lock(vm->engine);
 		slist_insert_tail(&vm->all_programs,p);
+		vm->engine->_client_unlock(vm->engine);
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	} else {
 		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
@@ -209,7 +224,9 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
 		p = compile_wast(wa, vm);
 		wa_del(wa);
+		vm->engine->_client_lock(vm->engine);
 		slist_insert_tail(&vm->all_programs,p);
+		vm->engine->_client_unlock(vm->engine);
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	} else {
 		fprintf(stderr,tinyap_get_error(vm->parser));
@@ -230,15 +247,16 @@ vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio) {
 	return vm;
 }
 
-
-thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
+thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {
 	thread_t t;
 	/*dlist_node_t dn;*/
 	if(!p) {
 		return NULL;
 	}
+	vm->engine->_client_lock(vm->engine);
 	t = vm_thread_new(vm,prio,p,ip);
 	t->state=ThreadStateMax;
+	t->_sync=fg;
 	mutex_lock(vm,&t->join_mutex,t);
 	/* FIXME : this should go into thread_new() */
 	vm->threads_count += 1;
@@ -257,6 +275,8 @@ thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio) {
 	/*dlist_insert_sorted(&vm->ready_threads,dn,comp_prio);*/
 	thread_set_state(vm,t,ThreadReady);
 
+	vm->engine->_client_unlock(vm->engine);
+
 	return t;
 }
 
@@ -265,9 +285,6 @@ thread_t vm_get_thread(vm_t vm, word_t index) {
 	return NULL;
 }
 
-word_t vm_get_current_thread_index(vm_t vm) {
-	return 0;
-}
 
 thread_t vm_get_current_thread(vm_t vm) {
 	if(!vm->current_thread) {
@@ -292,6 +309,7 @@ word_t _VM_CALL vm_get_IP(vm_t vm) {
 
 vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	/*printf("KILLing thread %p\n",t);*/
+	vm->engine->_client_lock(vm->engine);
 	vm->threads_count-=1;
 	if(vm->current_thread&&t==vm->current_thread) {
 		vm->current_thread=NULL;
@@ -301,9 +319,11 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	if(vm->threads_count==1) {
 		/*printf("SchedulerMonoThread\n");*/
 		vm->scheduler = SchedulerMonoThread;
+		vm->engine->_client_unlock(vm->engine);
 	} else if(vm->threads_count==0) {
 		/*printf("SchedulerIdle\n");*/
 		vm->scheduler = SchedulerIdle;
+		vm->engine->_client_unlock(vm->engine);
 		vm->engine->_deinit(vm->engine);
 	}
 
@@ -473,7 +493,7 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	/*program_fetch(t->program, t->IP, (word_t*)&op, &arg);*/
 	array = t->program->code.data+t->IP;
 
-/*
+//*
 	{
 		const char* label = program_lookup_label(t->program,t->IP);
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
@@ -601,7 +621,11 @@ _sched_method_t schedulers[SchedulerAlgoMax] = {
  * if has many threads, time-slice round-robin them.
  */
 void _VM_CALL vm_schedule_cycle(vm_t vm) {
-	thread_t current = schedulers[vm->scheduler](vm);
+	thread_t current;
+
+	vm->engine->_client_lock(vm->engine);
+
+	current = schedulers[vm->scheduler](vm);
 
 /*	printf("CURRENT THREAD %p\n",current);
 	printf("CURRENT PROGRAM %p\n",current->program);
@@ -626,6 +650,7 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 		}
 		vm->cycles+=1;
 	}
+	vm->engine->_client_unlock(vm->engine);
 }
 
 vm_t vm_set_engine(vm_t vm, vm_engine_t e) {

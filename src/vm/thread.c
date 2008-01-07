@@ -124,6 +124,11 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 	case ThreadRunning:
 		dlist_remove_no_free(&vm->running_threads,&t->sched_data);
 		break;
+	case ThreadStateMax:
+		/* thread is just starting */
+		if(t->_sync) {
+			vm->engine->_fg_thread_start_cb(vm->engine);
+		}
 	default:;
 	};
 	t->state=state;
@@ -131,6 +136,9 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 	case ThreadZombie:
 		/*thread_delete(vm,t);*/
 		dlist_insert_tail_node(&vm->zombie_threads,&t->sched_data);
+		if(t->_sync) {
+			vm->engine->_fg_thread_done_cb(vm->engine);
+		}
 		break;
 	case ThreadReady:
 		dlist_insert_sorted(&vm->ready_threads,&t->sched_data,comp_prio);
@@ -199,10 +207,10 @@ long mutex_unlock(vm_t vm, mutex_t m, thread_t t) {
 	/*printf("MUTEX UNLOCK :: thread %p attempts to unlock mutex %p owned by %p\n",t,m,m->owner);*/
 	if(m->owner!=t) {
 		printf("VM::Error : trying to unlock a mutex that is owned by another thread (%p).\n",m->owner);
-		return 0;
+	} else if(m->count>0) {
+		m->count-=1;
 	}
-	m->count-=1;
-	if(!m->count) {
+	if(!(m->owner&&m->count)) {
 		dlist_node_t dn;
 		m->owner=NULL;
 		while(m->pending.head) {

@@ -102,6 +102,16 @@
         opcode getSym                   #pop key, pop table, push result
         opcode addSym                   # pop key, pop table
 
+      # handling arrays
+        opcode arrayNew
+        opcode arrayResv:Int
+        opcode arrayResv
+        opcode arrayGet:Int
+        opcode arrayGet
+        opcode arraySet:Int
+        opcode arraySet
+        opcode arraySize
+
       # string operations
         opcode strcmp                   # compare two strings
 

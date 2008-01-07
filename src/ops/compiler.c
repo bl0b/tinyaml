@@ -169,7 +169,7 @@ void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
 	assert(t->type==DataObject);
 	assert(k->type==DataString);
 	idx=text_seg_text_to_index(ts, (const char*)k->data);
-	/*printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
+	printf("getSym(%s) => %lu\n",(const char*)k->data,idx);
 	vm_push_data(vm,DataInt, idx);
 }
 
@@ -180,7 +180,7 @@ void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
 	assert(t->type==DataObject);
 	assert(k->type==DataString);
 	(void)text_seg_find_by_text(ts, (const char*)k->data);
-	/*printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
+	printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));
 }
 
 
@@ -204,8 +204,11 @@ void _VM_CALL vm_op_astGetOp(vm_t vm, word_t x) {
 	vm_push_data(vm,DataString,(word_t)wa_op(vm->current_node));
 }
 
+void vm_dump_data_stack(vm_t vm);
 void _VM_CALL vm_op_astGetChildrenCount(vm_t vm, word_t x) {
+	printf("vm_op_astGetChildrenCount => %u\n",wa_opd_count(vm->current_node));
 	vm_push_data(vm,DataInt,wa_opd_count(vm->current_node));
+	vm_dump_data_stack(vm);
 }
 
 void _VM_CALL vm_op_astCompileChild_Int(vm_t vm, word_t x) {
@@ -231,10 +234,10 @@ void _VM_CALL vm_op__pop_curNode(vm_t vm, word_t x) {
 
 
 void _VM_CALL vm_op_astGetChildString_Int(vm_t vm, word_t x) {
-	/*printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),vm->current_thread->IP);*/
-	/*printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
+	printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),vm->current_thread->IP);
+	printf("stack size %lu\n",vm->current_thread->data_stack.sp);
 	vm_push_data(vm,DataString,(word_t)wa_op(wa_opd(vm->current_node,x)));
-	/*printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
+	printf("stack size %lu\n",vm->current_thread->data_stack.sp);
 }
 
 void _VM_CALL vm_op_astGetChildString(vm_t vm, word_t x) {

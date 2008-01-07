@@ -150,6 +150,14 @@ void _VM_CALL vm_op_enter_Int(vm_t vm, word_t size) {
 
 void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
 	thread_t t=vm->current_thread;
+	vm_data_t local;
+	long i,min=-size;
+	for(i=0;i>min;i-=1) {
+		local = _gpeek(&t->locals_stack,i);	/* -1 becomes 0 */
+		if(local->type==DataObject) {
+			vm_obj_deref(vm,(void*)local->data);
+		}
+	}
 	gstack_shrink(&t->locals_stack,size);
 }
 
@@ -340,7 +348,7 @@ void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 	thread_t t=vm->current_thread;
 	word_t ofs = t->IP+rel_ofs;
 	assert(d->type==DataInt);
-	t = vm_add_thread(vm,t->program, ofs, d->data);
+	t = vm_add_thread(vm, t->program, ofs, d->data, 0);
 	/*printf("new thread has handle %p\n",t);*/
 	vm_push_data(vm,DataObject,(word_t)t);
 }

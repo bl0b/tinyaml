@@ -39,12 +39,18 @@ struct _generic_stack_t {
 };
 
 struct _vm_engine_t {
-	void(*_init)(vm_engine_t);
-	void(*_deinit)(vm_engine_t);
-	void(*_run_sync)(vm_engine_t, program_t, word_t ip, word_t prio);
-	void(*_run_async)(vm_engine_t, program_t, word_t ip, word_t prio);
-	void(*_kill)(vm_engine_t);
-	vm_t vm;
+	void(*_VM_CALL _init)(vm_engine_t);
+	void(*_VM_CALL _deinit)(vm_engine_t);
+	void(*_VM_CALL _run_sync)(vm_engine_t, program_t, word_t ip, word_t prio);
+	void(*_VM_CALL _fg_thread_start_cb)(vm_engine_t);
+	void(*_VM_CALL _fg_thread_done_cb)(vm_engine_t);
+	void(*_VM_CALL _run_async)(vm_engine_t, program_t, word_t ip, word_t prio);
+	void(*_VM_CALL _kill)(vm_engine_t);
+	void(*_VM_CALL _client_lock)(vm_engine_t);
+	void(*_VM_CALL _client_unlock)(vm_engine_t);
+	void(*_VM_CALL _vm_lock)(vm_engine_t);
+	void(*_VM_CALL _vm_unlock)(vm_engine_t);
+	volatile vm_t vm;
 };
 
 
@@ -105,10 +111,10 @@ struct _vm_t {
 	tinyap_t parser;
 	/* meta-compiler */
 	struct _text_seg_t compile_vectors;
-	opcode_chain_t result;
-	WalkDirection compile_state;
-	wast_t current_node;
-	struct _generic_stack_t cn_stack;
+	volatile opcode_chain_t result;
+	volatile WalkDirection compile_state;
+	volatile wast_t current_node;
+	volatile struct _generic_stack_t cn_stack;
 	/* meta-language serialized state */
 	struct _text_seg_t gram_nodes;
 	/* known opcodes */
@@ -129,7 +135,7 @@ struct _vm_t {
 	/* runtime engine */
 	vm_engine_t engine;
 	/* stats */
-	word_t cycles;
+	volatile word_t cycles;
 	/* garbage collecting */
 	struct _dlist_t gc_pending;
 };
@@ -152,23 +158,24 @@ struct _program_t {
 
 struct _thread_t {
 	/* thread is aliased to a dlist_node */
-	struct _dlist_node_t sched_data;
+	volatile struct _dlist_node_t sched_data;
 	/* attached program */
-	program_t program;
+	volatile program_t program;
 	/* execution context */
-	struct _generic_stack_t locals_stack;
-	struct _generic_stack_t data_stack;
-	struct _generic_stack_t call_stack;
-	struct _generic_stack_t catch_stack;
-	word_t IP;
-	program_t jmp_seg;
-	word_t jmp_ofs;
+	volatile struct _generic_stack_t locals_stack;
+	volatile struct _generic_stack_t data_stack;
+	volatile struct _generic_stack_t call_stack;
+	volatile struct _generic_stack_t catch_stack;
+	volatile word_t IP;
+	volatile program_t jmp_seg;
+	volatile word_t jmp_ofs;
 	/* scheduling */
-	thread_state_t state;
-	word_t IP_status;
+	volatile thread_state_t state;
+	/*word_t IP_status;*/
+	int _sync;
 	word_t prio;
-	word_t remaining;
-	mutex_t pending_lock;
+	volatile word_t remaining;
+	volatile mutex_t pending_lock;
 	struct _mutex_t join_mutex;
 };
 

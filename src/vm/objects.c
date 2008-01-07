@@ -63,3 +63,44 @@ thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip) {
 	return ret;
 }
 
+
+
+
+void vm_da_deinit(vm_t vm, dynarray_t da) {
+	word_t i;
+	/* FIXME : too heavy to be done at once */
+	for(i=0;i<da->size;i+=2) {
+		if((vm_data_type_t)da->data[i] == DataObject) {
+			vm_obj_deref(vm,(void*)da->data[i+1]);
+		}
+	}
+	dynarray_deinit(da,NULL);
+}
+
+
+void vm_da_clone(vm_t vm, dynarray_t da) {
+	dynarray_t ret = vm_array_new();
+	word_t i;
+	dynarray_reserve(ret,dynarray_size(da));
+	/* FIXME : too heavy to be done at once */
+	for(i=0;i<da->size;i+=2) {
+		ret->data[i]=da->data[i];
+		if((vm_data_type_t)da->data[i] == DataObject) {
+			vm_obj_ref(vm,(void*)da->data[i+1]);
+			ret->data[i+1]=(word_t)vm_obj_clone(vm,PTR_TO_OBJ(da->data[i+1]));
+		} else {
+			ret->data[i+1]=da->data[i+1];
+		}
+	}
+	dynarray_deinit(da,NULL);
+}
+
+
+dynarray_t vm_array_new() {
+	dynarray_t ret = (dynarray_t)vm_obj_new(sizeof(struct _dynarray_t),
+			(void (*)(vm_t,void*)) vm_da_deinit,
+			(void*(*)(vm_t,void*)) vm_da_clone);
+	dynarray_init(ret);
+	return ret;
+}
+

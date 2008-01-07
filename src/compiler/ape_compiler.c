@@ -70,20 +70,20 @@ void dump_ocn(opcode_chain_node_t ocn) {
 }
 
 program_t compile_wast(wast_t node, vm_t vm) {
-	/*printf("compile_wast\n");*/
+	printf("compile_wast\n");
 	gpush(&vm->cn_stack,&vm->current_node);
 	vm->current_node = node;
 	tinyap_walk(node, "compiler", vm);
 	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 	program_t ret = program_new();
-	/*printf("now %p\n",vm->result);*/
+	printf("now %p\n",vm->result);
 	opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0");
 	docn_dat=docn_cod=0;
-	/*opcode_chain_apply(vm->result,dump_ocn);*/
+	opcode_chain_apply(vm->result,dump_ocn);
 	opcode_chain_serialize(vm->result, vm_get_dict(vm), ret, vm->dl_handle);
 	opcode_chain_delete(vm->result);
 	vm->result=NULL;
-	/*printf("\n-- New program compiled.\n-- Data size : %lu\n-- Code size : %lu\n\n",ret->data.size,ret->code.size);*/
+	printf("\n-- New program compiled.\n-- Data size : %lu\n-- Code size : %lu\n\n",ret->data.size,ret->code.size);
 	return ret;
 }
 
@@ -123,7 +123,7 @@ WalkDirection ape_compiler_default(wast_t node, vm_t vm) {
 		vm_run_program_fg(vm,p,ip,50);
 		vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 		free(vec_name);
-		/*printf("   vm return state : %i\n",vm->compile_state);*/
+		printf("   vm return state : %i\n",vm->compile_state);
 		return vm->compile_state;
 	}
 

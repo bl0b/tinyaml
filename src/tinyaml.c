@@ -72,6 +72,9 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 		} else if(cmp_param(0,"--run-foreground","-f")) {
 			vm_run_program_fg(vm,p,0,50);
 		} else if(cmp_param(0,"--run-background","-b")) {
+			if(vm->engine!=thread_engine) {
+				vm_set_engine(vm,thread_engine);
+			}
 			vm_run_program_bg(vm,p,0,50);
 		} else if(cmp_param(0,"--disasm","-d")) {
 			/*fputs("Disassembling not yet implemented.\n",stdout);*/
@@ -117,7 +120,7 @@ int main(int argc, char** argv) {
 	vm_t vm;
 	vm = vm_new();
 	/*vm_set_engine(vm, stub_engine);*/
-	vm_set_engine(vm, thread_engine);
+	/*vm_set_engine(vm, thread_engine);*/
 	do_args(vm,argc,argv);
 	if(!tinyaml_quiet) {
 		printf("\nVM runned for %lu cycles.\n",vm->cycles);

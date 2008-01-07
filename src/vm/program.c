@@ -179,7 +179,7 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	word_t wc;
 	word_t arg;
 
-	printf("program_unserialize\n");
+	/*printf("program_unserialize\n");*/
 	p=program_new();
 	od = opcode_dict_new();
 	opcode_dict_unserialize(od,r,vm->dl_handle);
@@ -367,7 +367,11 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 			}
 			break;
 		case OpcodeArgString:
-			argstr = strdup((char*)arg);
+			argstr = (char*)malloc(strlen((char*)arg)+3);
+			argstr[0]='"';
+			argstr[1]=0;
+			strcat(argstr,arg);
+			strcat(argstr,"\"");
 			break;
 		case OpcodeArgInt:
 			sprintf(tmpbuf,"%li",(long)arg);

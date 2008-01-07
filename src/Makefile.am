@@ -25,6 +25,7 @@ libtinyaml_la_SOURCES =	containers/generic_stack.c \
 			 \
 			ops/bml_vm.c \
 			ops/arithbin.c \
+			ops/containers.c \
 			ops/compiler.c
 
 tinyaml_SOURCES = tinyaml.c $(libtinyaml_la_SOURCES)
