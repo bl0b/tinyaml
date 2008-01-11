@@ -470,7 +470,7 @@ vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
 	dlist_node_t dn;
 	/*printf("vm uncollect %p\n",o);*/
 	if(!vm->gc_pending.head) {
-		/*printf("   => failed.\n");*/
+		/*printf("   => nothing to do.\n");*/
 		return vm;
 	}
 	dn = vm->gc_pending.head;
@@ -682,11 +682,39 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 				dlist_node_t tmp=vm->zombie_threads.head;
 				do {
 					if(vm_obj_refcount(tmp)==0) {
+						/* TODO */
 					}
 					tmp = tmp->next;
 				} while(tmp);
 			}
 		}
+
+/*
+		do {
+			dlist_node_t dn = vm->gc_pending.head;
+			printf(" *** - gc_pending :");
+			while(dn) {
+				printf(" 0x%lx",dn->value);
+				dn = dn->next;
+			}
+			puts(" - ***");
+		} while(0);
+// */		
+		/* FIXME : hardcoded incremental finalization */
+		if(vm->gc_pending.tail) {
+			dlist_node_t dn;
+			dn = vm->gc_pending.tail;
+			assert(((vm_obj_t)dn->value)->ref_count==0);
+			vm->gc_pending.tail=dn->prev;
+			if(dn->prev) {
+				dn->prev->next=NULL;
+			} else {
+				vm->gc_pending.head=NULL;
+			}
+			vm_obj_free(vm,(void*)dn->value);
+			free(dn);
+		}
+
 		vm->cycles+=1;
 	}
 	vm->engine->_client_unlock(vm->engine);

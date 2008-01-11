@@ -110,16 +110,14 @@ void _VM_CALL vm_op_arraySet_Int(vm_t vm, word_t index) {
 	assert(d->type==DataObject);
 	if(da->size>ofs+1) {
 		if(da_data->type==DataObject) { vm_obj_deref(vm,(void*)da_data->data); }
-		da_data->type = data->type;
-		da_data->data = data->data;
-		/*printf("set %u:%8.8lx in array %p\n",da_data->type,da_data->data,da);*/
 	} else {
 		dynarray_reserve(da,ofs+2);
 		da_data = (vm_data_t)(da->data+ofs);
-		da_data->type = data->type;
-		da_data->data = data->data;
 		da->size = ofs+2;
 	}
+	da_data->type = data->type;
+	da_data->data = data->data;
+	/*printf("set %u:%8.8lx in array %p\n",da_data->type,da_data->data,da);*/
 	if(data->type==DataObject) { vm_obj_ref(vm,(void*)data->data); }
 }
 

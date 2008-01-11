@@ -176,6 +176,8 @@ void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
 		local = _gpeek(&t->locals_stack,i);	/* -1 becomes 0 */
 		if(local->type==DataObject) {
 			vm_obj_deref(vm,(void*)local->data);
+			local->type=DataInt;
+			local->data=0;
 		}
 	}
 	gstack_shrink(&t->locals_stack,size);

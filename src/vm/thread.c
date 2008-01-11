@@ -68,6 +68,18 @@ void deref_stack(vm_t vm, generic_stack_t gs) {
 }
 
 void thread_deinit(vm_t vm, thread_t t) {
+	if(t->state==ThreadZombie) {
+		if(t->sched_data.prev) {
+			t->sched_data.prev->next = t->sched_data.next;
+		} else {
+			vm->zombie_threads.head = t->sched_data.next;
+		}
+		if(t->sched_data.next) {
+			t->sched_data.next->prev = t->sched_data.prev;
+		} else {
+			vm->zombie_threads.tail = t->sched_data.prev;
+		}
+	}
 	mutex_deinit(&t->join_mutex);
 	gstack_deinit(&t->closures_stack,NULL);
 	/*deref_stack(vm,&t->locals_stack);*/
