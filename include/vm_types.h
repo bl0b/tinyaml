@@ -34,6 +34,8 @@ typedef unsigned long int word_t;
 typedef word_t value_t;
 
 typedef struct _vm_obj_t* vm_obj_t;
+typedef struct _vm_dyn_env_t* vm_dyn_env_t;
+typedef struct _vm_dyn_func_t* vm_dyn_func_t;
 
 typedef struct _vm_t* vm_t;
 
@@ -57,7 +59,7 @@ typedef enum {
 	OpcodeArgPtr,
 	OpcodeArgLabel,
 	OpcodeArgString,
-	OpcodeArgOpcode,
+	OpcodeArgEnvSym,
 
 	OpcodeTypeMax
 } opcode_arg_t;

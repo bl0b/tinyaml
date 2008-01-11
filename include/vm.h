@@ -56,7 +56,7 @@ vm_t vm_kill_thread(vm_t,thread_t);
 
 
 vm_t vm_push_data(vm_t,vm_data_type_t, word_t);
-vm_t vm_push_caller(vm_t, program_t, word_t);
+vm_t vm_push_caller(vm_t, program_t, word_t ip, word_t has_closure);
 vm_t vm_push_catcher(vm_t, program_t, word_t);
 vm_t vm_peek_data(vm_t,int,vm_data_type_t*,word_t*);
 vm_t vm_poke_data(vm_t,vm_data_type_t,word_t);
@@ -77,6 +77,7 @@ vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o);
 vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o);
 
 vm_data_t _VM_CALL _vm_pop(vm_t vm);
+vm_data_t _VM_CALL _vm_peek(vm_t vm);
 
 #endif
 

@@ -191,7 +191,7 @@ opcode_stub_t opcode_stub_resolve(opcode_arg_t arg_type, const char* name, void*
 	case OpcodeArgFloat:	arg_name="_Float";	break;
 	case OpcodeArgLabel:	arg_name="_Label";	break;
 	case OpcodeArgString:	arg_name="_String";	break;
-	case OpcodeArgOpcode:	arg_name="_Opcode";	break;
+	case OpcodeArgEnvSym:	arg_name="_EnvSym";	break;
 	default:;
 	case OpcodeNoArg:	arg_name="";
 	};

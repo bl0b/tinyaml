@@ -45,11 +45,11 @@ static inline void* vm_obj_new(word_t struc_size, void(*_free)(vm_t,void*), void
 
 static inline void vm_obj_free(vm_t vm, vm_obj_t o) {
 	if(o->magic!=VM_OBJ_MAGIC) {
-		printf("[VM:ERR] trying to free something not a managed object (%p).\n",o);
+		fprintf(stderr,"[VM:ERR] trying to free something not a managed object (%p).\n",o);
 		return;
 	}
 	/*assert(o->magic==VM_OBJ_MAGIC);*/
-	/*printf("obj free %p\n",o);*/
+	/*printf("obj free %p (%li refs)\n",o,o->ref_count);*/
 	if(o->_free) {
 		o->_free(vm, (void*)(((char*)o)+VM_OBJ_OFS));
 	}
@@ -85,11 +85,15 @@ static inline void vm_obj_ref(vm_t vm, void* ptr) {
 static inline void vm_obj_deref(vm_t vm, void* ptr) {
 	vm_obj_t o = (vm_obj_t)(((char*)ptr)-VM_OBJ_OFS);
 	assert(o->magic==VM_OBJ_MAGIC);
-	assert(o->ref_count>0);
-	o->ref_count-=1;
-	/*printf("obj deref %p => %li\n",o,o->ref_count);*/
-	if(o->ref_count==0) {
-		vm_collect(vm, o);
+	/*assert(o->ref_count>0);*/
+	if(o->ref_count>0) {
+		o->ref_count-=1;
+		/*printf("obj deref %p => %li\n",o,o->ref_count);*/
+		if(o->ref_count==0) {
+			vm_collect(vm, o);
+		}
+	} else {
+		vm_collect(vm,o);
 	}
 }
 
@@ -100,6 +104,9 @@ text_seg_t vm_symtab_new();
 mutex_t vm_mutex_new();
 thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip);
 dynarray_t vm_array_new();
+vm_dyn_env_t vm_env_new();
+generic_stack_t vm_stack_new();
+vm_dyn_func_t vm_dyn_fun_new();
 
 #endif
 

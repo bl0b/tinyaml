@@ -5,24 +5,25 @@ bin_PROGRAMS = tinyaml
 libtinyaml_la_CFLAGS = -I ../include
 libtinyaml_la_LIBADD = -ldl -ltinyap -lm -lpthread
 
-libtinyaml_la_SOURCES =	containers/generic_stack.c \
-			containers/list.c \
+libtinyaml_la_SOURCES =	containers/list.c \
 			containers/dynarray.c \
+			containers/generic_stack.c \
 			 \
-			compiler/ape_compiler.c \
 			compiler/opcode_dict.c \
 			compiler/opcode_chain.c \
 			compiler/abstract_io.c \
+			compiler/ape_compiler.c \
 			 \
 			ml_core_gram.c \
 			 \
-			vm/objects.c \
-			vm/text_seg.c \
 			vm/vm.c \
-			vm/program.c \
 			vm/thread.c \
+			vm/objects.c \
+			vm/program.c \
+			vm/text_seg.c \
 			vm/vm_engine.c \
 			 \
+			ops/data.c \
 			ops/bml_vm.c \
 			ops/arithbin.c \
 			ops/containers.c \

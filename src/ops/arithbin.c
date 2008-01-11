@@ -316,4 +316,71 @@ void _VM_CALL vm_op_div_Float(vm_t vm, word_t b) {
 }
 
 
+#define _inf(_a,_b) ((_a)<(_b))
+#define _sup(_a,_b) ((_a)>(_b))
+#define _eq(_a,_b) ((_a)==(_b))
+#define _neq(_a,_b) ((_a)!=(_b))
+#define _infeq(_a,_b) ((_a)<=(_b))
+#define _supeq(_a,_b) ((_a)>=(_b))
+
+void _VM_CALL vm_op_inf(vm_t vm, word_t unused) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	fast_apply_bin_func(dta,a,dtb,b,_inf,_inf,a,dta);
+	vm_poke_data(vm,dta,a);
+}
+
+void _VM_CALL vm_op_sup(vm_t vm, word_t unused) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	fast_apply_bin_func(dta,a,dtb,b,_sup,_sup,a,dta);
+	vm_poke_data(vm,dta,a);
+}
+
+void _VM_CALL vm_op_infEq(vm_t vm, word_t unused) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	fast_apply_bin_func(dta,a,dtb,b,_infeq,_infeq,a,dta);
+	vm_poke_data(vm,dta,a);
+}
+
+void _VM_CALL vm_op_supEq(vm_t vm, word_t unused) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	fast_apply_bin_func(dta,a,dtb,b,_supeq,_supeq,a,dta);
+	vm_poke_data(vm,dta,a);
+}
+
+void _VM_CALL vm_op_eq(vm_t vm, word_t unused) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	fast_apply_bin_func(dta,a,dtb,b,_eq,_eq,a,dta);
+	vm_poke_data(vm,dta,a);
+}
+
+void _VM_CALL vm_op_nEq(vm_t vm, word_t unused) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	fast_apply_bin_func(dta,a,dtb,b,_neq,_neq,a,dta);
+	vm_poke_data(vm,dta,a);
+}
+
 

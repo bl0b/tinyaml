@@ -32,7 +32,7 @@ ast_node_t ast_unserialize(const char*);
 void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
 	word_t test = text_seg_text_to_index(&vm->gram_nodes,sernode);
 	if(!test) {
-		printf("ML::appending new grammar rules\n");
+		/*printf("ML::appending new grammar rules\n");*/
 		ast_node_t n = ast_unserialize(text_seg_find_by_text(&vm->gram_nodes,sernode));
 		tinyap_append_grammar(vm->parser,n);
 	}
@@ -42,7 +42,7 @@ void _VM_CALL vm_op__langPlug_String(vm_t vm, const char* plugin) {
 	vm_data_t arg = _vm_pop(vm);
 	const char* plug = (const char*) arg->data;
 	assert(arg->type==DataString);
-	printf("ML::plugging %s into %s\n",plugin,plug);
+	/*printf("ML::plugging %s into %s\n",plugin,plug);*/
 	tinyap_plug(vm->parser,plugin,plug);
 }
 
@@ -129,7 +129,7 @@ void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, int rel_ofs) {
 	vm_data_t local = _vm_pop(vm);	/* -1 becomes 0 */
 	word_t ofs = t->IP+rel_ofs;
 	word_t vec_ofs;
-	const char*name = strdup((const char*)local->data);
+	const char*name;
 	if(local->type!=DataString) {
 		printf("[VM:ERR] willingly obfuscated internal error.\n");
 		return;
@@ -139,6 +139,7 @@ void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, int rel_ofs) {
 		printf("[VM:ERR] vector already exists !\n");
 		return;
 	}
+	name = strdup((const char*)local->data);
 	vec_ofs = dynarray_size(&vm->compile_vectors.by_index);
 	/*printf("adding compile method for %s\n",(const char*)local->data);*/
 	hash_addelem(&vm->compile_vectors.by_text, (hash_key) name, (hash_elem) vec_ofs);
@@ -169,7 +170,7 @@ void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
 	assert(t->type==DataObject);
 	assert(k->type==DataString);
 	idx=text_seg_text_to_index(ts, (const char*)k->data);
-	printf("getSym(%s) => %lu\n",(const char*)k->data,idx);
+	/*printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
 	vm_push_data(vm,DataInt, idx);
 }
 
@@ -180,7 +181,7 @@ void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
 	assert(t->type==DataObject);
 	assert(k->type==DataString);
 	(void)text_seg_find_by_text(ts, (const char*)k->data);
-	printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));
+	/*printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
 }
 
 
@@ -206,9 +207,9 @@ void _VM_CALL vm_op_astGetOp(vm_t vm, word_t x) {
 
 void vm_dump_data_stack(vm_t vm);
 void _VM_CALL vm_op_astGetChildrenCount(vm_t vm, word_t x) {
-	printf("vm_op_astGetChildrenCount => %u\n",wa_opd_count(vm->current_node));
+	/*printf("vm_op_astGetChildrenCount => %u\n",wa_opd_count(vm->current_node));*/
 	vm_push_data(vm,DataInt,wa_opd_count(vm->current_node));
-	vm_dump_data_stack(vm);
+	/*vm_dump_data_stack(vm);*/
 }
 
 void _VM_CALL vm_op_astCompileChild_Int(vm_t vm, word_t x) {
@@ -234,10 +235,10 @@ void _VM_CALL vm_op__pop_curNode(vm_t vm, word_t x) {
 
 
 void _VM_CALL vm_op_astGetChildString_Int(vm_t vm, word_t x) {
-	printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),vm->current_thread->IP);
-	printf("stack size %lu\n",vm->current_thread->data_stack.sp);
+	/*printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),vm->current_thread->IP);*/
+	/*printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
 	vm_push_data(vm,DataString,(word_t)wa_op(wa_opd(vm->current_node,x)));
-	printf("stack size %lu\n",vm->current_thread->data_stack.sp);
+	/*printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
 }
 
 void _VM_CALL vm_op_astGetChildString(vm_t vm, word_t x) {

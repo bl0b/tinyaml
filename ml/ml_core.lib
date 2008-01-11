@@ -4,24 +4,47 @@
         opcode push:Int
         opcode push:Float
         opcode push:String
-        opcode push:Opcode
+       #opcode push:Opcode
         opcode pop
         opcode pop:Int          # pop n values
         opcode dup:Int          # duplicate n-th value on top of stack
+
+      # objects
+        opcode clone
+
       # tests
+
+        opcode inf
+        opcode sup
+        opcode eq
+        opcode nEq
+        opcode infEq
+        opcode supEq
+
         opcode SZ               # skip next instruction if zero
         opcode SNZ              # skip next instruction if non zero
       # jumps
         opcode jmp:Label        # relative intra-segment jump
       # call stack
+        opcode call             # call a function object
         opcode call:Label       # intra-segment call
         opcode lcall:Label      # pop segment then perform long call
         opcode retval:Int       # copy stack top then pop out n values
                                 # then poke old stack top then return
         opcode ret:Int          # pop out n values then return
+
+      # function objects
+        opcode dynFunNew:Label    # push func obj
+        opcode dynFunAddClosure   # pop (data to clone), peek func obj
+        opcode getClosure:Int     # pop (data to clone), peek func obj
+        opcode getClosure         # pop (data to clone), peek func obj
+
       # address space management
         opcode enter:Int        # reserve n local variables
         opcode leave:Int        # undo previous enter
+
+        opcode getClosure:Int
+
         opcode getmem:Int       # n>0  : push n-th global data
                                 # n<=0 : push n-th local data
         opcode setmem:Int       # pop data into mem cell #n (see above)
@@ -101,6 +124,15 @@
         opcode symTabSz
         opcode getSym                   #pop key, pop table, push result
         opcode addSym                   # pop key, pop table
+
+      # runtime environment
+        opcode envNew
+        opcode envSetEnv                # set as current program's environment
+        opcode envGetEnv                # get current environment
+        opcode envLookup                # [symbol] => offset
+        opcode envGet:EnvSym
+        opcode envSet:EnvSym
+        opcode envAdd
 
       # handling arrays
         opcode arrayNew

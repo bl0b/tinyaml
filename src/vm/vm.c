@@ -74,9 +74,12 @@ vm_t vm_new() {
 	vm_add_opcode(ret,"nop",OpcodeNoArg, vm_op_nop);
 	vm_add_opcode(ret,"nop",OpcodeArgString, vm_op_nop);
 	vm_add_opcode(ret,"nop",OpcodeArgLabel, vm_op_nop);
-	vm_add_opcode(ret,"nop",OpcodeArgOpcode, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgEnvSym, vm_op_nop);
 	vm_add_opcode(ret,"nop",OpcodeArgInt, vm_op_nop);
 	vm_add_opcode(ret,"nop",OpcodeArgFloat, vm_op_nop);
+
+	ret->env = vm_env_new();
+	vm_obj_ref(ret,ret->env);
 
 	return ret;
 }
@@ -85,6 +88,8 @@ void htab_free_dict(htab_entry_t);
 
 
 void vm_del(vm_t ret) {
+	dlist_node_t dn;
+
 	ret->engine->_kill(ret->engine);
 	ret->engine=stub_engine;
 	ret->engine->vm=ret;
@@ -111,14 +116,27 @@ void vm_del(vm_t ret) {
 	opcode_dict_deinit(&ret->opcodes);
 	text_seg_deinit(&ret->gram_nodes);
 
-	#define thd_del(_x) vm_collect(ret,PTR_TO_OBJ(_x))
-	dlist_forward(&ret->zombie_threads,thread_t,thd_del);
-	#undef thd_del
+	/*#define thd_del(_x) vm_collect(ret,PTR_TO_OBJ(_x))*/
+	/*dlist_forward(&ret->zombie_threads,thread_t,thd_del);*/
+	/*#undef thd_del*/
 
-	#define obj_free(_x) vm_obj_free(ret,_x)
-	dlist_forward(&ret->gc_pending,void*,obj_free);
-	#undef obj_free
+	vm_obj_deref(ret, ret->env);
+	/*vm_collect(ret,PTR_TO_OBJ(ret->env));*/
+
+	while(ret->gc_pending.tail) {
+		dn = ret->gc_pending.tail;
+		ret->gc_pending.tail=dn->prev;
+		if(dn->prev) {
+			dn->prev->next=NULL;
+		} else {
+			ret->gc_pending.head=NULL;
+		}
+		vm_obj_free(ret,(void*)dn->value);
+		free(dn);
+	}
+	/*dlist_forward(&ret->gc_pending,void*,obj_free);*/
 	dlist_flush(&ret->gc_pending);
+
 	gstack_deinit(&ret->cn_stack,NULL);
 	ret->engine->_vm_unlock(ret->engine);
 	free(ret);
@@ -229,7 +247,7 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 		vm->engine->_client_unlock(vm->engine);
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	} else {
-		fprintf(stderr,tinyap_get_error(vm->parser));
+		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
 	return p;
 }
@@ -314,6 +332,7 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	if(vm->current_thread&&t==vm->current_thread) {
 		vm->current_thread=NULL;
 	}
+	vm_obj_deref(vm, t);
 	thread_set_state(vm, t, ThreadZombie);
 	mutex_unlock(vm,&t->join_mutex,t);
 	if(vm->threads_count==1) {
@@ -358,11 +377,12 @@ vm_t vm_push_data(vm_t vm, vm_data_type_t type, word_t value) {
 	return vm;
 }
 
-vm_t vm_push_caller(vm_t vm, program_t seg, word_t ofs) {
+vm_t vm_push_caller(vm_t vm, program_t seg, word_t ofs, word_t has_closure) {
 	struct _call_stack_entry_t e;
 	generic_stack_t stack = &vm->current_thread->call_stack;
 	e.cs = seg;
 	e.ip = ofs;
+	e.has_closure = has_closure;
 	gpush( stack, &e );
 	return vm;
 }
@@ -416,6 +436,11 @@ vm_t vm_peek_catcher(vm_t vm, program_t* cs, word_t* ip) {
 }
 
 
+vm_data_t _VM_CALL _vm_peek(vm_t vm) {
+	return (vm_data_t) _gpeek(&vm->current_thread->data_stack,0);
+}
+
+
 vm_data_t _VM_CALL _vm_pop(vm_t vm) {
 	generic_stack_t stack = &vm->current_thread->data_stack;
 	vm_data_t top = _gpop(stack);
@@ -425,9 +450,19 @@ vm_data_t _VM_CALL _vm_pop(vm_t vm) {
 	return top;
 }
 
+
 vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o) {
+	dlist_node_t dn;
+	assert(o->ref_count==0);
+	/* also assert that obj is not yet collected */
 	/*printf("vm collect %p\n",o);*/
-	dlist_insert_head(&vm->gc_pending,o);
+	dn = vm->gc_pending.head;
+	while(dn&&(void*)dn->value!=o) { dn = dn->next; }
+	if(dn) {
+		fprintf(stdout,"[VM:ERR] object %p is already collected ! collection aborted.\n",o);
+	} else {
+		dlist_insert_head(&vm->gc_pending,o);
+	}
 	return vm;
 }
 
@@ -451,9 +486,9 @@ vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
 }
 
 vm_t vm_pop_data(vm_t vm, word_t count) {
-	generic_stack_t stack = &vm->current_thread->data_stack;
+	/*generic_stack_t stack = &vm->current_thread->data_stack;*/
 	while(count>0) {
-		_gpop(stack);
+		_vm_pop(vm);
 		count-=1;
 	}
 	return vm;
@@ -461,8 +496,12 @@ vm_t vm_pop_data(vm_t vm, word_t count) {
 
 vm_t vm_pop_caller(vm_t vm, word_t count) {
 	generic_stack_t stack = &vm->current_thread->call_stack;
+	call_stack_entry_t cse;
 	while(count>0) {
-		_gpop(stack);
+		cse = _gpop(stack);
+		if(cse->has_closure) {
+			_gpop(&vm->current_thread->closures_stack);
+		}
 		count-=1;
 	}
 	return vm;
@@ -493,14 +532,14 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	/*program_fetch(t->program, t->IP, (word_t*)&op, &arg);*/
 	array = t->program->code.data+t->IP;
 
-//*
+/*
 	{
 		const char* label = program_lookup_label(t->program,t->IP);
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
-		printf("\nEXEC:%p (%p:%lX)\t%-15.15s %-40.40s | ",t,t->program,t->IP,label?label:"",disasm);
+		printf("\nEXEC:%p (%p:%lX)\t%-20.20s %-40.40s | ",t,t->program,t->IP,label?label:"",disasm);
 		free((char*)disasm);
 	}
-//*/
+// */
 
 	/* decode */
 	if(*array) {

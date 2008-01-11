@@ -19,6 +19,7 @@
 #include "_impl.h"
 #include "vm.h"
 #include "thread.h"
+#include "object.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -33,6 +34,7 @@ thread_t thread_new(word_t prio, program_t p, word_t ip) {
 }
 
 void thread_init(thread_t ret, word_t prio, program_t p, word_t ip) {
+	gstack_init(&ret->closures_stack,sizeof(dynarray_t));
 	gstack_init(&ret->locals_stack,sizeof(struct _data_stack_entry_t));
 	gstack_init(&ret->data_stack,sizeof(struct _data_stack_entry_t));
 	gstack_init(&ret->call_stack,sizeof(struct _call_stack_entry_t));
@@ -51,24 +53,27 @@ void thread_init(thread_t ret, word_t prio, program_t p, word_t ip) {
 	ret->sched_data.value=(word_t)ret;
 }
 
-void thread_deinit(vm_t vm, thread_t t) {
-	/*if(t->pending_lock) {*/
-		/*dlist_remove(&t->pending_lock->pending,&t->sched_data);*/
-	/*}*/
-	/*if(t->sched_data.next) {*/
-		/*t->sched_data.next->prev = t->sched_data.prev;*/
-	/*} else {*/
-		/*vm->zombie_threads.tail=t->sched_data.prev;*/
-	/*}*/
-	/*if(t->sched_data.prev) {*/
-		/*t->sched_data.prev->next = t->sched_data.next;*/
-	/*} else {*/
-		/*vm->zombie_threads.head=t->sched_data.next;*/
-	/*}*/
+void deref_stack(vm_t vm, generic_stack_t gs) {
+	int i;
+	vm_data_t dt = (vm_data_t)gs->stack;
+	if(!dt) {
+		return;
+	}
+	for(i=0;i<=(long)gs->sp;i+=1) {
+		if(dt[i].type==DataObject) {
+			/*printf("found an object : %p\n",(void*)dt[i].data);*/
+			vm_obj_deref(vm,(void*)dt[i].data);
+		}
+	}
+}
 
-	/*mutex_unlock(vm,&t->join_mutex,t);*/
+void thread_deinit(vm_t vm, thread_t t) {
 	mutex_deinit(&t->join_mutex);
+	gstack_deinit(&t->closures_stack,NULL);
+	/*deref_stack(vm,&t->locals_stack);*/
+	assert(t->locals_stack.sp==(word_t)-1);
 	gstack_deinit(&t->locals_stack,NULL);
+	deref_stack(vm,&t->data_stack);
 	gstack_deinit(&t->data_stack,NULL);
 	gstack_deinit(&t->call_stack,NULL);
 	gstack_deinit(&t->catch_stack,NULL);
@@ -206,7 +211,7 @@ long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
 long mutex_unlock(vm_t vm, mutex_t m, thread_t t) {
 	/*printf("MUTEX UNLOCK :: thread %p attempts to unlock mutex %p owned by %p\n",t,m,m->owner);*/
 	if(m->owner!=t) {
-		printf("VM::Error : trying to unlock a mutex that is owned by another thread (%p).\n",m->owner);
+		fprintf(stderr,"[VM::ERR] : trying to unlock a mutex that is owned by another thread (%p).\n",m->owner);
 	} else if(m->count>0) {
 		m->count-=1;
 	}

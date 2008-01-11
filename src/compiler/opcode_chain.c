@@ -21,6 +21,7 @@
 #include "opcode_chain.h"
 #include "opcode_dict.h"
 #include "program.h"
+#include "text_seg.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -183,7 +184,7 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	word_t op = (word_t)opcode_stub_by_name(od,ocn->arg_type, ocn->name);
 	word_t arg;
 	union { word_t i; float f; } conv;
-	char*str;
+	/*char*str;*/
 	if(!op) {
 		fprintf(stderr,"Warning : opcode not found %s:%i\n",ocn->name,ocn->arg_type);
 		op=(word_t)vm_op_nop;
@@ -215,14 +216,18 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 			arg = opcode_label_to_ofs(oc,ocn->arg) - ip;
 		}
 		break;
-	case OpcodeArgOpcode:
+	case OpcodeArgEnvSym:
+		arg = (word_t) env_sym_to_index(p->env, ocn->arg);
+		if(!arg) {
+			fprintf(stderr,"[VM:ERR] Symbol '%s' doesn't exist in environment !\n",ocn->arg);
+		}
 		/*printf("Opcode\t(%s)", ocn->arg);*/
-		str = (char*)malloc(strlen(ocn->arg)+8);
-		sprintf(str,"vm_op_%s",ocn->arg);
-		arg = (word_t) dlsym(dl_handle,str);
-		free(str);
+		/*str = (char*)malloc(strlen(ocn->arg)+8);*/
+		/*sprintf(str,"vm_op_%s",ocn->arg);*/
+		/*arg = (word_t) dlsym(dl_handle,str);*/
+		/*free(str);*/
 		/* TODO */
-		arg=(word_t)-1;
+		/*arg=(word_t)-1;*/
 		break;
 	default:;
 		arg=0;

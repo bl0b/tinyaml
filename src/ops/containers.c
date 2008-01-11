@@ -25,6 +25,7 @@
 #include "fastmath.h"
 #include "opcode_chain.h"
 #include "object.h"
+#include "text_seg.h"
 
 /**********************************************************
  * arrayNew
@@ -33,27 +34,27 @@
  */
 void _VM_CALL vm_op_arrayNew(vm_t vm, word_t unused) {
 	dynarray_t da = vm_array_new();
-	printf("new array %p\n",da);
+	/*printf("new array %p\n",da);*/
 	vm_push_data(vm,DataObject,(word_t)da);
 }
 
 /**********************************************************
  * arrayResv:Int
  * reserves [arg] items in array
- * Object -> nil
+ * Object -> Object
  */
 void _VM_CALL vm_op_arrayResv_Int(vm_t vm, word_t sz) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = _vm_peek(vm);
 	dynarray_t da = (dynarray_t) d->data;
 	assert(d->type==DataObject);
 	dynarray_reserve(da,sz<<1);
-	printf("reserved %lu words for array %p\n",sz,da);
+	/*printf("reserved %lu words for array %p\n",sz,da);*/
 }
 
 /**********************************************************
  * arrayResv
  * reserves some items in array
- * Object X Int -> nil
+ * Object X Int -> Object
  */
 void _VM_CALL vm_op_arrayResv(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
@@ -70,11 +71,12 @@ void _VM_CALL vm_op_arrayGet_Int(vm_t vm, word_t index) {
 	vm_data_t d = _vm_pop(vm);
 	dynarray_t da = (dynarray_t) d->data;
 	word_t ofs = index<<1;
-	word_t* data = da->data+ofs;
+	word_t* data;
 	assert(d->type==DataObject);
+	data = da->data+ofs;
 	if(da->size>ofs+1) {
 		vm_push_data(vm,*data,*(data+1));
-		printf("get %lu:%8.8lx from array %p\n",*data,*(data+1),da);
+		/*printf("get %lu:%8.8lx from array %p\n",*data,*(data+1),da);*/
 	} else {
 		dynarray_reserve(da,ofs+2);
 		/* FIXME ? */
@@ -97,11 +99,11 @@ void _VM_CALL vm_op_arrayGet(vm_t vm, word_t unused) {
 /**********************************************************
  * arraySet:Int
  * set the item at index [arg] in array to (something)
- * Object X (something) -> nil
+ * Object X (something) -> Object
  */
 void _VM_CALL vm_op_arraySet_Int(vm_t vm, word_t index) {
 	vm_data_t data = _vm_pop(vm);
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = _vm_peek(vm);
 	dynarray_t da = (dynarray_t) d->data;
 	word_t ofs = index<<1;
 	vm_data_t da_data = (vm_data_t)(da->data+ofs);
@@ -110,7 +112,7 @@ void _VM_CALL vm_op_arraySet_Int(vm_t vm, word_t index) {
 		if(da_data->type==DataObject) { vm_obj_deref(vm,(void*)da_data->data); }
 		da_data->type = data->type;
 		da_data->data = data->data;
-		printf("set %u:%8.8lx in array %p\n",da_data->type,da_data->data,da);
+		/*printf("set %u:%8.8lx in array %p\n",da_data->type,da_data->data,da);*/
 	} else {
 		dynarray_reserve(da,ofs+2);
 		da_data = (vm_data_t)(da->data+ofs);
@@ -124,7 +126,7 @@ void _VM_CALL vm_op_arraySet_Int(vm_t vm, word_t index) {
 /**********************************************************
  * arraySet
  * set the item at some index in array to (something)
- * Object X (something) X Int -> nil
+ * Object X (something) X Int -> Object
  */
 void _VM_CALL vm_op_arraySet(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
@@ -142,6 +144,90 @@ void _VM_CALL vm_op_arraySize(vm_t vm, word_t unused) {
 	dynarray_t da = (dynarray_t) d->data;
 	assert(d->type==DataObject);
 	vm_push_data(vm,DataInt,dynarray_size(da)>>1);
+}
+
+
+
+void _VM_CALL vm_op_envNew(vm_t vm, word_t unused) {
+	vm_dyn_env_t env = vm_env_new();
+	vm_push_data(vm,DataObject,(word_t)env);
+}
+
+
+void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index) {
+	vm_dyn_env_t env = vm->current_thread->program->env;
+	if(!env) {
+		printf("### program->env should be set ! ###\n");
+		env = vm->env;
+	}
+	index<<=1;
+	vm_push_data(vm,vm->env->data.data[index],vm->env->data.data[index+1]);
+}
+
+
+
+void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
+	vm_data_t dk = _vm_pop(vm);
+	vm_data_t dc = _vm_pop(vm);
+	vm_dyn_env_t env = vm->current_thread->program->env;
+	word_t index;
+	word_t data=0;
+	if(!env) {
+		printf("### program->env should be set ! ###\n");
+		env = vm->env;
+	}
+
+	/* slow but safe */
+	index = text_seg_text_to_index(&env->symbols,text_seg_find_by_text(&env->symbols,(const char*)dk->data));
+
+	if(dc->type==DataObject) {
+		data = (word_t) vm_obj_clone(vm,PTR_TO_OBJ(dc->data));
+		vm_obj_ref(vm,(void*)data);
+	} else {
+		data = dc->data;
+	}
+	index<<=1;
+	dynarray_set(&env->data,index,dc->type);
+	dynarray_set(&env->data,index+1,data);
+}
+
+void _VM_CALL vm_op_envSet_EnvSym(vm_t vm, long index) {
+	vm_dyn_env_t env = vm->current_thread->program->env;
+	vm_data_t dc = _vm_pop(vm);
+	vm_data_t env_dc;
+	if(!env) {
+		printf("### program->env should be set ! ###\n");
+		env = vm->env;
+	}
+	env_dc = &((vm_data_t)env->data.data)[index];
+	if(env_dc->type==DataObject) {
+		vm_obj_deref(vm,PTR_TO_OBJ(env_dc->data));
+	}
+	env_dc->type = dc->type;
+	env_dc->data = dc->data;
+	/*index<<=1;*/
+	/**/
+	/*if(dc->type==DataObject) {*/
+		/*vm_obj_ref(vm,PTR_TO_OBJ(dc));*/
+	/*}*/
+	/*dynarray_set(&env->data,index,dc->type);*/
+	/*dynarray_set(&env->data,index+1,dc->data);*/
+}
+
+
+
+
+void _VM_CALL vm_op_envLookup(vm_t vm, long index) {
+	vm_data_t key = _vm_pop(vm);
+	vm_dyn_env_t env = vm->current_thread->program->env;
+	assert(key->type==DataString||key->type==DataObject);	/* let string objects in */
+	index = text_seg_text_to_index(&env->symbols,(const char*)key->data);
+	if(!env) {
+		printf("### program->env should be set ! ###\n");
+		env = vm->env;
+	}
+	vm_push_data(vm,DataInt,index);
+
 }
 
 

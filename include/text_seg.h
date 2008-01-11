@@ -32,5 +32,10 @@ word_t text_seg_text_to_index(text_seg_t, const char*);
 void text_seg_serialize(text_seg_t, writer_t);
 void text_seg_unserialize(text_seg_t, reader_t);
 
+word_t env_sym_to_index(vm_dyn_env_t env, const char* key);
+const char* env_index_to_sym(vm_dyn_env_t env, word_t index);
+vm_data_t env_get(vm_dyn_env_t env, word_t index);
+void env_set(vm_t vm, vm_dyn_env_t env, word_t index,vm_data_t data);
+
 #endif
 

@@ -23,7 +23,7 @@
 #include "fastmath.h"
 #include "opcode_dict.h"
 #include "vm.h"
-#include "bml_ops.h"
+#include "object.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -55,6 +55,7 @@ word_t clean_data_seg[20] = {
 program_t program_new() {
 	program_t ret = (program_t)malloc(sizeof(struct _program_t));
 	/*init_hashtab(&ret->labels, (hash_func) hash_str, (compare_func) strcmp);*/
+	ret->env=NULL;
 	text_seg_init(&ret->labels.labels);
 	dynarray_init(&ret->labels.offsets);
 	dynarray_set(&ret->labels.offsets,0,0);
@@ -73,12 +74,20 @@ void program_free(vm_t vm, program_t p) {
 	text_seg_deinit(&p->strings);
 	dynarray_deinit(&p->code,NULL);
 	if(p->data.size) {
-		p->code.size=18;
-		p->code.reserved=0;
-		p->code.data=clean_data_seg;
-		clean_data_seg[1]=p->data.size>>1;
+		/*p->code.size=18;*/
+		/*p->code.reserved=0;*/
+		/*p->code.data=clean_data_seg;*/
+		/*clean_data_seg[1]=p->data.size>>1;*/
 		/*printf("cleaning %lu data items\n",clean_data_seg[1]);*/
-		vm_run_program_fg(vm,p,0,99);
+		/*vm_run_program_fg(vm,p,0,99);*/
+		int i;
+		/*printf("dereff'ing data segment (%lu items)\n",p->data.size>>1);*/
+		for(i=0;i<p->data.size;i+=2) {
+			if((vm_data_type_t)p->data.data[i]==DataObject) {
+				/*printf("found an object : %p\n",(void*)p->data.data[i+1]);*/
+				vm_obj_deref(vm,(void*)p->data.data[i+1]);
+			}
+		}
 	}
 	text_seg_deinit(&p->labels.labels);
 	dynarray_deinit(&p->labels.offsets,NULL);
@@ -101,6 +110,9 @@ word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg) {
 
 word_t opcode_arg_unserialize(program_t p, opcode_arg_t arg_type, word_t arg) {
 	switch(arg_type) {
+	case OpcodeArgEnvSym:
+		arg = (word_t) env_index_to_sym(p->env,arg);
+		break;
 	case OpcodeArgString:
 		arg = (word_t) text_seg_find_by_index(&p->strings,arg);
 		break;
@@ -346,7 +358,8 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 	char* buffy;
 	word_t wc = opcode_code_by_stub(vm_get_dict(vm),(opcode_stub_t)p->code.data[IP]);
 	const char* op = opcode_name_by_stub(vm_get_dict(vm),(opcode_stub_t)p->code.data[IP]);
-	char* argstr,*tmp;
+	char* argstr;
+	const char*tmp;
 	char tmpbuf[40];
 	_IFC conv;
 	word_t arg = p->code.data[IP+1];
@@ -370,7 +383,7 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 			argstr = (char*)malloc(strlen((char*)arg)+3);
 			argstr[0]='"';
 			argstr[1]=0;
-			strcat(argstr,arg);
+			strcat(argstr,(const char*)arg);
 			strcat(argstr,"\"");
 			break;
 		case OpcodeArgInt:
@@ -382,8 +395,11 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 			sprintf(tmpbuf,"%f",conv.f);
 			argstr=strdup(tmpbuf);
 			break;
-		case OpcodeArgOpcode:
-			argstr=strdup("[opcode :: TODO]");
+		case OpcodeArgEnvSym:
+			tmp = env_index_to_sym(vm->env,arg);
+			argstr=(char*)malloc(strlen(tmp)+2);
+			sprintf(argstr,"&%s",tmp);
+			/*argstr=strdup("[opcode :: TODO]");*/
 			break;
 		case OpcodeNoArg:
 		default:

@@ -16,8 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#include "vm.h"
 #include "_impl.h"
 #include "text_seg.h"
+#include "object.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -110,5 +112,32 @@ void text_seg_unserialize(text_seg_t seg, reader_t r) {
 	assert(w==0xFFFFFFFF);
 }
 
+
+
+word_t env_sym_to_index(vm_dyn_env_t env, const char* key) {
+	return text_seg_text_to_index(&env->symbols,key);
+}
+
+const char* env_index_to_sym(vm_dyn_env_t env, word_t index) {
+	return text_seg_find_by_index(&env->symbols,index);
+}
+
+vm_data_t env_get(vm_dyn_env_t env, word_t index) {
+	return (vm_data_t) &(env->data.data[index<<1]);
+}
+
+void env_set(vm_t vm, vm_dyn_env_t env, word_t index,vm_data_t data) {
+	index<<=1;
+	if(env->data.size<(index+2)) {
+		dynarray_reserve(&env->data,index+2);
+	} else if((vm_data_type_t)env->data.data[index]==DataObject) {
+		vm_obj_deref(vm,(void*)env->data.data[index+1]);
+	}
+	env->data.data[index] = data->type;
+	env->data.data[index+1] = data->data;
+	if(data->type==DataObject) {
+		vm_obj_ref(vm,(void*)data->data);
+	}
+}
 
 

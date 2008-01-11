@@ -31,9 +31,13 @@ void _VM_CALL vm_op_nop(vm_t vm, word_t unused) {
 }
 
 
+void _VM_CALL vm_op_clone(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataObject);
+	vm_push_data(vm,DataObject, (word_t)vm_obj_clone(vm,PTR_TO_OBJ(d->data)));
+}
 
 
-/* FIXME : have print take an Int and pop&print as many values */
 void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
 	vm_data_type_t dt;
 	_IFC tmp;
@@ -125,9 +129,25 @@ void _VM_CALL vm_op_jmp_Label(vm_t vm, word_t data) {
  * Call stack
  */
 
+void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	thread_t t=vm->current_thread;
+	vm_dyn_func_t fun = (vm_dyn_func_t) d->data;
+	assert(d->type==DataObject);
+	if(fun->closure) { 
+		vm_push_caller(vm, t->program, t->IP, 1);
+		gpush(&t->closures_stack,&fun->closure);
+		/*printf("pushed closure %p\n",fun->closure);*/
+	} else {
+		vm_push_caller(vm, t->program, t->IP, 0);
+	}
+	t->jmp_seg=fun->cs;
+	t->jmp_ofs=fun->ip;
+}
+
 void _VM_CALL vm_op_call_Label(vm_t vm, word_t data) {
 	thread_t t=vm->current_thread;
-	vm_push_caller(vm, t->program, t->IP);
+	vm_push_caller(vm, t->program, t->IP, 0);
 	t->jmp_ofs=t->IP+data;
 }
 
@@ -136,7 +156,7 @@ void _VM_CALL vm_op_lcall_Label(vm_t vm, word_t data) {
 	vm_data_type_t a;
 	word_t b;
 	vm_peek_data(vm,0,&a,&b);
-	vm_push_caller(vm, t->program, t->IP);
+	vm_push_caller(vm, t->program, t->IP, 0);
 	t->jmp_seg=(program_t)b;
 	/* FIXME : can resolve_label() set up correct data value ? */
 	t->jmp_ofs=data;
@@ -162,67 +182,6 @@ void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
 }
 
 
-
-
-void _VM_CALL vm_op_getmem_Int(vm_t vm, int n) {
-	thread_t t=vm->current_thread;
-	vm_data_t var;
-	if(n<0) {
-		vm_data_t local = _gpeek(&t->locals_stack,1+n);	/* -1 becomes 0 */
-		vm_push_data(vm,local->type,local->data);
-	} else {
-		var = (vm_data_t ) (t->program->data.data+(n<<1));
-		vm_push_data(vm,var->type,var->data);
-	}
-}
-
-
-
-
-void _VM_CALL vm_op_setmem_Int(vm_t vm, int n) {
-	thread_t t=vm->current_thread;
-	vm_data_t top = _vm_pop(vm);
-	vm_data_t var=NULL;
-	if(n<0) {
-		assert(t->locals_stack.sp>=-1-n);
-		var = gpeek( vm_data_t , &t->locals_stack, 1+n );
-	} else {
-		n<<=1;
-		/*printf("setmem at %lu of %lu/%lu\n",n,t->program->data.size,t->program->data.reserved);*/
-		assert(t->program->data.reserved>n);
-		if(n>t->program->data.size) {
-			t->program->data.size = n+2;
-		}
-		var = (vm_data_t ) (t->program->data.data+n);
-	}
-	/* tests for valgrind's sake */
-	if(var->type==DataObject) {
-		vm_obj_deref(vm,(void*)var->data);
-	}
-	var->type=top->type;
-	var->data=top->data;
-	if(top->type==DataObject) {
-		vm_obj_ref(vm,(void*)top->data);
-	}
-}
-
-
-void _VM_CALL vm_op_setmem(vm_t vm, int n) {
-	vm_data_t top = _vm_pop(vm);
-	if(top->type!=DataInt) {
-		return;
-	}
-	vm_op_setmem_Int(vm, (int)top->data);
-}
-
-
-void _VM_CALL vm_op_getmem(vm_t vm, int n) {
-	vm_data_t top = _vm_pop(vm);
-	if(top->type!=DataInt) {
-		return;
-	}
-	vm_op_getmem_Int(vm, (int)top->data);
-}
 
 
 
@@ -264,83 +223,6 @@ void _VM_CALL vm_op_ret_Int(vm_t vm, word_t n) {
 }
 
 
-void _VM_CALL vm_op_strcmp(vm_t vm, word_t unused) {
-	vm_data_t s2 = _vm_pop(vm);
-	vm_data_t s1 = _vm_pop(vm);
-	assert(s1->type==DataString);
-	assert(s2->type==DataString);
-	vm_push_data(vm,DataInt,strcmp((const char*)s1->data, (const char*)s2->data));
-}
-
-
-
-void _VM_CALL vm_op_toI(vm_t vm, word_t unused) {
-	_IFC conv;
-	vm_data_t d = _vm_pop(vm);
-	switch(d->type) {
-	case DataInt:
-		vm_push_data(vm,DataInt,d->data);
-		break;
-	case DataFloat:
-		conv.i=d->data;
-		vm_push_data(vm,DataInt,f2i(conv.f));
-		break;
-	case DataString:
-		/*printf("convert \"%s\" to int\n",(const char*)d->data);*/
-		vm_push_data(vm,DataInt,atoi((const char*)d->data));
-		break;
-	default:
-		printf("[VM:WRN] can't convert to int.\n");
-		vm_push_data(vm,DataInt,0);
-	};
-}
-
-
-void _VM_CALL vm_op_toF(vm_t vm, word_t unused) {
-	_IFC conv;
-	vm_data_t d = _vm_pop(vm);
-	switch(d->type) {
-	case DataInt:
-		vm_push_data(vm,DataFloat,i2f(d->data));
-		break;
-	case DataFloat:
-		vm_push_data(vm,DataFloat,d->data);
-		break;
-	case DataString:
-		conv.f = atof((const char*)d->data);
-		vm_push_data(vm,DataFloat,conv.i);
-		break;
-	default:
-		vm_push_data(vm,DataFloat,0);
-	};
-}
-
-
-void _VM_CALL vm_op_toS(vm_t vm, word_t unused) {
-	static char buf[40];
-	vm_data_t d = _vm_pop(vm);
-	_IFC conv;
-	char* str;
-	switch(d->type) {
-	case DataInt:
-		sprintf(buf,"%li",(long)d->data);
-		str=vm_string_new(buf);
-		vm_push_data(vm,DataString,(word_t)str);
-		break;
-	case DataFloat:
-		conv.i=d->data;
-		sprintf(buf,"%f",conv.f);
-		str=vm_string_new(buf);
-		vm_push_data(vm,DataString,(word_t)str);
-		break;
-	case DataString:
-		vm_push_data(vm,DataString,d->data);
-		break;
-	default:
-		vm_push_data(vm,DataString,0);
-	};
-}
-
 
 
 void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
@@ -363,6 +245,9 @@ void _VM_CALL vm_op_newMtx(vm_t vm, word_t unused) {
 	/*printf("push new mutex %lx\n",handle);*/
 	vm_push_data(vm, DataObject, handle);
 }
+
+
+void _VM_CALL vm_op_getmem_Int(vm_t vm, int n);
 
 
 void _VM_CALL vm_op_lockMtx_Int(vm_t vm, long memcell) {
@@ -465,5 +350,36 @@ void _VM_CALL vm_op_yield(vm_t vm, word_t unused) {
 
 
 
+void _VM_CALL vm_op_dynFunNew_Label(vm_t vm, word_t rel_ofs) {
+	vm_dyn_func_t handle = vm_dyn_fun_new();
+	handle->cs = vm->current_thread->program;
+	handle->ip = vm->current_thread->IP+rel_ofs;
+	/*printf("push new mutex %lx\n",handle);*/
+	vm_push_data(vm, DataObject, (word_t) handle);
+}
+
+
+void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
+	word_t index;
+	vm_data_t dc = _vm_pop(vm);
+	/* FIXME : changes pops to peeks wherever it fits and change asm compiler code accordingly */
+	vm_data_t df = _vm_peek(vm);
+	vm_dyn_func_t f=(vm_dyn_func_t) df->data;
+	word_t data=0;
+	assert(df->type==DataObject);
+	if(dc->type==DataObject) {
+		data = (word_t) vm_obj_clone(vm,PTR_TO_OBJ(dc->data));
+	} else {
+		data = dc->data;
+	}
+	if(!f->closure) {
+		f->closure = vm_array_new();
+		vm_obj_ref(vm,f->closure);
+	}
+	index = f->closure->size;
+	dynarray_set(f->closure,f->closure->size,dc->type);
+	dynarray_set(f->closure,f->closure->size,data);
+	/*printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);*/
+}
 
 

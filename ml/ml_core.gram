@@ -2,7 +2,7 @@
 # 
 # Grammar for the meta-language
 
-string = ( "\"" "\" /["]/ "\""  | "\"" /[^"]+/ "\""  ). #"\"" /([^\\"]|\\"|\\\\)*/ "\"".
+string = ( "\"" "\" /["]/ "\""  | "\"" /[^"]*/ "\""  ). #"\"" /([^\\"]|\\"|\\\\)*/ "\"".
 float = /[-]?[0-9]+[.][0-9]+\>/.
 int = /[-]?[0-9]+\>/.
 sym = /\<[_a-zA-Z][_a-zA-Z0-9]*[?]?\>/.
@@ -12,11 +12,11 @@ sym = /\<[_a-zA-Z][_a-zA-Z0-9]*[?]?\>/.
 ##
 #
 
-Opcode =( <Opcode_Float>
+p_Opcode =( <Opcode_Float>
 	| <Opcode_Int>
 	| <Opcode_Label>
 	| <Opcode_String>
-	| <Opcode_Opcode>
+	| <Opcode_EnvSym>
 	| <Opcode_NoArg>
 	).
 
@@ -25,14 +25,14 @@ Opcode_Int ::= <p_Opcode_Int> <OpcodeArg_Int>.
 Opcode_Float ::= <p_Opcode_Float> <OpcodeArg_Float>.
 Opcode_String ::= <p_Opcode_String> <OpcodeArg_String>.
 Opcode_Label ::= <p_Opcode_Label> <OpcodeArg_Label>.
-Opcode_Opcode ::= <p_Opcode_Opcode> <OpcodeArg_Opcode>.
+Opcode_EnvSym ::= <p_Opcode_EnvSym> <OpcodeArg_EnvSym>.
 
 OpcodeArg_NoArg = epsilon.
 OpcodeArg_Int = <int>.
 OpcodeArg_Float = <float>.
 OpcodeArg_String = <string>.
 OpcodeArg_Label = ( "@" <sym> | /[+-][0-9]+/ ).
-OpcodeArg_Opcode = "&" [<sym>] <declOpcode_opt_arg>.
+OpcodeArg_EnvSym = "&" <sym>.
 
 ##
 ## Extendable mnemonics library
@@ -44,7 +44,7 @@ p_Opcode_Int = (/\<nop\>/).
 p_Opcode_Float = (/\<nop\>/).
 p_Opcode_String = (/\<nop\>/).
 p_Opcode_Label = (/\<nop\>/).
-p_Opcode_Opcode = (/\<nop\>/).
+p_Opcode_EnvSym = (/\<nop\>/).
 
 
 ##
@@ -62,7 +62,7 @@ DeclLabel ::= <sym> ":".
 AsmBloc ::= "asm" <asm_loop>.
 asm_loop = ( <asm_statement> <asm_loop> | <asm_statement> "end" ).
 
-asm_statement = ( <DeclLabel> <Opcode> | <Opcode> ).
+asm_statement = ( <DeclLabel> <p_Opcode> | <p_Opcode> ).
 
 Program ::= <program_bloc_loop>.
 
@@ -96,7 +96,7 @@ declOpcode_opt_arg =	( <DeclOpcode_Float>
 			| <DeclOpcode_Int>
 			| <DeclOpcode_String>
 			| <DeclOpcode_Label>
-			| <DeclOpcode_Opcode>
+			| <DeclOpcode_EnvSym>
 			| <DeclOpcode_NoArg>
 			).
 
@@ -104,12 +104,12 @@ DeclOpcode_Float ::= ":" "Float".
 DeclOpcode_Int ::= ":" "Int".
 DeclOpcode_String ::= ":" "String".
 DeclOpcode_Label ::= ":" "Label".
-DeclOpcode_Opcode ::= ":" "Opcode".
+DeclOpcode_EnvSym ::= ":" "EnvSym".
 DeclOpcode_NoArg ::= epsilon.
 
 Library ::= "lib" <lib_decl_loop>.
-lib_decl_loop = ( <lib_statement> <lib_decl_loop> | "end" EOF ).
-lib_statement = ( <DeclOpcode> | <LibFile> ).
+lib_decl_loop = ( <p_libStatement> <lib_decl_loop> | "end" EOF ).
+p_libStatement = ( <DeclOpcode> | <LibFile> ).
 
 LibFile ::= "file" <string>.
 
@@ -131,7 +131,13 @@ LangComp ::= "compile" <sym> <p_Code>.
 #
 
 
-_start = (<Library>|<Program>).
+_start = (<Program> | <Library> | <Preproc>).
+
+Preproc ::= <req_loop>.
+
+Require ::= "require" <string>.
+req_loop = <Require> ( <req_loop> | <Postponed> ).
+Postponed ::= /.*/ EOF.
 
 
 

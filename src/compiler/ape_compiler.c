@@ -70,20 +70,25 @@ void dump_ocn(opcode_chain_node_t ocn) {
 }
 
 program_t compile_wast(wast_t node, vm_t vm) {
-	printf("compile_wast\n");
+	/*printf("compile_wast\n");*/
 	gpush(&vm->cn_stack,&vm->current_node);
 	vm->current_node = node;
 	tinyap_walk(node, "compiler", vm);
 	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 	program_t ret = program_new();
-	printf("now %p\n",vm->result);
+	ret->env = vm->env;
+	/*printf("now %p\n",vm->result);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0");
 	docn_dat=docn_cod=0;
-	opcode_chain_apply(vm->result,dump_ocn);
-	opcode_chain_serialize(vm->result, vm_get_dict(vm), ret, vm->dl_handle);
-	opcode_chain_delete(vm->result);
-	vm->result=NULL;
-	printf("\n-- New program compiled.\n-- Data size : %lu\n-- Code size : %lu\n\n",ret->data.size,ret->code.size);
+	if(vm->result) {
+		if(vm->result->head) {
+			/*opcode_chain_apply(vm->result,dump_ocn);*/
+			opcode_chain_serialize(vm->result, vm_get_dict(vm), ret, vm->dl_handle);
+		}
+		opcode_chain_delete(vm->result);
+		vm->result=NULL;
+	}
+	/*printf("\n-- New program compiled.\n-- Data size : %lu\n-- Code size : %lu\n\n",ret->data.size,ret->code.size);*/
 	return ret;
 }
 
@@ -94,7 +99,7 @@ void* ape_compiler_init(vm_t vm) {
 	if(vm->result==NULL) {
 		/*printf("###      NEW       top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 		vm->result = opcode_chain_new();
-	} else {
+	/*} else {*/
 		/*printf("###      NEW       sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 	}
 	/*printf("vm new ochain : %p\n",vm->result);*/
@@ -117,13 +122,13 @@ WalkDirection ape_compiler_default(wast_t node, vm_t vm) {
 		vm->compile_state = Error;
 		program_t p = (program_t)*(vm->compile_vectors.by_index.data+vec_ofs);
 		word_t ip = *(vm->compile_vectors.by_index.data+vec_ofs+1);
-		printf("compiler calling %p:%lX (%s)\n",p,ip,wa_op(node));
+		/*printf("compiler calling %p:%lX (%s)\n",p,ip,wa_op(node));*/
 		gpush(&vm->cn_stack,&vm->current_node);
 		vm->current_node = node;
 		vm_run_program_fg(vm,p,ip,50);
 		vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 		free(vec_name);
-		printf("   vm return state : %i\n",vm->compile_state);
+		/*printf("   vm return state : %i\n",vm->compile_state);*/
 		return vm->compile_state;
 	}
 
@@ -156,14 +161,14 @@ WalkDirection ocao(wast_t node, vm_t vm, opcode_arg_t t) {
 	if(t==OpcodeNoArg) {
 		/*printf("ocao::opcode without arg\t\t%s\n",op);*/
 		opcode_chain_add_opcode(vm->result,t,op,NULL);
-	} else if(t==OpcodeArgOpcode) {
-		const char*type = wa_op(wa_opd(node,1))+strlen("DeclOpcode_");
-		const char*name = wa_op(wa_opd(wa_opd(node,1),0));
-		char*arg = (char*)malloc(strlen(type)+strlen(name)+2);
-		sprintf(arg,"%s_%s",name,type);
+	/*} else if(t==OpcodeArgOpcode) {*/
+		/*const char*type = wa_op(wa_opd(node,1))+strlen("DeclOpcode_");*/
+		/*const char*name = wa_op(wa_opd(wa_opd(node,1),0));*/
+		/*char*arg = (char*)malloc(strlen(type)+strlen(name)+2);*/
+		/*sprintf(arg,"%s_%s",name,type);*/
 		/*printf("ocao::opcode with arg\t\t%s %s\n",op,arg);*/
-		opcode_chain_add_opcode(vm->result,t,op,arg);
-		free(arg);
+		/*opcode_chain_add_opcode(vm->result,t,op,arg);*/
+		/*free(arg);*/
 	} else {
 		const char*arg = wa_op(wa_opd(node,1));
 		/*printf("ocao::opcode with arg\t\t%s %s\n",op,arg);*/
@@ -189,8 +194,8 @@ WalkDirection ape_compiler_Opcode_Label(wast_t node, vm_t vm) {
 	return ocao(node,vm,OpcodeArgLabel);
 }
 
-WalkDirection ape_compiler_Opcode_Opcode(wast_t node, vm_t vm) {
-	return ocao(node,vm,OpcodeArgOpcode);
+WalkDirection ape_compiler_Opcode_EnvSym(wast_t node, vm_t vm) {
+	return ocao(node,vm,OpcodeArgEnvSym);
 }
 
 WalkDirection ape_compiler_Opcode_NoArg(wast_t node, vm_t vm) {
@@ -276,15 +281,15 @@ WalkDirection ape_compiler_DeclOpcode_Label(wast_t node, vm_t vm) {
 	return Next;
 }
 
-WalkDirection ape_compiler_DeclOpcode_Opcode(wast_t node, vm_t vm) {
+WalkDirection ape_compiler_DeclOpcode_EnvSym(wast_t node, vm_t vm) {
 	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
-	plug_opcode(vm->parser, "Opcode", name);
-	os = opcode_stub_resolve(OpcodeArgOpcode,name,vm->dl_handle);
+	plug_opcode(vm->parser, "EnvSym", name);
+	os = opcode_stub_resolve(OpcodeArgEnvSym,name,vm->dl_handle);
 	if(!os) {
-		fprintf(stderr,"warning : loading NULL opcode : %s:Opcode\n",name);
+		fprintf(stderr,"warning : loading NULL opcode : %s:EnvSym\n",name);
 	}
-	opcode_dict_add(vm_get_dict(vm), OpcodeArgOpcode, name, os);
+	opcode_dict_add(vm_get_dict(vm), OpcodeArgEnvSym, name, os);
 	return Next;
 }
 
@@ -354,6 +359,7 @@ WalkDirection ape_compiler_LangDef(wast_t node, vm_t vm) {
 	const char* str = tinyap_serialize_to_string(n);
 	delete_node(n);
 	opcode_chain_add_opcode(vm->result, OpcodeArgString, "_langDef", str);
+	free((char*)str);
 	return Next;
 }
 
@@ -420,4 +426,71 @@ WalkDirection ape_compiler_LangComp(wast_t node, vm_t vm) {
 }
 
 
+WalkDirection ape_compiler_Preproc(wast_t node, vm_t vm) {
+	return Down;
+}
+
+WalkDirection ape_compiler_Require(wast_t node, vm_t vm) {
+	/* compile and fg-execute the mentioned program */
+	FILE*f;
+	char buffy[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	const char* fname = wa_op(wa_opd(node,0));
+	program_t p;
+	f = fopen(fname,"r");
+	if(!f) {
+		fprintf(stderr,"ERROR : compiler couldn't open file %s\n",fname);
+		return Error;
+	}
+	fread(buffy,8,1,f);
+	fclose(f);
+	if(strcmp(buffy,"BML_PRG")) {
+		/* looks like a source file */
+		/* try and compile the file */
+		opcode_chain_delete(vm->result);	/* discard result, anyway it is empty at this point */
+		vm->result=NULL;
+		p = vm_compile_file(vm, fname);
+		vm->result = opcode_chain_new();
+	} else {
+		/* looks like a serialized program */
+		/* unserialize program */
+		reader_t r = file_reader_new(fname);
+		p = vm_unserialize_program(vm,r);
+		reader_close(r);
+	}
+	if(p) {
+		vm_run_program_fg(vm,p,0,50);
+		/*printf("Required file executed.\n");*/
+	} else {
+		fprintf(stderr,"ERROR : nothing to execute while requiring %s\n",fname);
+		return Error;
+	}
+	return Next;
+}
+
+
+WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
+	char* buffy = strdup(wa_op(wa_opd(node,0)));
+
+	/*const char* debug = tinyap_serialize_to_string(tinyap_get_grammar_ast(vm->parser));*/
+
+	/*printf("Now compiling deferred buffer (%u bytes)\n"*/
+		/*"===================================\n"*/
+		/*"%s\n"*/
+		/*"===================================\n with grammar \n%s\n", strlen(buffy), buffy, debug); fflush(stdout);*/
+	/*free((char*)debug);*/
+	
+	tinyap_set_source_buffer(vm->parser,buffy,strlen(buffy));
+	tinyap_parse(vm->parser);
+	free(buffy);
+
+	if(tinyap_get_output(vm->parser)) {
+		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
+		tinyap_walk(wa, "compiler", vm);
+		wa_del(wa);
+	} else {
+		printf("parser output : %p\n",tinyap_get_output(vm->parser));
+		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+	}
+	return Done;
+}
 

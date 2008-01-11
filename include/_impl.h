@@ -95,6 +95,7 @@ struct _data_stack_entry_t {
 struct _call_stack_entry_t {
 	program_t cs;
 	word_t ip;
+	word_t has_closure;	/* FIXME : this should be a set of flags, not just one flag */
 };
 
 
@@ -105,16 +106,27 @@ struct _vm_obj_t {
 	word_t magic;
 };
 
+struct _vm_dyn_env_t {
+	vm_dyn_env_t parent;
+	struct _text_seg_t symbols;
+	struct _dynarray_t data;
+};
+
+struct _vm_dyn_func_t {
+	program_t cs;
+	word_t ip;
+	dynarray_t closure;
+};
 
 struct _vm_t {
 	/* embedded parser */
 	tinyap_t parser;
 	/* meta-compiler */
 	struct _text_seg_t compile_vectors;
-	volatile opcode_chain_t result;
-	volatile WalkDirection compile_state;
-	volatile wast_t current_node;
-	volatile struct _generic_stack_t cn_stack;
+	opcode_chain_t result;
+	WalkDirection compile_state;
+	wast_t current_node;
+	struct _generic_stack_t cn_stack;
 	/* meta-language serialized state */
 	struct _text_seg_t gram_nodes;
 	/* known opcodes */
@@ -123,6 +135,8 @@ struct _vm_t {
 	void* dl_handle;
 	/* all programs */
 	struct _slist_t all_programs;
+	/* globals */
+	vm_dyn_env_t env;
 	/* threads */
 	scheduler_algorithm_t scheduler;
 	word_t threads_count;
@@ -149,6 +163,9 @@ struct _label_tab_t {
 
 
 struct _program_t {
+	/* globals */
+	vm_dyn_env_t env;
+	/* segments */
 	struct _text_seg_t strings;
 	struct _label_tab_t labels;
 	struct _dynarray_t gram_nodes_indexes;
@@ -158,14 +175,15 @@ struct _program_t {
 
 struct _thread_t {
 	/* thread is aliased to a dlist_node */
-	volatile struct _dlist_node_t sched_data;
+	struct _dlist_node_t sched_data;
 	/* attached program */
 	volatile program_t program;
 	/* execution context */
-	volatile struct _generic_stack_t locals_stack;
-	volatile struct _generic_stack_t data_stack;
-	volatile struct _generic_stack_t call_stack;
-	volatile struct _generic_stack_t catch_stack;
+	struct _generic_stack_t closures_stack;
+	struct _generic_stack_t locals_stack;
+	struct _generic_stack_t data_stack;
+	struct _generic_stack_t call_stack;
+	struct _generic_stack_t catch_stack;
 	volatile word_t IP;
 	volatile program_t jmp_seg;
 	volatile word_t jmp_ofs;
