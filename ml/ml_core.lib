@@ -127,8 +127,6 @@
 
       # runtime environment
         opcode envNew
-        opcode envSetEnv                # set as current program's environment
-        opcode envGetEnv                # get current environment
         opcode envLookup                # [symbol] => offset
         opcode envGet:EnvSym
         opcode envSet:EnvSym

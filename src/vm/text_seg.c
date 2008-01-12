@@ -75,11 +75,11 @@ word_t text_seg_text_to_index(text_seg_t ts, const char*str) {
 }
 
 
-void text_seg_serialize(text_seg_t seg, writer_t w) {
+void text_seg_serialize(text_seg_t seg, writer_t w, const char* sec_name) {
 	int i,tot;
 	const char*str;
 	/* write header */
-	write_string(w,"STRINGS");
+	write_string(w,sec_name);
 	tot = dynarray_size(&seg->by_index);
 	write_word(w,tot);
 	for(i=0;i<tot;i+=1) {
@@ -90,12 +90,12 @@ void text_seg_serialize(text_seg_t seg, writer_t w) {
 	write_word(w,0xFFFFFFFF);
 }
 
-void text_seg_unserialize(text_seg_t seg, reader_t r) {
+void text_seg_unserialize(text_seg_t seg, reader_t r, const char* sec_name) {
 	const char*str;
 	word_t w,tot;
 	int i;
 	str = read_string(r);
-	assert(!strcmp(str,"STRINGS"));
+	assert(!strcmp(str,sec_name));
 	tot = read_word(r);
 	dynarray_reserve(&seg->by_index,tot);
 	w = read_word(r);

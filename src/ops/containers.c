@@ -149,6 +149,7 @@ void _VM_CALL vm_op_arraySize(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_envNew(vm_t vm, word_t unused) {
 	vm_dyn_env_t env = vm_env_new();
 	vm_push_data(vm,DataObject,(word_t)env);
+	/*printf("vm_op_envNew\n");*/
 }
 
 
@@ -158,8 +159,9 @@ void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index) {
 		printf("### program->env should be set ! ###\n");
 		env = vm->env;
 	}
+	/*printf("vm_op_envGet %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);*/
 	index<<=1;
-	vm_push_data(vm,vm->env->data.data[index],vm->env->data.data[index+1]);
+	vm_push_data(vm,env->data.data[index],env->data.data[index+1]);
 }
 
 
@@ -177,6 +179,8 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 
 	/* slow but safe */
 	index = text_seg_text_to_index(&env->symbols,text_seg_find_by_text(&env->symbols,(const char*)dk->data));
+
+	/*printf("vm_op_envAdd %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);*/
 
 	if(dc->type==DataObject) {
 		data = (word_t) vm_obj_clone(vm,PTR_TO_OBJ(dc->data));
@@ -197,6 +201,7 @@ void _VM_CALL vm_op_envSet_EnvSym(vm_t vm, long index) {
 		printf("### program->env should be set ! ###\n");
 		env = vm->env;
 	}
+	/*printf("vm_op_envSet %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);*/
 	env_dc = &((vm_data_t)env->data.data)[index];
 	if(env_dc->type==DataObject) {
 		vm_obj_deref(vm,PTR_TO_OBJ(env_dc->data));

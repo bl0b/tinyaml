@@ -1,0 +1,30 @@
+require "tests/struc.melang"
+
+data
+	0 rep 10
+	"\\t"
+	"\\n"
+end
+
+struc foobar { foo bar baz }
+
+asm		dynFunNew @_dump_struc
+		push "dump_struc"
+	envAdd
+
+	jmp @_skip_0
+
+_dump_struc:
+        getmem -1+foobar.bar
+        getmem 10
+        getmem -1+foobar.foo
+        getmem 10
+        getmem -1+foobar.baz
+        getmem 11
+        print 6
+	ret 0
+
+_skip_0:
+	nop
+end
+

@@ -97,8 +97,11 @@ void program_free(vm_t vm, program_t p) {
 }
 
 
-word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg) {
+word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg, vm_dyn_env_t smallenv) {
 	switch(arg_type) {
+	case OpcodeArgEnvSym:
+		arg = text_seg_text_to_index(&smallenv->symbols, text_seg_find_by_index(&p->env->symbols, arg));
+		break;
 	case OpcodeArgString:
 		arg = text_seg_text_to_index(&p->strings,(const char*)arg);
 		break;
@@ -108,10 +111,10 @@ word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg) {
 }
 
 
-word_t opcode_arg_unserialize(program_t p, opcode_arg_t arg_type, word_t arg) {
+word_t opcode_arg_unserialize(program_t p, opcode_arg_t arg_type, word_t arg, vm_dyn_env_t smallenv) {
 	switch(arg_type) {
 	case OpcodeArgEnvSym:
-		arg = (word_t) env_index_to_sym(p->env,arg);
+		arg = text_seg_text_to_index(&p->env->symbols, text_seg_find_by_index(&smallenv->symbols, arg));
 		break;
 	case OpcodeArgString:
 		arg = (word_t) text_seg_find_by_index(&p->strings,arg);
@@ -122,18 +125,44 @@ word_t opcode_arg_unserialize(program_t p, opcode_arg_t arg_type, word_t arg) {
 }
 
 
+vm_dyn_env_t program_env_optimize(vm_t vm, program_t prog) {
+	opcode_dict_t glob = vm_get_dict(vm);
+	vm_dyn_env_t ret = vm_env_new();
+	opcode_arg_t arg_type;
+	opcode_stub_t stub;
+	word_t idx;
+	int i;
+
+	for(i=0;i<prog->code.size;i+=2) {
+		stub = (opcode_stub_t)prog->code.data[i];
+		arg_type = WC_GET_ARGTYPE(opcode_code_by_stub(glob,stub));
+		if(arg_type==OpcodeArgEnvSym) {
+			idx = text_seg_text_to_index(&ret->symbols,text_seg_find_by_text(&ret->symbols,(const char*) vm->env->symbols.by_index.data[ prog->code.data[i+1] ] ));
+			/*dynarray_set(&ret->data,idx<<1, DataInt);*/
+			/*dynarray_set(&ret->data,1+(idx<<1), DataInt);*/
+		}
+	}
+
+	return ret;
+}
+
 
 void program_serialize(vm_t vm, program_t p, writer_t w) {
 	int i;
 	word_t op;
 	word_t arg;
 	const char* lbl;
+	vm_dyn_env_t env;
 	/* optimize opcode dictionary */
 	opcode_dict_t odopt = opcode_dict_optimize(vm,p);
 	/* write dict */
 	opcode_dict_serialize(odopt,w);
+	/* optimize env */
+	env = program_env_optimize(vm, p);
+	/* write env */
+	text_seg_serialize(&env->symbols,w,"ENV");
 	/* write text segment */
-	text_seg_serialize(&p->strings,w);
+	text_seg_serialize(&p->strings,w,"STRINGS");
 	/* write code segment */
 	write_string(w,"LABELS-");
 	/* write labels count */
@@ -150,17 +179,10 @@ void program_serialize(vm_t vm, program_t p, writer_t w) {
 	/* write code segment size */
 	write_word(w,dynarray_size(&p->code));
 
-	/*printf("Dumping raw wordcode [%lu words (0x%lX)]\n",p->code.size,p->code.size);*/
-	/*for(i=0;i<dynarray_size(&p->code);i+=2) {*/
-		/*printf("%8.8lX %8.8lX  ",dynarray_get(&p->code,i),dynarray_get(&p->code,i+1));*/
-		/*if(i%8==6) printf("\n");*/
-	/*}*/
-	/*printf("\nDumping serialized wordcode\n");*/
-
 	/* write serialized word code */
 	for(i=0;i<dynarray_size(&p->code);i+=2) {
 		op = opcode_code_by_stub(odopt, (opcode_stub_t)dynarray_get(&p->code,i));
-		arg = opcode_arg_serialize(p, WC_GET_ARGTYPE(op), dynarray_get(&p->code,i+1));
+		arg = opcode_arg_serialize(p, WC_GET_ARGTYPE(op), dynarray_get(&p->code,i+1), env);
 		/*printf("%8.8lX %8.8lX  ",op,arg);*/
 		/*if(i%8==6) printf("\n");*/
 		write_word(w,op);
@@ -173,10 +195,11 @@ void program_serialize(vm_t vm, program_t p, writer_t w) {
 	write_word(w,dynarray_size(&p->data));
 	for(i=0;i<dynarray_size(&p->data);i+=2) {
 		op = dynarray_get(&p->data,i);
-		arg = opcode_arg_serialize(p, op, dynarray_get(&p->data,i+1));
+		arg = opcode_arg_serialize(p, op, dynarray_get(&p->data,i+1),NULL);	/* EnvSym isn't supposed to happen in a data segment */
 		write_word(w,op);
 		write_word(w,arg);
 	}
+	vm_obj_free(vm,PTR_TO_OBJ(env));
 }
 
 
@@ -190,13 +213,16 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	word_t op;
 	word_t wc;
 	word_t arg;
+	vm_dyn_env_t env = vm_env_new();
 
 	/*printf("program_unserialize\n");*/
 	p=program_new();
+	p->env=vm->env;
 	od = opcode_dict_new();
 	opcode_dict_unserialize(od,r,vm->dl_handle);
 
-	text_seg_unserialize(&p->strings,r);
+	text_seg_unserialize(&env->symbols,r,"ENV");
+	text_seg_unserialize(&p->strings,r,"STRINGS");
 
 	str = read_string(r);
 	assert(!strcmp(str,"LABELS-"));
@@ -219,7 +245,7 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	for(i=0;i<tot;i+=2) {
 		wc = read_word(r);
 		op = (word_t) opcode_stub_by_code(od, wc);
-		arg = opcode_arg_unserialize(p, WC_GET_ARGTYPE(wc), read_word(r));
+		arg = opcode_arg_unserialize(p, WC_GET_ARGTYPE(wc), read_word(r), env);
 		program_write_code(p,op,arg);
 		/*printf("unserialized (%p,%lX) at %lu (%lX) (code size=%lu (%lX))\n",op,arg,i,i,p->code.size,p->code.size);*/
 	}
@@ -232,9 +258,10 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	dynarray_reserve(&p->data,wc+2);
 	for(i=0;i<wc;i+=2) {
 		p->data.data[i] = read_word(r);
-		p->data.data[i+1] = opcode_arg_unserialize(p, p->data.data[i], read_word(r));
+		p->data.data[i+1] = opcode_arg_unserialize(p, p->data.data[i], read_word(r), NULL);
 	}
 	p->data.size=wc;
+	vm_obj_free(vm,PTR_TO_OBJ(env));
 	return p;
 }
 
