@@ -100,6 +100,7 @@ static inline void vm_obj_deref(vm_t vm, void* ptr) {
 #define assert_ptr_is_obj(_x) assert(((vm_obj_t)(((char*)(_x))-VM_OBJ_OFS))->magic==VM_OBJ_MAGIC)
 
 char* vm_string_new(const char*src);
+char* vm_string_new_buf(word_t sz);
 text_seg_t vm_symtab_new();
 mutex_t vm_mutex_new();
 thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip);

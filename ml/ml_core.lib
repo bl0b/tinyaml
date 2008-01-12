@@ -120,6 +120,8 @@
         opcode _langDef:String
         opcode _langPlug:String         # pop plug
 
+        opcode compileString
+
       # handling symbol tables
         opcode newSymTab                # create a new sym tab and push
                                         # it onto data stack
@@ -145,7 +147,18 @@
         opcode arraySize
 
       # string operations
-        opcode strcmp                   # compare two strings
+        opcode strcmp:String
+        opcode strcat:String
+        opcode strdup:String
+        opcode strcmp
+        opcode strcat
+        opcode strdup
+        opcode strlen
+        opcode charAt:Int
+        opcode setCharAt:Int
+        opcode charAt
+        opcode setCharAt
+        opcode substr
 
       # basic conversions
         opcode toS

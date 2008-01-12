@@ -18,6 +18,10 @@ char* vm_string_new(const char*src) {
 	return str;
 }
 
+char* vm_string_new_buf(word_t sz) {
+	return (char*)vm_obj_new(sz+1, NULL, vm_string_dup);
+}
+
 
 text_seg_t vm_symtab_clone(vm_t vm, text_seg_t seg) {
 	/* FIXME : shouldn't be such a semi-singleton */

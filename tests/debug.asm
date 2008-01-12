@@ -10,8 +10,16 @@ glob
 	ret = "\\n"
 end
 
+hello
+
 asm
 _start:
+	push "0123456789"
+	push 2			# start offset, included
+	push 5			# end offset, excluded
+	substr toS		# toS converts from object to string, without check (FIXME)
+	push "\\n"
+	print 2
     nop
         strucNew foobar {
                 foo:  asm dynFunNew @_dump_struc_cls $wibble dynFunAddClosure end

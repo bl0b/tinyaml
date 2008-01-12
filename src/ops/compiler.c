@@ -268,4 +268,20 @@ void _VM_CALL vm_op_pp_curNode(vm_t vm, word_t x) {
 	tinyap_walk(vm->current_node,"prettyprint",NULL);
 }
 
+void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	const char*buffer = (const char*)d->data;
+	assert(d->type==DataString||d->type==DataObject);
+
+	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
+	tinyap_parse(vm->parser);
+
+	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
+		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
+		tinyap_walk(wa, "compiler", vm);
+		wa_del(wa);
+	} else {
+		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+	}
+}
 

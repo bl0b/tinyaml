@@ -57,6 +57,8 @@ _skip_0:
 end
 
 language
+	Hello ::= "hello".
+
 	GlobSymTab ::= "glob" <gs_loop>.
 	gs_loop = ( <GlobSym> <gs_loop> | "end" ).
 	GlobSym ::= <sym> "=" ( <gs_Int> | <gs_Float> | <gs_String> ).
@@ -79,6 +81,7 @@ language
 end
 
 plug GlobSymTab into p_Data
+plug Hello into p_ProgramTopLevel
 plug Struc into p_ProgramTopLevel
 plug GlobGet into p_Opcode
 plug GlobSet into p_Opcode
@@ -86,6 +89,15 @@ plug GlobIdx into p_Opcode
 plug StrucNew into p_Opcode
 plug StrucGet into p_Opcode
 plug StrucSet into p_Opcode
+
+compile Hello asm
+	strdup "asm\n"
+	strcat "push "
+	strcat "\"Hello, World.\n\"\n" 
+	strcat "print 1\nend"
+	compileString
+	compileStateNext
+end
 
 compile gs_Int asm
 	push 1			# rep
