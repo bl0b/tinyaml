@@ -49,7 +49,7 @@ void _VM_CALL vm_op__langPlug_String(vm_t vm, const char* plugin) {
 
 
 void _VM_CALL vm_op_write_data(vm_t vm, word_t x) {
-	char tmp_r[20], tmp_d[20];
+	char tmp_r[512], tmp_d[512];
 	_IFC conv;
 	vm_data_t d = _vm_pop(vm);
 	vm_data_t rep = _vm_pop(vm);
@@ -66,8 +66,11 @@ void _VM_CALL vm_op_write_data(vm_t vm, word_t x) {
 		opcode_chain_add_data(vm->result, d->type, tmp_d, tmp_r);
 		break;
 	case DataString:
+		/*printf("add String data \"%s\"\n",(const char*)d->data);*/
 		opcode_chain_add_data(vm->result, d->type, (const char*)d->data, tmp_r);
 		break;
+	case DataObject:
+		fprintf(stderr,"[COMPILER:ERR] Inline Objects aren't allowed in the data segment !\n");
 	default:;
 	}
 	/*printf("vm_op_write_data\n");*/
@@ -94,7 +97,7 @@ void _VM_CALL vm_op_write_oc_String_String(vm_t vm, const char* name) {
 
 void _VM_CALL vm_op_write_oc_Int_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	char argstr[20];
+	char argstr[512];
 	assert(arg->type==DataInt);
 	sprintf(argstr,"%li",(long int)arg->data);
 	/*printf("vm_op_write_oc_Int_String %s %s\n",name,argstr);*/
@@ -103,16 +106,25 @@ void _VM_CALL vm_op_write_oc_Int_String(vm_t vm, const char* name) {
 
 void _VM_CALL vm_op_write_oc_Label_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	char argstr[20];
+	char argstr[512];
 	assert(arg->type==DataInt);
 	sprintf(argstr,"%li",(long int)arg->data);
 	/*printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgFloat, name, argstr);
+	opcode_chain_add_opcode(vm->result, OpcodeArgLabel, name, argstr);
+}
+
+void _VM_CALL vm_op_write_oc_EnvSym_String(vm_t vm, const char* name) {
+	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
+	char argstr[512];
+	assert(arg->type==DataInt);
+	sprintf(argstr,"%li",(long int)arg->data);
+	/*printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgEnvSym, name, argstr);
 }
 
 void _VM_CALL vm_op_write_oc_Float_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	char argstr[40];
+	char argstr[512];
 	_IFC conv;
 	assert(arg->type==DataFloat);
 	conv.i=arg->data;
@@ -197,6 +209,10 @@ void _VM_CALL vm_op_compileStateUp(vm_t vm, word_t x) {
 	vm->compile_state=Up;
 }
 
+void _VM_CALL vm_op_compileStateDone(vm_t vm, word_t x) {
+	vm->compile_state=Done;
+}
+
 void _VM_CALL vm_op_compileStateError(vm_t vm, word_t x) {
 	vm->compile_state=Error;
 }
@@ -249,7 +265,7 @@ void _VM_CALL vm_op_astGetChildString(vm_t vm, word_t x) {
 
 
 void _VM_CALL vm_op_pp_curNode(vm_t vm, word_t x) {
-	/*tinyap_walk(vm->current_node,"prettyprint",NULL);*/
+	tinyap_walk(vm->current_node,"prettyprint",NULL);
 }
 
 

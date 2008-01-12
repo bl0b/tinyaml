@@ -1,10 +1,11 @@
 require "tests/struc.melang"
 
-data
-	0 rep 10
-	"\\t"
-	"\\n"
+glob
+	nil = 0
+	tab = "\\t"
+	ret = "\\n"
 end
+
 
 struc foobar { foo bar baz }
 
@@ -15,12 +16,15 @@ asm		dynFunNew @_dump_struc
 	jmp @_skip_0
 
 _dump_struc:
-        getmem -1+foobar.bar
-        getmem 10
-        getmem -1+foobar.foo
-        getmem 10
-        getmem -1+foobar.baz
-        getmem 11
+        getmem -1+(foobar.bar)
+        #getmem 10
+	+$tab
+        getmem -1+(foobar.foo)
+        #getmem 10
+	+$tab
+        getmem -1+(foobar.baz)
+        #getmem 11
+	+$ret
         print 6
 	ret 0
 

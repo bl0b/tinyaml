@@ -108,6 +108,7 @@ void* ape_compiler_init(vm_t vm) {
 
 
 void ape_compiler_free(vm_t vm) {
+	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 }
 
 

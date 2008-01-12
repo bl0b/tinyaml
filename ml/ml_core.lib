@@ -105,10 +105,12 @@
         opcode write_oc_Float:String
         opcode write_oc_Label:String
         opcode write_oc_String:String
+        opcode write_oc_EnvSym:String
 
         opcode compileStateNext
         opcode compileStateDown
         opcode compileStateUp
+        opcode compileStateDone
         opcode compileStateError
 
         opcode pp_curNode
