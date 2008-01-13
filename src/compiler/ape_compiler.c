@@ -22,7 +22,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <assert.h>
+#include "vm_assert.h"
 
 #include "vm.h"
 #include "opcode_chain.h"
@@ -494,4 +494,86 @@ WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 	}
 	return Done;
 }
+
+
+
+
+
+WalkDirection ape_compiler_NewWalker(wast_t node, vm_t vm) {
+	vm->virt_walker = strdup(wa_op(wa_opd(node,0)));
+
+	tinyap_walk(wa_opd(node,1), "compiler", vm);
+	/*tinyap_walk(node,"prettyprint",NULL);*/
+
+	free((char*)vm->virt_walker);
+	return Next;
+}
+
+
+
+WalkDirection ape_compiler_WalkerBodies(wast_t node, vm_t vm) {
+	return Down;
+}
+
+
+void compile_walker_method(wast_t node, vm_t vm, const char* plugin, int body_index) {
+	/* FIXME : clean copypasta */
+	const char* start = strdup(gen_unique_label());
+	const char* end = strdup(gen_unique_label());
+	/*const char* plugin = wa_op(wa_opd(node,0));*/
+	char* methname = (char*)malloc(strlen(plugin)+strlen(vm->virt_walker)+8);
+	char* tmp = (char*)malloc(strlen(start)+strlen(plugin)+2);
+	sprintf(tmp,"%s_%s",start,plugin);
+	free((char*)start);
+	start=tmp;
+
+	sprintf(methname,".virt_%s_%s",vm->virt_walker,plugin);
+
+	
+	/* compile compiling code */
+	opcode_chain_add_opcode(vm->result,OpcodeArgLabel,"jmp",end);
+	opcode_chain_add_label(vm->result,start);
+
+	//ape_compiler_AsmBloc(wa_opd(node,2),vm);
+	tinyap_walk(wa_opd(node,body_index), "compiler", vm);
+	
+	
+	/* plug compiling code */
+	/*opcode_chain_add_opcode(vm->result, OpcodeNoArg, "_pop_curNode",0);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0");
+	opcode_chain_add_label(vm->result, end);
+	/*opcode_chain_add_opcode(vm->result, OpcodeArgString, "push", vm->virt_walker);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgString, "push", methname);
+	opcode_chain_add_opcode(vm->result,OpcodeArgLabel,"__addCompileMethod",start);
+
+	free((char*)start);
+	free((char*)end);
+	free(methname);
+}
+
+
+WalkDirection ape_compiler_WalkerInit(wast_t node, vm_t vm) {
+	compile_walker_method(node,vm,"__init__",0);
+	return Next;
+}
+
+
+WalkDirection ape_compiler_WalkerTerminate(wast_t node, vm_t vm) {
+	compile_walker_method(node,vm,"__term__",0);
+	return Next;
+}
+
+
+WalkDirection ape_compiler_WalkerDefault(wast_t node, vm_t vm) {
+	compile_walker_method(node,vm,"__dflt__",0);
+	return Next;
+}
+
+
+WalkDirection ape_compiler_WalkerBody(wast_t node, vm_t vm) {
+	compile_walker_method(node,vm,wa_op(wa_opd(node,0)),1);
+	return Next;
+}
+
+
 

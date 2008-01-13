@@ -81,6 +81,12 @@ void _VM_CALL vm_op_write_label_String(vm_t vm, const char* label) {
 	/*printf("vm_op_write_Label_String\n");*/
 }
 
+void _VM_CALL vm_op_write_label(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObject);
+	vm_op_write_label_String(vm,(const char*)d->data);
+}
+
 void _VM_CALL vm_op_write_oc_String(vm_t vm, const char* name) {
 	opcode_chain_add_opcode(vm->result, OpcodeNoArg, name, NULL);
 	/*printf("vm_op_write_oc_String %s\n",name);*/
@@ -106,11 +112,9 @@ void _VM_CALL vm_op_write_oc_Int_String(vm_t vm, const char* name) {
 
 void _VM_CALL vm_op_write_oc_Label_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	char argstr[512];
-	assert(arg->type==DataInt);
-	sprintf(argstr,"%li",(long int)arg->data);
+	assert(arg->type==DataString||arg->type==DataObject);
 	/*printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgLabel, name, argstr);
+	opcode_chain_add_opcode(vm->result, OpcodeArgLabel, name, (const char*)arg->data);
 }
 
 void _VM_CALL vm_op_write_oc_EnvSym_String(vm_t vm, const char* name) {
@@ -180,7 +184,7 @@ void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
 	word_t idx;
 	text_seg_t ts = (text_seg_t) t->data;
 	assert(t->type==DataObject);
-	assert(k->type==DataString);
+	assert(k->type==DataString||k->type==DataObject);
 	idx=text_seg_text_to_index(ts, (const char*)k->data);
 	/*printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
 	vm_push_data(vm,DataInt, idx);
@@ -191,7 +195,7 @@ void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
 	vm_data_t t = _vm_pop(vm);
 	text_seg_t ts = (text_seg_t) t->data;
 	assert(t->type==DataObject);
-	assert(k->type==DataString);
+	assert(k->type==DataString||k->type==DataObject);
 	(void)text_seg_find_by_text(ts, (const char*)k->data);
 	/*printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
 }
@@ -235,7 +239,35 @@ void _VM_CALL vm_op_astCompileChild_Int(vm_t vm, word_t x) {
 	tinyap_walk(wa_opd(vm->current_node,x), "compiler", vm);
 }
 
-void _VM_CALL vm_op_astCompileChild(vm_t vm, word_t x) {
+
+void _VM_CALL vm_op_doWalk_String(vm_t vm, const char* walker) {
+	vm->virt_walker = walker;
+	tinyap_walk(vm->current_node, "virtual", vm);
+}
+
+void _VM_CALL vm_op_doWalk(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObject);
+	vm_op_doWalk_String(vm,(const char*)d->data);
+}
+
+
+void _VM_CALL vm_op_walkChild_Int(vm_t vm, word_t idx) {
+	assert(idx<wa_opd_count(vm->current_node));
+	/*printf("calling sub compiler\n");*/
+	/*tinyap_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
+	tinyap_walk(wa_opd(vm->current_node,idx), "virtual", vm);
+}
+
+
+void _VM_CALL vm_op_walkChild(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	vm_op_walkChild_Int(vm,d->data);
+}
+
+
+void _VM_CALL vm_op_astCompileChild(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataInt);
 	/*tinyap_walk(vm->current_node, "prettyprint", vm);*/
@@ -244,10 +276,10 @@ void _VM_CALL vm_op_astCompileChild(vm_t vm, word_t x) {
 }
 
 
-void _VM_CALL vm_op__pop_curNode(vm_t vm, word_t x) {
+/*void _VM_CALL vm_op__pop_curNode(vm_t vm, word_t x) {*/
 	/*printf("VM pop cur node !\n");*/
-	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
-}
+	/*vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);*/
+/*}*/
 
 
 void _VM_CALL vm_op_astGetChildString_Int(vm_t vm, word_t x) {

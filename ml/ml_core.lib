@@ -100,6 +100,7 @@
         opcode __addCompileMethod:Label
         opcode write_data               # pop data, pop rep, write
         opcode write_label:String
+        opcode write_label
         opcode write_oc:String
         opcode write_oc_Int:String
         opcode write_oc_Float:String
@@ -115,12 +116,17 @@
 
         opcode pp_curNode
 
-        opcode _pop_curNode
+        #opcode _pop_curNode
 
         opcode _langDef:String
         opcode _langPlug:String         # pop plug
 
         opcode compileString
+
+        opcode doWalk:String            # walk current node with named
+        opcode doWalk                   # walker, or pop name from stack
+        opcode walkChild:Int            # perform walking on this child
+        opcode walkChild
 
       # handling symbol tables
         opcode newSymTab                # create a new sym tab and push
@@ -145,6 +151,15 @@
         opcode arraySet:Int
         opcode arraySet
         opcode arraySize
+
+      # handling object stacks
+        opcode stackNew
+        opcode stackPush
+        opcode stackPop
+        opcode stackPeek
+        opcode stackPop:Int
+        opcode stackPeek:Int
+        opcode stackSize
 
       # string operations
         opcode strcmp:String

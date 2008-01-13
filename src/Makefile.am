@@ -3,7 +3,8 @@ bin_PROGRAMS = tinyaml
 #lib_LTLIBRARIES = libtinyaml.la
 
 libtinyaml_la_CFLAGS = -I ../include
-libtinyaml_la_LIBADD = -ldl -ltinyap -lm -lpthread
+#libtinyaml_la_LIBADD = -ldl -ltinyap -lm -lpthread
+libtinyaml_la_LIBADD = -ldl /usr/local/lib/libtinyap.a -lm -lpthread
 
 libtinyaml_la_SOURCES =	containers/list.c \
 			containers/dynarray.c \
@@ -13,6 +14,7 @@ libtinyaml_la_SOURCES =	containers/list.c \
 			compiler/opcode_chain.c \
 			compiler/abstract_io.c \
 			compiler/ape_compiler.c \
+			compiler/ape_virtual.c \
 			 \
 			ml_core_gram.c \
 			 \

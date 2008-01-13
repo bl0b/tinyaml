@@ -230,8 +230,57 @@ void _VM_CALL vm_op_envLookup(vm_t vm, long index) {
 		env = vm->env;
 	}
 	vm_push_data(vm,DataInt,index);
-
 }
 
+
+
+void _VM_CALL vm_op_stackNew(vm_t vm, word_t unused) {
+	vm_push_data(vm,DataObject,(word_t)vm_stack_new());
+}
+
+
+void _VM_CALL vm_op_stackPush(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	vm_data_t sk = _vm_pop(vm);
+	assert(sk->type==DataObject);
+	gpush((generic_stack_t)sk->data,d);
+}
+
+
+void _VM_CALL vm_op_stackPop_Int(vm_t vm, word_t counter) {
+	vm_data_t sk = _vm_pop(vm);
+	assert(sk->type==DataObject);
+	while(counter>0) {
+		(void)_gpop((generic_stack_t)sk->data);
+		counter-=1;
+	}
+	/*vm_push_data(vm, d->type, d->data);*/
+}
+
+
+void _VM_CALL vm_op_stackPeek_Int(vm_t vm, long ofs) {
+	vm_data_t sk = _vm_pop(vm);
+	vm_data_t d;
+	assert(sk->type==DataObject);
+	d = (vm_data_t) _gpeek((generic_stack_t)sk->data,-ofs);
+	vm_push_data(vm, d->type, d->data);
+}
+
+
+void _VM_CALL vm_op_stackPop(vm_t vm, word_t counter) {
+	vm_op_stackPop_Int(vm,1);
+}
+
+
+void _VM_CALL vm_op_stackPeek(vm_t vm, word_t unused) {
+	vm_op_stackPeek_Int(vm,0);
+}
+
+
+void _VM_CALL vm_op_stackSize(vm_t vm, word_t unused) {
+	vm_data_t sk = _vm_pop(vm);
+	assert(sk->type==DataObject);
+	vm_push_data(vm,DataInt,gstack_size((generic_stack_t)sk->data));
+}
 
 

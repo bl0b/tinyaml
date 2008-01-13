@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include "fastmath.h"
 #include "vm.h"
 #include "_impl.h"
 #include "text_seg.h"
@@ -25,11 +26,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dlfcn.h>
-#include <assert.h>
+#include "vm_assert.h"
 
 #include "bml_ops.h"
 #include "object.h"
 #include "vm_engine.h"
+
+#include <setjmp.h>
+
+
 
 /* hidden feature in tinyap */
 ast_node_t ast_unserialize(const char*);
@@ -37,8 +42,20 @@ ast_node_t ast_unserialize(const char*);
 extern const char* ml_core_grammar;
 extern const char* ml_core_lib;
 
+static volatile vm_t _glob_vm = NULL;
+
+jmp_buf _glob_vm_jmpbuf;
+
+/* the VM is a singleton */
 vm_t vm_new() {
-	vm_t ret = (vm_t)malloc(sizeof(struct _vm_t));
+	vm_t ret;
+
+	if(_glob_vm) {
+		return _glob_vm;
+	}
+
+	ret = (vm_t)malloc(sizeof(struct _vm_t));
+	_glob_vm = ret;
 	tinyap_init();
 	ret->engine=stub_engine;
 	ret->engine->vm=ret;
@@ -50,6 +67,7 @@ vm_t vm_new() {
 	gstack_init(&ret->cn_stack,sizeof(wast_t));
 	ret->threads_count=0;
 	ret->current_thread=NULL;
+	ret->virt_walker=NULL;
 	ret->timeslice=100;
 	text_seg_init(&ret->gram_nodes);
 	dynarray_init(&ret->compile_vectors.by_index);
@@ -140,6 +158,7 @@ void vm_del(vm_t ret) {
 	gstack_deinit(&ret->cn_stack,NULL);
 	ret->engine->_vm_unlock(ret->engine);
 	free(ret);
+	_glob_vm = NULL;
 }
 
 
@@ -536,13 +555,13 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	{
 		const char* label = program_lookup_label(t->program,t->IP);
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
-		printf("\nEXEC:%p (%p:%lX)\t%-20.20s %-40.40s | ",t,t->program,t->IP,label?label:"",disasm);
+		fprintf(stderr,"\nEXEC:%p (%p:%lX)\t%-20.20s %-40.40s | ",t,t->program,t->IP,label?label:"",disasm);
 		free((char*)disasm);
 	}
 // */
 
 	/* decode */
-	if(*array) {
+	if(*array&&!setjmp(_glob_vm_jmpbuf)) {
 		((opcode_stub_t) *array) ( vm, *(array+1) );
 	}
 
@@ -730,4 +749,114 @@ vm_t vm_set_engine(vm_t vm, vm_engine_t e) {
 	/*e->_init(e);*/
 	return vm;
 }
+
+
+void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* ofs) {
+	struct _label_tab_t* l = &cs->labels;
+	word_t i=1;
+	while(i<(l->offsets.size-1) && ip>l->offsets.data[i+1]) { i+=1; }
+	if(i>=l->offsets.size) {
+		*ofs = ip;
+		*label = NULL;
+	} else {
+		*ofs = ip - l->offsets.data[i];
+		*label = (const char*)l->labels.by_index.data[i];
+	}
+}
+
+
+void data_stack_renderer(vm_data_t d) {
+	_IFC conv;
+	int i;
+	const unsigned char*s;
+	switch(d->type) {
+	case DataInt:
+		fprintf(stderr,"Int     %li",d->data);
+		break;
+	case DataFloat:
+		conv.i = d->data;
+		fprintf(stderr,"Float   %f",conv.f);
+		break;
+	case DataString:
+		fprintf(stderr,"String  \"%s\"",(const char*)d->data);
+		break;
+	case DataObject:
+		/* naively check for strings */
+		s = (const unsigned char*)d->data;
+		i = 0;
+		while(*s&&*s>=32&&*s<128) { s+=1; }
+		if(*s) {
+			fprintf(stderr,"Object  %p",(void*)d->data);
+		} else {
+			fprintf(stderr,"ObjStr  \"%s\"",(const char*)d->data);
+		}
+		break;
+	default:
+		fprintf(stderr, "Unknown (%u, 0x%lX)",d->type,d->data);
+	};
+}
+
+void call_stack_renderer(struct _call_stack_entry_t* cse) {
+	word_t ofs;
+	const char*label;
+	lookup_label_and_ofs(cse->cs,cse->ip,&label,&ofs);
+	if(label) {
+		fprintf(stderr,"%p:%s+%lu",cse->cs, label, ofs);
+	} else {
+		fprintf(stderr,"%p:%lu",cse->cs,cse->ip);
+	}
+}
+
+
+void render_stack(generic_stack_t s, const char*prefix, void(*renderer)(void*)) {
+	long counter = 0;
+	long stop = -gstack_size(s);
+	while(counter>stop) {
+		fprintf(stderr,"%s%li : ",prefix,-counter);
+		renderer(_gpeek(s,counter));
+		fputc('\n',stderr);
+		counter-=1;
+	}
+}
+
+void thread_dump(vm_t vm, thread_t t) {
+	word_t ofs;
+	const char*label;
+	lookup_label_and_ofs(t->program,t->IP,&label,&ofs);
+	fprintf(stderr, "Thread :\t%p\n",t);
+	if(label) {
+		fprintf(stderr,"CS:IP :\t%p:%s+%lu",t->program, label, ofs);
+	} else {
+		fprintf(stderr,"CS:IP :\t%p:%lu",t->program,t->IP);
+	}
+	{
+		const char* disasm = program_disassemble(vm,t->program,t->IP);
+		printf("\t# %-40.40s\n",disasm);
+		free((char*)disasm);
+	}
+	fprintf(stderr,"\nCall stack :\t[%lu]\n", gstack_size(&t->call_stack));
+	render_stack(&t->call_stack,"\t",(void(*)(void*)) call_stack_renderer);
+	fprintf(stderr,"\nData stack :\t[%lu]\n", gstack_size(&t->data_stack));
+	render_stack(&t->data_stack,"\t",(void(*)(void*)) data_stack_renderer);
+	fprintf(stderr,"\nLocals stack :\t[%lu]\n", gstack_size(&t->locals_stack));
+	render_stack(&t->locals_stack,"\t",(void(*)(void*)) data_stack_renderer);
+	fprintf(stderr,"\nCatch stack :\t[%lu]\n", gstack_size(&t->catch_stack));
+}
+
+
+
+
+void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, const char* function) {
+	fprintf(stderr, "[VM:FATAL] Assertion failed in function `%s' at %s:%u : %s\n", function, file, line, assertion);
+	if(_glob_vm&&_glob_vm->current_thread) {
+		fprintf(stderr,"[VM:NOTICE] Killing current thread %p\n", _glob_vm->current_thread);
+		thread_dump(_glob_vm,_glob_vm->current_thread);
+		vm_kill_thread(_glob_vm,_glob_vm->current_thread);
+		_glob_vm->current_thread = NULL;
+		longjmp(_glob_vm_jmpbuf,1);
+	} else {
+		abort();
+	}
+}
+
 

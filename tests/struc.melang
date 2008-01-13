@@ -9,6 +9,7 @@ data
 	0	# 0 : symtab of struct names
 	0	# 1 : array of struct fields tables
 	0	# 2 : symtab to map the data segment
+	0	# 3 : int counter for unique labels
 end
 
 asm
@@ -52,13 +53,17 @@ getStruc:
 	arrayGet
 	retval 1
 
+# string:something -> string:label
+gen_label:
+	getmem 3 inc setmem 3
+	push "_" getmem 3 toS strcat strcat
+	ret 0
+
 _skip_0:
 	nop
 end
 
 language
-	Hello ::= "hello".
-
 	GlobSymTab ::= "glob" <gs_loop>.
 	gs_loop = ( <GlobSym> <gs_loop> | "end" ).
 	GlobSym ::= <sym> "=" ( <gs_Int> | <gs_Float> | <gs_String> ).
@@ -78,10 +83,15 @@ language
 	struc_loop = ( <sym> <struc_loop> | "}" ).
 	newstruc_loop = ( <struc_item> <newstruc_loop> | "}" ).
 	struc_item = <sym> ":" ( <AsmBloc> | <p_Opcode> ).
+
+	SubAsmBloc ::= <asm_contents>.
+	IfElseNZ ::= "[[" <SubAsmBloc> "][" <SubAsmBloc> "]]".
+	IfNZ ::= "[" <SubAsmBloc> "]".
 end
 
+plug IfNZ into p_Opcode
+plug IfElseNZ into p_Opcode
 plug GlobSymTab into p_Data
-plug Hello into p_ProgramTopLevel
 plug Struc into p_ProgramTopLevel
 plug GlobGet into p_Opcode
 plug GlobSet into p_Opcode
@@ -90,14 +100,65 @@ plug StrucNew into p_Opcode
 plug StrucGet into p_Opcode
 plug StrucSet into p_Opcode
 
-compile Hello asm
-	strdup "asm\n"
-	strcat "push "
-	strcat "\"Hello, World.\n\"\n" 
-	strcat "print 1\nend"
-	compileString
+compile SubAsmBloc asm
+	enter 1
+		push 0 setmem -1
+sab_loop:
+		getmem -1 astGetChildrenCount sub SNZ jmp @sab_done
+
+		getmem -1 astCompileChild
+
+		getmem -1 inc setmem -1
+		jmp @sab_loop
+sab_done:
+	leave 1
 	compileStateNext
 end
+
+compile IfNZ asm
+	enter 1
+	push "endif" call @gen_label setmem -1
+# SNZ jmp _end
+# ...
+# _end:
+#
+	write_oc "SNZ"
+	getmem -1
+	write_oc_Label "jmp"
+	astCompileChild 0
+	getmem -1
+	write_label
+	leave 1
+	compileStateNext
+end
+
+compile IfElseNZ asm
+	enter 2
+	push "else" call @gen_label setmem -1
+	push "endif" call @gen_label setmem -2
+# SNZ jmp _else
+# ...
+# jmp _end
+# _else:
+#...
+# _end:
+#
+	write_oc "SNZ"
+	getmem -1
+	write_oc_Label "jmp"
+	astCompileChild 0
+	getmem -2
+	write_oc_Label "jmp"
+	getmem -1
+	write_label
+	astCompileChild 1
+	getmem -2
+	write_label
+	leave 2
+	compileStateNext
+end
+
+
 
 compile gs_Int asm
 	push 1			# rep

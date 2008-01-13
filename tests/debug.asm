@@ -8,18 +8,28 @@ glob
 	wobble = 0
 	tab = "\\t"
 	ret = "\\n"
+	count = 0
 end
-
-hello
 
 asm
 _start:
-	push "0123456789"
-	push 2			# start offset, included
-	push 5			# end offset, excluded
-	substr toS		# toS converts from object to string, without check (FIXME)
-	push "\\n"
-	print 2
+	+$count [[
+		push "Compteur à 1.\n" print 1
+		ret 0
+	][
+		+$count inc -$count
+	]]
+
+	+$count [
+		push "maintenant, le compteur est à 1.\n" print 1
+	]
+	
+#	push "0123456789"
+#	push 2			# start offset, included
+#	push 5			# end offset, excluded
+#	substr toS		# toS converts from object to string, without check (FIXME)
+#	push "\\n"
+#	print 2
     nop
         strucNew foobar {
                 foo:  asm dynFunNew @_dump_struc_cls $wibble dynFunAddClosure end

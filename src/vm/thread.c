@@ -83,7 +83,8 @@ void thread_deinit(vm_t vm, thread_t t) {
 	mutex_deinit(&t->join_mutex);
 	gstack_deinit(&t->closures_stack,NULL);
 	/*deref_stack(vm,&t->locals_stack);*/
-	assert(t->locals_stack.sp==(word_t)-1);
+	/*assert(t->locals_stack.sp==(word_t)-1);*/
+	deref_stack(vm,&t->locals_stack);
 	gstack_deinit(&t->locals_stack,NULL);
 	deref_stack(vm,&t->data_stack);
 	gstack_deinit(&t->data_stack,NULL);

@@ -1,10 +1,23 @@
-# TODO: Licence, author
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
 # 
-# Grammar for the meta-language
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+# 
+# Grammar for the meta-language, written in tinyaP language.
 
-#string = ( "\"" "\" /["]/ "\""  | "\"" /[^"]*/ "\""  ). #"\"" /([^\\"]|\\"|\\\\)*/ "\"".
-
-string = "\"" /([^"\\]|[\\]([\\"trnb]))*/ "\"".
+string = "\"" /([^"\\]|[\\]([\\" trnb]))*/ "\"".
 
 float = /[-]?[0-9]+[.][0-9]+\>/.
 int = /[-]?[0-9]+\>/.
@@ -62,8 +75,9 @@ DeclLabel ::= <sym> ":".
 ##
 #
 
-AsmBloc ::= "asm" <asm_loop>.
-asm_loop = ( <asm_statement> <asm_loop> | <asm_statement> "end" ).
+AsmBloc ::= "asm" <asm_contents> "end".
+asm_contents = <asm_statement> ( <asm_contents> | epsilon ).
+#asm_loop = ( <asm_statement> <asm_loop> | <asm_statement> "end" ).
 
 asm_statement = ( <DeclLabel> <p_Opcode> | <p_Opcode> ).
 
@@ -71,7 +85,7 @@ Program ::= <program_bloc_loop>.
 
 p_Code = ( <AsmBloc> ).
 
-p_ProgramTopLevel = ( <p_Data> | <p_Code> | <LangDef> | <LangPlug> | <LangComp> ).
+p_ProgramTopLevel = ( <p_Data> | <p_Code> | <LangDef> | <LangPlug> | <LangComp> | <NewWalker> ).
 
 program_bloc_loop = ( <p_ProgramTopLevel> <program_bloc_loop> | <p_ProgramTopLevel> EOF ).
 
@@ -127,6 +141,22 @@ LangPlug ::= "plug" <sym> "into" <sym>.
 LangComp ::= "compile" <sym> <p_Code>.
 
 
+##
+## Defining new walkers
+##
+#
+
+NewWalker ::= "walker" <sym> <WalkerBodies>.
+WalkerBodies ::= <wabod_loop> "}".
+wabod_loop = ( <wabod_loop> <wb_select> | "{" ).	# tinyap feature : weak handling of left recursive rules.
+wb_select = ( <WalkerDefault> | <WalkerInit> | <WalkerTerminate> | <WalkerBody> ).
+WalkerDefault ::= "default" <p_Code>.
+WalkerInit ::= "init" <p_Code>.
+WalkerTerminate ::= "terminate" <p_Code>.
+WalkerBody ::= "on" <sym> <p_Code>.
+
+
+
 
 ##
 ## Entry point
@@ -153,7 +183,7 @@ Postponed ::= /.*/ EOF.
 
 elem = /[_a-zA-Z][0-9a-zA-Z_]*/ .
 #T ::= ( "\"" "\" /["]/ "\""  | "\"" /[^"]+/ "\""  ) .
-T ::= "\"" /([^"\\]|[\\]([\\"trnb]))*/ "\"".
+T ::= "\"" /([^"\\]|[\\]([\\" trnb]))*/ "\"".
 NT ::= "<" <elem> ">"  .
 RE ::= "/" /((\[[^\\]]*(\])?[^\]]*])|[^/])*/ "/"  .
 rule = ( <OperatorRule> | <TransientRule> ) .

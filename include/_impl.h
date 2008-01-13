@@ -127,6 +127,9 @@ struct _vm_t {
 	WalkDirection compile_state;
 	wast_t current_node;
 	struct _generic_stack_t cn_stack;
+	/* support of virtual AST walkers */
+	const char* virt_walker;
+	WalkDirection virt_walker_state;
 	/* meta-language serialized state */
 	struct _text_seg_t gram_nodes;
 	/* known opcodes */

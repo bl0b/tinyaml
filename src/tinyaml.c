@@ -81,7 +81,7 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			for(i=0;i<p->code.size;i+=2) {
 				const char* label = program_lookup_label(p,i);
 				const char* disasm = program_disassemble(vm,p,i);
-				printf("%8.8lX %-20.20s%s %-50.50s\n",(long)i,label?label:"",label&&*label?":":" ",disasm);
+				printf("%8.8lX %-32.32s%s %-60.60s\n",(long)i,label?label:"",label&&*label?":":" ",disasm);
 				free((char*)disasm);
 	
 			}

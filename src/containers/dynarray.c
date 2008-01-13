@@ -20,7 +20,7 @@
 #include "dynarray.h"
 #include <malloc.h>
 #include <string.h>
-#include <assert.h>
+#include "vm_assert.h"
 #include <stdio.h>
 
 

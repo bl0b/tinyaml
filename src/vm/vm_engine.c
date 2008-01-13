@@ -24,15 +24,17 @@ void _VM_CALL e_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
 		s_sz = t->call_stack.sp-1;
 		t->program=p;
 		t->IP=ip;
-		while(t->call_stack.sp!=s_sz) {
+		while(e->vm->threads_count&&t->call_stack.sp!=s_sz) {
 			vm_schedule_cycle(e->vm);
 		}
-		/*printf("done with sub thread\n");*/
-		/* restore old state */
-		t->program=program;
-		t->IP=IP;
-		t->jmp_seg=jmp_seg;
-		t->jmp_ofs=jmp_ofs;
+		if(e->vm->threads_count) {
+			/*printf("done with sub thread\n");*/
+			/* restore old state */
+			t->program=program;
+			t->IP=IP;
+			t->jmp_seg=jmp_seg;
+			t->jmp_ofs=jmp_ofs;
+		}
 	} else {
 		vm_add_thread(e->vm,p,ip,prio,0);
 		while(e->vm->threads_count) {

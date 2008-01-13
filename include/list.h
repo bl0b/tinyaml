@@ -16,8 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef _BML_LIST_H_
+#define _BML_LIST_H_
 
-#include <assert.h>
+#include "vm_assert.h"
 
 typedef struct _slist_node_t* slist_node_t;
 typedef struct _slist_t* slist_t;
@@ -318,5 +320,5 @@ void slist_del(slist_t);
 dlist_t dlist_new();
 void dlist_del(dlist_t);
 
-
+#endif
 
