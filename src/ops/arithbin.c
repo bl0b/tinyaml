@@ -379,8 +379,10 @@ void _VM_CALL vm_op_nEq(vm_t vm, word_t unused) {
 	vm_peek_data(vm,0,&dtb,&b);
 	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
+	/*printf("comp: %li != %li => ",a,b);*/
 	fast_apply_bin_func(dta,a,dtb,b,_neq,_neq,a,dta);
 	vm_poke_data(vm,dta,a);
+	/*printf("%li\n",a);*/
 }
 
 

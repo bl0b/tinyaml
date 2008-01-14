@@ -52,7 +52,7 @@ WalkDirection try_method(const char*op, vm_t vm, wast_t node) {
 		WalkDirection backup = vm->compile_state;
 		program_t p = (program_t)*(vm->compile_vectors.by_index.data+vec_ofs);
 		word_t ip = *(vm->compile_vectors.by_index.data+vec_ofs+1);
-		printf("virtual walker calling %p:%lX (%s)\n",p,ip,op);
+		/*printf("virtual walker calling %p:%lX (%s)\n",p,ip,op);*/
 		gpush(&vm->cn_stack,&vm->current_node);
 		vm->current_node = node;
 		vm_run_program_fg(vm,p,ip,50);
