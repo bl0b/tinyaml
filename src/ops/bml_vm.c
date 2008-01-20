@@ -33,8 +33,8 @@ void _VM_CALL vm_op_nop(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_clone(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataObject);
-	vm_push_data(vm,DataObject, (word_t)vm_obj_clone(vm,PTR_TO_OBJ(d->data)));
+	assert(d->type&DataManagedObjectFlag);
+	vm_push_data(vm, d->type, (word_t)vm_obj_clone_obj(vm,PTR_TO_OBJ(d->data)));
 }
 
 
@@ -54,9 +54,39 @@ void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
 		case DataString:
 			printf("%s", (const char*) tmp.i);
 			break;
-		case DataObject:
-			printf("[Object %p]", (opcode_stub_t*)tmp.i);
+		case DataObjStr:
+			printf("[ObjStr  \"%s\"]",(const char*)tmp.i);
 			break;
+		case DataObjSymTab:
+			printf("[SymTab  %p]",(void*)tmp.i);
+			break;
+		case DataObjMutex:
+			printf("[Mutex  %p]",(void*)tmp.i);
+			break;
+		case DataObjThread:
+			printf("[Thread  %p]",(void*)tmp.i);
+			break;
+		case DataObjArray:
+			printf("[Array  %p]",(void*)tmp.i);
+			break;
+		case DataObjEnv:
+			printf("[Map  %p]",(void*)tmp.i);
+			break;
+		case DataObjStack:
+			printf("[Stack  %p]",(void*)tmp.i);
+			break;
+		case DataObjFun:
+			printf("[Function  %p]",(void*)tmp.i);
+			break;
+		case DataObjVObj:
+			printf("[V-Obj  %p]",(void*)tmp.i);
+			break;
+		case DataManagedObjectFlag:
+			printf("[Undefined Object ! %p]", (opcode_stub_t*)tmp.i);
+			break;
+		case DataTypeMax:
+		default:;
+			printf("[Erroneous data %X %lX]", dt, tmp.i);
 		};
 		k+=1;
 	}
@@ -133,7 +163,7 @@ void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	thread_t t=vm->current_thread;
 	vm_dyn_func_t fun = (vm_dyn_func_t) d->data;
-	assert(d->type==DataObject);
+	assert(d->type&DataManagedObjectFlag);
 	if(fun->closure) { 
 		vm_push_caller(vm, t->program, t->IP, 1);
 		gpush(&t->closures_stack,&fun->closure);
@@ -174,8 +204,8 @@ void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
 	long i,min=-size;
 	for(i=0;i>min;i-=1) {
 		local = _gpeek(&t->locals_stack,i);	/* -1 becomes 0 */
-		if(local->type==DataObject) {
-			vm_obj_deref(vm,(void*)local->data);
+		if(local->type&DataManagedObjectFlag) {
+			vm_obj_deref_ptr(vm,(void*)local->data);
 			local->type=DataInt;
 			local->data=0;
 		}
@@ -234,18 +264,18 @@ void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 	assert(d->type==DataInt);
 	t = vm_add_thread(vm, t->program, ofs, d->data, 0);
 	/*printf("new thread has handle %p\n",t);*/
-	vm_push_data(vm,DataObject,(word_t)t);
+	vm_push_data(vm,DataObjThread,(word_t)t);
 }
 
 void _VM_CALL vm_op_getPid(vm_t vm, word_t unused) {
-	vm_push_data(vm,DataObject,(word_t) vm->current_thread);
+	vm_push_data(vm,DataObjThread,(word_t) vm->current_thread);
 }
 
 
 void _VM_CALL vm_op_newMtx(vm_t vm, word_t unused) {
 	word_t handle = (word_t) vm_mutex_new();
 	/*printf("push new mutex %lx\n",handle);*/
-	vm_push_data(vm, DataObject, handle);
+	vm_push_data(vm, DataObjMutex, handle);
 }
 
 
@@ -258,9 +288,10 @@ void _VM_CALL vm_op_lockMtx_Int(vm_t vm, long memcell) {
 	mutex_t m;
 	vm_op_getmem_Int(vm,memcell);
 	d = _vm_pop(vm);
-	assert(d->type==DataObject);
+	assert(d->type==DataObjMutex);
 	m = (mutex_t)d->data;
-	assert_ptr_is_obj(m);
+	/*assert_ptr_is_obj(m);*/
+	assert(_is_a_ptr(m,DataObjMutex));
 	mutex_lock(vm,m,t);
 }
 
@@ -271,9 +302,10 @@ void _VM_CALL vm_op_unlockMtx_Int(vm_t vm, long memcell) {
 	mutex_t m;
 	vm_op_getmem_Int(vm,memcell);
 	d = _vm_pop(vm);
-	assert(d->type==DataObject);
+	assert(d->type==DataObjMutex);
 	m = (mutex_t)d->data;
-	assert_ptr_is_obj(m);
+	/*assert_ptr_is_obj(m);*/
+	assert(_is_a_ptr(m,DataObjMutex));
 	mutex_unlock(vm,m,t);
 }
 
@@ -284,9 +316,10 @@ void _VM_CALL vm_op_lockMtx(vm_t vm, word_t unused) {
 	thread_t t = vm->current_thread;
 	if(!t->pending_lock) {
 		d = _vm_pop(vm);
-		assert(d->type==DataObject);
+		assert(d->type==DataObjMutex);
 		t->pending_lock = (mutex_t)d->data;
-		assert_ptr_is_obj(t->pending_lock);
+		assert(_is_a_ptr(t->pending_lock,DataObjMutex));
+		/*assert_ptr_is_obj(t->pending_lock);*/
 	}
 	if(mutex_lock(vm,t->pending_lock,t)) {
 		t->pending_lock=NULL;
@@ -299,9 +332,9 @@ void _VM_CALL vm_op_unlockMtx(vm_t vm, word_t unused) {
 	thread_t t = vm->current_thread;
 	mutex_t m;
 	d = _vm_pop(vm);
-	assert(d->type==DataObject);
 	m = (mutex_t)d->data;
-	assert_ptr_is_obj(m);
+	assert(_is_a_ptr(m,DataObjMutex));
+	/*assert_ptr_is_obj(m);*/
 	mutex_unlock(vm,m,t);
 }
 
@@ -313,11 +346,12 @@ void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 	thread_t t = vm->current_thread,joinee;
 	if(!t->pending_lock) {
 		d=_vm_pop(vm);
-		assert(d->type==DataObject);
+		assert(d->type==DataObjThread);
 		joinee = (thread_t)d->data;
+		assert(_is_a_ptr(joinee,DataObjThread));
 		assert(((thread_t)joinee->sched_data.value) == joinee /* check that it's really a thread */);
 		t->pending_lock = &joinee->join_mutex;
-		vm_obj_ref(vm,joinee);
+		vm_obj_ref_ptr(vm,joinee);
 	} else {
 		joinee = join_lock_to_thread(t,t->pending_lock);
 		/*printf("pending_lock %p => thread should be %p\n",t->pending_lock,joinee);*/
@@ -325,7 +359,7 @@ void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 	if(mutex_lock(vm,t->pending_lock,t)) {
 		mutex_unlock(vm,t->pending_lock,t);
 		t->pending_lock=NULL;
-		vm_obj_deref(vm,joinee);
+		vm_obj_deref_ptr(vm,joinee);
 	}
 }
 
@@ -333,9 +367,9 @@ void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_killThread(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	thread_t victim = (thread_t)d->data;
-	assert(d->type==DataObject);
+	assert(_is_a_ptr(victim,DataObjThread));
 	assert(((thread_t)victim->sched_data.value) == victim /* check that it's really a thread */);
-	vm_obj_deref(vm,victim);
+	vm_obj_deref_ptr(vm,victim);
 	vm_kill_thread(vm,victim);
 	/*thread_set_state(vm,victim,ThreadDying);*/
 }
@@ -357,7 +391,7 @@ void _VM_CALL vm_op_dynFunNew_Label(vm_t vm, word_t rel_ofs) {
 	handle->cs = vm->current_thread->program;
 	handle->ip = vm->current_thread->IP+rel_ofs;
 	/*printf("push new mutex %lx\n",handle);*/
-	vm_push_data(vm, DataObject, (word_t) handle);
+	vm_push_data(vm, DataObjFun, (word_t) handle);
 }
 
 
@@ -368,15 +402,15 @@ void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
 	vm_data_t df = _vm_peek(vm);
 	vm_dyn_func_t f=(vm_dyn_func_t) df->data;
 	word_t data=0;
-	assert(df->type==DataObject);
-	if(dc->type==DataObject) {
-		data = (word_t) vm_obj_clone(vm,PTR_TO_OBJ(dc->data));
+	assert(_is_a_ptr(f,DataObjFun));
+	if(dc->type&DataManagedObjectFlag) {
+		data = (word_t) vm_obj_clone_obj(vm,PTR_TO_OBJ(dc->data));
 	} else {
 		data = dc->data;
 	}
 	if(!f->closure) {
 		f->closure = vm_array_new();
-		vm_obj_ref(vm,f->closure);
+		vm_obj_ref_ptr(vm,f->closure);
 	}
 	index = f->closure->size;
 	dynarray_set(f->closure,f->closure->size,dc->type);

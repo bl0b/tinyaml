@@ -130,13 +130,13 @@ void env_set(vm_t vm, vm_dyn_env_t env, word_t index,vm_data_t data) {
 	index<<=1;
 	if(env->data.size<(index+2)) {
 		dynarray_reserve(&env->data,index+2);
-	} else if((vm_data_type_t)env->data.data[index]==DataObject) {
-		vm_obj_deref(vm,(void*)env->data.data[index+1]);
+	} else if((vm_data_type_t)env->data.data[index]&DataManagedObjectFlag) {
+		vm_obj_deref_ptr(vm,(void*)env->data.data[index+1]);
 	}
 	env->data.data[index] = data->type;
 	env->data.data[index+1] = data->data;
-	if(data->type==DataObject) {
-		vm_obj_ref(vm,(void*)data->data);
+	if(data->type&DataManagedObjectFlag) {
+		vm_obj_ref_ptr(vm,(void*)data->data);
 	}
 }
 

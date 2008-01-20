@@ -83,9 +83,9 @@ void program_free(vm_t vm, program_t p) {
 		int i;
 		/*printf("dereff'ing data segment (%lu items)\n",p->data.size>>1);*/
 		for(i=0;i<p->data.size;i+=2) {
-			if((vm_data_type_t)p->data.data[i]==DataObject) {
+			if((vm_data_type_t)p->data.data[i]&DataManagedObjectFlag) {
 				/*printf("found an object : %p\n",(void*)p->data.data[i+1]);*/
-				vm_obj_deref(vm,(void*)p->data.data[i+1]);
+				vm_obj_deref_ptr(vm,(void*)p->data.data[i+1]);
 			}
 		}
 	}
@@ -199,7 +199,7 @@ void program_serialize(vm_t vm, program_t p, writer_t w) {
 		write_word(w,op);
 		write_word(w,arg);
 	}
-	vm_obj_free(vm,PTR_TO_OBJ(env));
+	vm_obj_free_obj(vm,PTR_TO_OBJ(env));
 }
 
 
@@ -261,7 +261,7 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 		p->data.data[i+1] = opcode_arg_unserialize(p, p->data.data[i], read_word(r), NULL);
 	}
 	p->data.size=wc;
-	vm_obj_free(vm,PTR_TO_OBJ(env));
+	vm_obj_free_obj(vm,PTR_TO_OBJ(env));
 	return p;
 }
 

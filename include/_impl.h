@@ -50,6 +50,8 @@ struct _vm_engine_t {
 	void(*_VM_CALL _client_unlock)(vm_engine_t);
 	void(*_VM_CALL _vm_lock)(vm_engine_t);
 	void(*_VM_CALL _vm_unlock)(vm_engine_t);
+	void(*_VM_CALL _thread_failed)(vm_t,thread_t);
+	void(*_VM_CALL _debug)(vm_engine_t);
 	volatile vm_t vm;
 };
 
@@ -182,6 +184,7 @@ struct _thread_t {
 	/* attached program */
 	volatile program_t program;
 	/* execution context */
+	word_t data_sp_backup;
 	struct _generic_stack_t closures_stack;
 	struct _generic_stack_t locals_stack;
 	struct _generic_stack_t data_stack;

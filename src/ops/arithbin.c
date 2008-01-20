@@ -239,6 +239,10 @@ void _VM_CALL vm_op_div(vm_t vm, word_t immed) {
 	vm_peek_data(vm,0,&dtb,&b);
 	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
+	assert((dta==DataInt||dta==DataFloat)&&(dtb==DataInt||dtb==DataFloat));
+	if(b==0) {
+		vm_fatal("Division by zero !");
+	}
 	fast_apply_bin_func(dta,a,dtb,b,_div,_div,a,dta);
 	vm_poke_data(vm,dta,a);
 }

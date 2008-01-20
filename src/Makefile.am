@@ -1,10 +1,10 @@
 
-bin_PROGRAMS = tinyaml
-#lib_LTLIBRARIES = libtinyaml.la
+bin_PROGRAMS = tinyaml tinyaml_dbg
+lib_LTLIBRARIES = libtinyaml.la
 
 libtinyaml_la_CFLAGS = -I ../include
-#libtinyaml_la_LIBADD = -ldl -ltinyap -lm -lpthread
-libtinyaml_la_LIBADD = -ldl /usr/local/lib/libtinyap.a -lm -lpthread
+libtinyaml_la_LIBADD = -ldl -ltinyap -lm -lpthread
+#libtinyaml_la_LIBADD = -ldl /usr/local/lib/libtinyap.a -lm -lpthread
 
 libtinyaml_la_SOURCES =	containers/list.c \
 			containers/dynarray.c \
@@ -31,10 +31,15 @@ libtinyaml_la_SOURCES =	containers/list.c \
 			ops/containers.c \
 			ops/compiler.c
 
-tinyaml_SOURCES = tinyaml.c $(libtinyaml_la_SOURCES)
-#tinyaml_LDADD = libtinyaml.la
-tinyaml_LDFLAGS = -Wl,--export-dynamic $(libtinyaml_la_LIBADD)
+tinyaml_dbg_SOURCES = tinyaml_dbg.c
+tinyaml_dbg_LDADD = libtinyaml.la -lcurses
+tinyaml_dbg_LDFLAGS = -Wl,--export-dynamic
+tinyaml_dbg_CFLAGS = -I ../include
 
+
+tinyaml_SOURCES = tinyaml.c
+tinyaml_LDADD = libtinyaml.la
+tinyaml_LDFLAGS = -Wl,--export-dynamic
 tinyaml_CFLAGS = -I ../include
 
 

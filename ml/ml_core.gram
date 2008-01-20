@@ -169,7 +169,7 @@ _start = (<Program> | <Library> | <Preproc>).
 Preproc ::= <req_loop>.
 
 Require ::= "require" <string>.
-req_loop = <Require> ( <req_loop> | <Postponed> ).
+req_loop = <Require> ( <req_loop> | EOF | <Postponed> ).
 Postponed ::= /.*/ EOF.
 
 

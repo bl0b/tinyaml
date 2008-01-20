@@ -46,7 +46,7 @@ program_t compile_wast(wast_t node, vm_t vm);
 static int tinyaml_quiet=0;
 
 int do_args(vm_t vm, int argc,char*argv[]) {
-	int i;
+	int i,k;
 	program_t p=NULL;
 	writer_t w=NULL;
 	reader_t r=NULL;
@@ -78,12 +78,11 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			vm_run_program_bg(vm,p,0,50);
 		} else if(cmp_param(0,"--disasm","-d")) {
 			/*fputs("Disassembling not yet implemented.\n",stdout);*/
-			for(i=0;i<p->code.size;i+=2) {
-				const char* label = program_lookup_label(p,i);
-				const char* disasm = program_disassemble(vm,p,i);
-				printf("%8.8lX %-32.32s%s %-60.60s\n",(long)i,label?label:"",label&&*label?":":" ",disasm);
+			for(k=0;k<p->code.size;k+=2) {
+				const char* label = program_lookup_label(p,k);
+				const char* disasm = program_disassemble(vm,p,k);
+				printf("%8.8lX %-32.32s%s %-60.60s\n",(long)k,label?label:"",label&&*label?":":" ",disasm);
 				free((char*)disasm);
-	
 			}
 		} else if(cmp_param(0,"--version","-v")) {
 			printf(TINYAML_ABOUT);

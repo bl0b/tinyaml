@@ -97,7 +97,7 @@ vm_t vm_new() {
 	vm_add_opcode(ret,"nop",OpcodeArgFloat, vm_op_nop);
 
 	ret->env = vm_env_new();
-	vm_obj_ref(ret,ret->env);
+	vm_obj_ref_ptr(ret,ret->env);
 
 	return ret;
 }
@@ -138,7 +138,7 @@ void vm_del(vm_t ret) {
 	/*dlist_forward(&ret->zombie_threads,thread_t,thd_del);*/
 	/*#undef thd_del*/
 
-	vm_obj_deref(ret, ret->env);
+	vm_obj_deref_ptr(ret, ret->env);
 	/*vm_collect(ret,PTR_TO_OBJ(ret->env));*/
 
 	while(ret->gc_pending.tail) {
@@ -149,7 +149,7 @@ void vm_del(vm_t ret) {
 		} else {
 			ret->gc_pending.head=NULL;
 		}
-		vm_obj_free(ret,(void*)dn->value);
+		vm_obj_free_obj(ret,(void*)dn->value);
 		free(dn);
 	}
 	/*dlist_forward(&ret->gc_pending,void*,obj_free);*/
@@ -351,7 +351,7 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	if(vm->current_thread&&t==vm->current_thread) {
 		vm->current_thread=NULL;
 	}
-	vm_obj_deref(vm, t);
+	vm_obj_deref_ptr(vm, t);
 	thread_set_state(vm, t, ThreadZombie);
 	mutex_unlock(vm,&t->join_mutex,t);
 	if(vm->threads_count==1) {
@@ -388,8 +388,8 @@ vm_t vm_push_data(vm_t vm, vm_data_type_t type, word_t value) {
 	/*printf("vm push data : %lu %lu\n",type,value);*/
 	e.type = type;
 	e.data = value;
-	if(type==DataObject) {
-		vm_obj_ref(vm,(void*)value);
+	if(type&DataManagedObjectFlag) {
+		vm_obj_ref_ptr(vm,(void*)value);
 	}
 	gpush( stack, &e );
 	/*vm_dump_data_stack(vm);*/
@@ -427,13 +427,13 @@ vm_t vm_peek_data(vm_t vm, int rel_ofs, vm_data_type_t* type, word_t* value) {
 vm_t vm_poke_data(vm_t vm, vm_data_type_t type, word_t value) {
 	generic_stack_t stack = &vm->current_thread->data_stack;
 	vm_data_t top = gpeek( vm_data_t , stack, 0 );
-	if(top->type==DataObject) {
-		vm_obj_deref(vm,(void*)top->data);
+	if(top->type&DataManagedObjectFlag) {
+		vm_obj_deref_ptr(vm,(void*)top->data);
 	}
 	top->type = type;
 	top->data = value;
-	if(top->type==DataObject) {
-		vm_obj_ref(vm,(void*)top->data);
+	if(top->type&DataManagedObjectFlag) {
+		vm_obj_ref_ptr(vm,(void*)top->data);
 	}
 	return vm;
 }
@@ -463,8 +463,8 @@ vm_data_t _VM_CALL _vm_peek(vm_t vm) {
 vm_data_t _VM_CALL _vm_pop(vm_t vm) {
 	generic_stack_t stack = &vm->current_thread->data_stack;
 	vm_data_t top = _gpop(stack);
-	if(top->type==DataObject) {
-		vm_obj_deref(vm,(void*)top->data);
+	if(top->type&DataManagedObjectFlag) {
+		vm_obj_deref_ptr(vm,(void*)top->data);
 	}
 	return top;
 }
@@ -562,6 +562,7 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 
 	/* decode */
 	if(*array&&!setjmp(_glob_vm_jmpbuf)) {
+		t->data_sp_backup = t->data_stack.sp;
 		((opcode_stub_t) *array) ( vm, *(array+1) );
 	}
 
@@ -690,6 +691,9 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 	if(current) {
 */
 	if(current) {
+		if(vm->engine->_debug) {
+			vm->engine->_debug(vm->engine);
+		}
 		current->remaining -= 1;
 		if(current&&vm_exec_cycle(vm,current)==ThreadDying) {
 			/* current thread may be already dead */
@@ -700,7 +704,7 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 			if(vm->zombie_threads.head) {
 				dlist_node_t tmp=vm->zombie_threads.head;
 				do {
-					if(vm_obj_refcount(tmp)==0) {
+					if(vm_obj_refcount_ptr(tmp)==0) {
 						/* TODO */
 					}
 					tmp = tmp->next;
@@ -730,7 +734,7 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 			} else {
 				vm->gc_pending.head=NULL;
 			}
-			vm_obj_free(vm,(void*)dn->value);
+			vm_obj_free_obj(vm,(void*)dn->value);
 			free(dn);
 		}
 
@@ -751,98 +755,6 @@ vm_t vm_set_engine(vm_t vm, vm_engine_t e) {
 }
 
 
-void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* ofs) {
-	struct _label_tab_t* l = &cs->labels;
-	word_t i=1;
-	while(i<(l->offsets.size-1) && ip>l->offsets.data[i+1]) { i+=1; }
-	if(i>=l->offsets.size) {
-		*ofs = ip;
-		*label = NULL;
-	} else {
-		*ofs = ip - l->offsets.data[i];
-		*label = (const char*)l->labels.by_index.data[i];
-	}
-}
-
-
-void data_stack_renderer(vm_data_t d) {
-	_IFC conv;
-	int i;
-	const unsigned char*s;
-	switch(d->type) {
-	case DataInt:
-		fprintf(stderr,"Int     %li",d->data);
-		break;
-	case DataFloat:
-		conv.i = d->data;
-		fprintf(stderr,"Float   %f",conv.f);
-		break;
-	case DataString:
-		fprintf(stderr,"String  \"%s\"",(const char*)d->data);
-		break;
-	case DataObject:
-		/* naively check for strings */
-		s = (const unsigned char*)d->data;
-		i = 0;
-		while(*s&&*s>=32&&*s<128) { s+=1; }
-		if(*s) {
-			fprintf(stderr,"Object  %p",(void*)d->data);
-		} else {
-			fprintf(stderr,"ObjStr  \"%s\"",(const char*)d->data);
-		}
-		break;
-	default:
-		fprintf(stderr, "Unknown (%u, 0x%lX)",d->type,d->data);
-	};
-}
-
-void call_stack_renderer(struct _call_stack_entry_t* cse) {
-	word_t ofs;
-	const char*label;
-	lookup_label_and_ofs(cse->cs,cse->ip,&label,&ofs);
-	if(label) {
-		fprintf(stderr,"%p:%s+%lu",cse->cs, label, ofs);
-	} else {
-		fprintf(stderr,"%p:%lu",cse->cs,cse->ip);
-	}
-}
-
-
-void render_stack(generic_stack_t s, const char*prefix, void(*renderer)(void*)) {
-	long counter = 0;
-	long stop = -gstack_size(s);
-	while(counter>stop) {
-		fprintf(stderr,"%s%li : ",prefix,-counter);
-		renderer(_gpeek(s,counter));
-		fputc('\n',stderr);
-		counter-=1;
-	}
-}
-
-void thread_dump(vm_t vm, thread_t t) {
-	word_t ofs;
-	const char*label;
-	lookup_label_and_ofs(t->program,t->IP,&label,&ofs);
-	fprintf(stderr, "Thread :\t%p\n",t);
-	if(label) {
-		fprintf(stderr,"CS:IP :\t%p:%s+%lu",t->program, label, ofs);
-	} else {
-		fprintf(stderr,"CS:IP :\t%p:%lu",t->program,t->IP);
-	}
-	{
-		const char* disasm = program_disassemble(vm,t->program,t->IP);
-		printf("\t# %-40.40s\n",disasm);
-		free((char*)disasm);
-	}
-	fprintf(stderr,"\nCall stack :\t[%lu]\n", gstack_size(&t->call_stack));
-	render_stack(&t->call_stack,"\t",(void(*)(void*)) call_stack_renderer);
-	fprintf(stderr,"\nData stack :\t[%lu]\n", gstack_size(&t->data_stack));
-	render_stack(&t->data_stack,"\t",(void(*)(void*)) data_stack_renderer);
-	fprintf(stderr,"\nLocals stack :\t[%lu]\n", gstack_size(&t->locals_stack));
-	render_stack(&t->locals_stack,"\t",(void(*)(void*)) data_stack_renderer);
-	fprintf(stderr,"\nCatch stack :\t[%lu]\n", gstack_size(&t->catch_stack));
-}
-
 
 
 
@@ -850,7 +762,7 @@ void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, 
 	fprintf(stderr, "[VM:FATAL] Assertion failed in function `%s' at %s:%u : %s\n", function, file, line, assertion);
 	if(_glob_vm&&_glob_vm->current_thread) {
 		fprintf(stderr,"[VM:NOTICE] Killing current thread %p\n", _glob_vm->current_thread);
-		thread_dump(_glob_vm,_glob_vm->current_thread);
+		_glob_vm->engine->_thread_failed(_glob_vm,_glob_vm->current_thread);
 		vm_kill_thread(_glob_vm,_glob_vm->current_thread);
 		_glob_vm->current_thread = NULL;
 		longjmp(_glob_vm_jmpbuf,1);

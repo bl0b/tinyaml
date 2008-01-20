@@ -54,15 +54,15 @@ void thread_init(thread_t ret, word_t prio, program_t p, word_t ip) {
 }
 
 void deref_stack(vm_t vm, generic_stack_t gs) {
-	int i;
+	long i;
 	vm_data_t dt = (vm_data_t)gs->stack;
 	if(!dt) {
 		return;
 	}
 	for(i=0;i<=(long)gs->sp;i+=1) {
-		if(dt[i].type==DataObject) {
-			/*printf("found an object : %p\n",(void*)dt[i].data);*/
-			vm_obj_deref(vm,(void*)dt[i].data);
+		if(dt[i].type&DataManagedObjectFlag&&dt[i].type<DataTypeMax) {
+			/*printf("stack-deref::found an object : %p\n",(void*)dt[i].data);*/
+			vm_obj_deref_ptr(vm,(void*)dt[i].data);
 		}
 	}
 }

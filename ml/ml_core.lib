@@ -136,11 +136,18 @@
         opcode addSym                   # pop key, pop table
 
       # runtime environment
-        opcode envNew
         opcode envLookup                # [symbol] => offset
         opcode envGet:EnvSym
         opcode envSet:EnvSym
         opcode envAdd
+
+        opcode mapNew
+        opcode mapHasKey
+        opcode mapGet
+        opcode mapSet
+        opcode mapHasKey:String
+        opcode mapGet:String
+        opcode mapSet:String
 
       # handling arrays
         opcode arrayNew

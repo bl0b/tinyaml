@@ -94,7 +94,19 @@ typedef enum {
 	DataInt=0,
 	DataFloat=1,
 	DataString=OpcodeArgString,
-	DataObject
+
+	DataManagedObjectFlag=0x100,
+	DataObjStr,
+	DataObjSymTab,
+	DataObjMutex,
+	DataObjThread,
+	DataObjArray,
+	DataObjEnv,
+	DataObjStack,
+	DataObjFun,
+	DataObjVObj,
+
+	DataTypeMax,
 } vm_data_type_t;
 
 typedef struct _slist_t* opcode_chain_t;

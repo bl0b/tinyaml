@@ -69,7 +69,7 @@ void _VM_CALL vm_op_write_data(vm_t vm, word_t x) {
 		/*printf("add String data \"%s\"\n",(const char*)d->data);*/
 		opcode_chain_add_data(vm->result, d->type, (const char*)d->data, tmp_r);
 		break;
-	case DataObject:
+	case DataManagedObjectFlag:
 		fprintf(stderr,"[COMPILER:ERR] Inline Objects aren't allowed in the data segment !\n");
 	default:;
 	}
@@ -83,7 +83,7 @@ void _VM_CALL vm_op_write_label_String(vm_t vm, const char* label) {
 
 void _VM_CALL vm_op_write_label(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObject);
+	assert(d->type==DataString||d->type==DataObjStr);
 	vm_op_write_label_String(vm,(const char*)d->data);
 }
 
@@ -95,7 +95,7 @@ void _VM_CALL vm_op_write_oc_String(vm_t vm, const char* name) {
 void _VM_CALL vm_op_write_oc_String_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	const char*argstr;
-	assert(arg->type==DataString);
+	assert(arg->type==DataString||arg->type==DataObjStr);
 	argstr = (const char*) arg->data;
 	/*printf("vm_op_write_oc_String_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgString, name, argstr);
@@ -112,7 +112,7 @@ void _VM_CALL vm_op_write_oc_Int_String(vm_t vm, const char* name) {
 
 void _VM_CALL vm_op_write_oc_Label_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	assert(arg->type==DataString||arg->type==DataObject);
+	assert(arg->type==DataString||arg->type==DataObjStr);
 	/*printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgLabel, name, (const char*)arg->data);
 }
@@ -166,14 +166,14 @@ void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, int rel_ofs) {
 
 
 void _VM_CALL vm_op_newSymTab(vm_t vm, int rel_ofs) {
-	vm_push_data(vm, DataObject, (word_t) vm_symtab_new(vm));
+	vm_push_data(vm, DataObjSymTab, (word_t) vm_symtab_new(vm));
 }
 
 
 void _VM_CALL vm_op_symTabSz(vm_t vm, word_t x) {
 	vm_data_t t = _vm_pop(vm);
 	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObject);
+	assert(t->type==DataObjSymTab);
 	vm_push_data(vm,DataInt,ts->by_index.size);
 }
 
@@ -183,8 +183,8 @@ void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
 	vm_data_t t = _vm_pop(vm);
 	word_t idx;
 	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObject);
-	assert(k->type==DataString||k->type==DataObject);
+	assert(t->type==DataObjSymTab);
+	assert(k->type==DataString||k->type==DataObjStr);
 	idx=text_seg_text_to_index(ts, (const char*)k->data);
 	/*printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
 	vm_push_data(vm,DataInt, idx);
@@ -194,8 +194,8 @@ void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
 	vm_data_t k = _vm_pop(vm);
 	vm_data_t t = _vm_pop(vm);
 	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObject);
-	assert(k->type==DataString||k->type==DataObject);
+	assert(t->type==DataObjSymTab);
+	assert(k->type==DataString||k->type==DataObjStr);
 	(void)text_seg_find_by_text(ts, (const char*)k->data);
 	/*printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
 }
@@ -247,7 +247,7 @@ void _VM_CALL vm_op_doWalk_String(vm_t vm, const char* walker) {
 
 void _VM_CALL vm_op_doWalk(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObject);
+	assert(d->type==DataString||d->type==DataObjStr);
 	vm_op_doWalk_String(vm,(const char*)d->data);
 }
 
@@ -303,7 +303,7 @@ void _VM_CALL vm_op_pp_curNode(vm_t vm, word_t x) {
 void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	const char*buffer = (const char*)d->data;
-	assert(d->type==DataString||d->type==DataObject);
+	assert(d->type==DataString||d->type==DataObjStr);
 
 	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
 	tinyap_parse(vm->parser);

@@ -13,11 +13,24 @@ glob
 	symMustEnclose = 105
 	symUnknown = 106
 
+	type_dic = 0
+	type_tab = 0
+
+	TypeAny = 201
+	TypeArray = 202
+	TypeStruc = 203
+
 	cur_fname = 0
 	lbl_counter = 0
 
 	call_local_ofs = 0
 end
+
+struc Type {
+	type_name	# string : type name
+	type_type	# int : $Type* constant
+	subtype		# ref : struc Type
+}
 
 struc FuncDecl {
 	returns		# int : maximum count of returned values

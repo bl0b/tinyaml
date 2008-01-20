@@ -4,6 +4,8 @@
 # handles a global symbol table for program's data segment
 # and symbolic access to structured types.
 #
+# TODO : handle local frames also
+#
 
 data
 	0	# 0 : symtab of struct names
