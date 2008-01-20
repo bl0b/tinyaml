@@ -169,13 +169,14 @@ generic_stack_t vm_stack_new() {
 
 
 void vm_df_deinit(vm_t vm, vm_dyn_func_t src) {
-	/*printf("deinit DynFun\n");*/
+	/*printf("deinit DynFun %p\n",src);*/
 	/* TODO */
 	if(src->closure) {
 		/*vm_da_deinit(vm,src->closure);*/
 		/*free(PTR_TO_OBJ(src->closure));*/
 		/*printf("DynFun has closure, dereff'ing\n");*/
 		vm_obj_deref_ptr(vm,src->closure);
+		/*printf("DynFun closure is reff'ed %ld times\n",vm_obj_refcount_ptr(src->closure));*/
 	}
 }
 

@@ -183,6 +183,11 @@ void _VM_CALL vm_op_mapSet_String(vm_t vm, const char* key) {
 		index = text_seg_text_to_index(&env->symbols,text_seg_find_by_text(&env->symbols,key));
 	}
 	index<<=1;
+	if(index>=env->data.size) {
+		assert(index<env->data.size+128);
+		dynarray_reserve(&env->data,env->data.size+128);
+		env->data.size=index+2;
+	}
 	/*fprintf(stderr,"MapSet : index is %ld for key '%s'\n",index,key);*/
 	if(env->data.data[index]&DataManagedObjectFlag) {
 		vm_obj_deref_ptr(vm,(void*)env->data.data[index]);

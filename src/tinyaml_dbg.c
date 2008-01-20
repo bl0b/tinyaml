@@ -26,34 +26,34 @@ static void data_stack_renderer(WINDOW* w,vm_data_t d) {
 		wprintw(w,"String  \"%s\"",(const char*)d->data);
 		break;
 	case DataObjStr:
-		wprintw(w,"ObjStr  \"%s\"",(const char*)d->data);
+		wprintw(w,"ObjStr  \"%s\"[%lu]",(const char*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataObjSymTab:
-		wprintw(w,"SymTab  %p",(void*)d->data);
+		wprintw(w,"SymTab  %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataObjMutex:
-		wprintw(w,"Mutex  %p",(void*)d->data);
+		wprintw(w,"Mutex  %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataObjThread:
-		wprintw(w,"Thread  %p",(void*)d->data);
+		wprintw(w,"Thread  %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataObjArray:
-		wprintw(w,"Array  %p",(void*)d->data);
+		wprintw(w,"Array  %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataObjEnv:
-		wprintw(w,"Map  %p",(void*)d->data);
+		wprintw(w,"Map  %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataObjStack:
-		wprintw(w,"Stack  %p",(void*)d->data);
+		wprintw(w,"Stack  %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataObjFun:
-		wprintw(w,"Function  %p",(void*)d->data);
+		wprintw(w,"Function  %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataObjVObj:
-		wprintw(w,"V-Obj  %p",(void*)d->data);
+		wprintw(w,"V-Obj  %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	case DataManagedObjectFlag:
-		wprintw(w,"Undefined Object ! %p",(void*)d->data);
+		wprintw(w,"Undefined Object ! %p[%lu]",(void*)d->data,vm_obj_refcount_ptr((void*)d->data));
 		break;
 	default:
 		wprintw(w, "Unknown (%u, 0x%lX)",d->type,d->data);
@@ -82,12 +82,13 @@ static void call_stack_renderer(WINDOW* w,struct _call_stack_entry_t* cse) {
 }
 
 
-static void render_stack(WINDOW* w, generic_stack_t s, word_t sz, const char*prefix, void(*renderer)(WINDOW*,void*)) {
-	long counter = 0;
-	long stop = -sz;
+static void render_stack(WINDOW* w, generic_stack_t s, word_t skip, word_t count, const char*prefix, void(*renderer)(WINDOW*,void*), int disp_start, int disp_incr) {
+	long counter = -skip;
+	long stop = -(skip+count);
 	wprintw(w,"\n");
 	while(counter>stop) {
-		wprintw(w,"%s%li : ",prefix,-counter);
+		wprintw(w,"%s%li : ",prefix,disp_start);
+		disp_start+=disp_incr;
 		renderer(w,_gpeek(s,counter));
 		wprintw(w,"\n");
 		counter-=1;
@@ -106,11 +107,6 @@ static void render_stack(WINDOW* w, generic_stack_t s, word_t sz, const char*pre
  *
  *************************************************************************/
 
-void read_command() {
-	getch();
-}
-
-
 int x_sz,y_sz;
 
 WINDOW* call_stack;
@@ -121,19 +117,194 @@ WINDOW* closure_stack;
 
 WINDOW* code;
 
+#define N_WINDOWS 6
+
+
 #define ST_W ((getmaxx(stdscr)>>2))
 #define ST_H ((getmaxy(stdscr)>>1))
 
-void print_centered(WINDOW*w, int y, const char* str) {
-	mvwprintw(w,y,(getmaxx(w)-strlen(str))>>1, str);
+
+int cur_win=0;
+
+int window_vofs[N_WINDOWS] = { 0,0,0,0,0,0, };
+
+WINDOW** windows[N_WINDOWS] = {
+	&code,
+	&call_stack,
+	&data_stack,
+	&locals_stack,
+	&closure_stack,
+	&data_seg,
+};
+
+#define STATE_IDLE 0
+#define STATE_RUNNING 1
+#define STATE_STEPPING 2
+#define STATE_DEAD 3
+
+int state=STATE_IDLE;
+
+void do_scroll_down() {
+	window_vofs[cur_win]+=1+(!cur_win);
+	state=STATE_IDLE;
 }
 
-void repaint(vm_t vm, thread_t t) {
+void do_scroll_up() {
+	if(window_vofs[cur_win]==0) {
+		return;
+	}
+	window_vofs[cur_win]-=1+(!cur_win);
+	state=STATE_IDLE;
+}
+
+void do_step() {
+	if(state==STATE_IDLE) {
+		state=STATE_STEPPING;
+	}
+}
+
+void do_run() {
+	if(state==STATE_IDLE) {
+		state=STATE_RUNNING;
+	}
+}
+
+void do_cycle_win() {
+	cur_win=(cur_win+1)%N_WINDOWS;
+	/*fprintf(stderr,"cur_win is now %i\n",cur_win);*/
+}
+
+void term();
+
+void do_quit() {
+	term();
+	exit(0);
+}
+
+void do_help();
+
+typedef struct _command_t {
+	int ch;
+	const char* descr;
+	void (*command)();
+} command_t;
+
+command_t commands[N_WINDOWS][10] = {
+/* code window */ {
+	{ 'h', "display this popup", do_help },
+	{ 's', "execute next opcode", do_step },
+	{ 'r', "run this thread", do_run },
+	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
+	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
+	{ 'm', "scroll down by one opcode", do_scroll_down },
+	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ '\t', "cycle through windows", do_cycle_win },
+	{ 'q', "quit", do_quit },
+{ 0, NULL, NULL}}, /* call_stack */ {
+	{ 'h', "display this popup", do_help },
+	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
+	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
+	{ 'm', "scroll down by one opcode", do_scroll_down },
+	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ '\t', "cycle through windows", do_cycle_win },
+	{ 'q', "quit", do_quit },
+{ 0, NULL, NULL}}, /* data_stack */ {
+	{ 'h', "display this popup", do_help },
+	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
+	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
+	{ 'm', "scroll down by one opcode", do_scroll_down },
+	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ '\t', "cycle through windows", do_cycle_win },
+	{ 'q', "quit", do_quit },
+{ 0, NULL, NULL}}, /* locals_stack */ {
+	{ 'h', "display this popup", do_help },
+	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
+	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
+	{ 'm', "scroll down by one opcode", do_scroll_down },
+	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ '\t', "cycle through windows", do_cycle_win },
+	{ 'q', "quit", do_quit },
+{ 0, NULL, NULL}}, /* closure_stack */ {
+	{ 'h', "display this popup", do_help },
+	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
+	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
+	{ 'm', "scroll down by one opcode", do_scroll_down },
+	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ '\t', "cycle through windows", do_cycle_win },
+	{ 'q', "quit", do_quit },
+{ 0, NULL, NULL}}, /* data_seg */ {
+	{ 'h', "display this popup", do_help },
+	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
+	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
+	{ 'm', "scroll down by one opcode", do_scroll_down },
+	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ '\t', "cycle through windows", do_cycle_win },
+	{ 'q', "quit", do_quit },
+{ 0, NULL, NULL},
+}};
+
+
+void read_command(vm_t vm, thread_t t);
+
+
+void print_centered(int n, int y, const char* str) {
+	if(n==cur_win) {
+		wattron(*windows[n],A_STANDOUT|A_UNDERLINE|A_BOLD);
+	}
+	mvwprintw(*windows[n],y,(getmaxx(*windows[n])-strlen(str))>>1, str);
+	if(n==cur_win) {
+		wattroff(*windows[n],A_STANDOUT|A_UNDERLINE|A_BOLD);
+	}
+}
+
+
+void do_help() {
+	int sz=0;
+	WINDOW* popup;
+	while(commands[cur_win][sz].ch) { sz+=1; }
+	popup = subwin(stdscr, sz+2, 52, (getmaxy(stdscr)-sz-2)>>1, (getmaxx(stdscr)-52)>>1);
+	sz=0;
+	wprintw(popup,"\n");
+	while(commands[cur_win][sz].ch) {
+		switch(commands[cur_win][sz].ch) {
+		case KEY_UP:
+			wprintw(popup," \t<UP>\t%s\n",commands[cur_win][sz].descr);
+			break;
+		case KEY_DOWN:
+			wprintw(popup," \t<DOWN>\t%s\n",commands[cur_win][sz].descr);
+			break;
+		case '\t':
+			wprintw(popup," \t<TAB>\t%s\n",commands[cur_win][sz].descr);
+			break;
+		default:;
+			wprintw(popup," \t'%c'\t%s\n",commands[cur_win][sz].ch,commands[cur_win][sz].descr);
+		};
+		sz+=1;
+	}
+	box(popup,0,0);
+	touchwin(stdscr);
+	wnoutrefresh(stdscr);
+	doupdate();
+	getch();
+	delwin(popup);
+}
+
+
+word_t calc_count(int n, word_t sz) {
+	word_t skip = window_vofs[n];
+	word_t count = sz-skip;
+	if(count>getmaxy(*windows[n])-2) {
+		count = getmaxy(*windows[n])-2;
+	}
+	return count;
+}
+
+void repaint(vm_t vm, thread_t t, int do_command) {
 	word_t ofs;
 	vm_data_t tab;
 	const char*label;
 	const char*disasm;
-	word_t code_start, code_end,i,j;
+	word_t code_start, code_end,i,j,skip,count;
 	char title[50];
 
 	clear();
@@ -141,7 +312,7 @@ void repaint(vm_t vm, thread_t t) {
 	if(!(vm&&t)) {
 
 		box(code,0,0);
-		print_centered(code,0," No running thread ");
+		print_centered(0,0," No running thread ");
 		box(call_stack,0,0);
 
 		box(data_stack,0,0);
@@ -152,7 +323,7 @@ void repaint(vm_t vm, thread_t t) {
 		wnoutrefresh(stdscr);
 		doupdate();
 
-		read_command();
+		read_command(vm,t);
 		
 		return;
 	}
@@ -165,16 +336,20 @@ void repaint(vm_t vm, thread_t t) {
 					"TODO",
 		t,t->program,t->IP);
 
-	if(t->IP>ST_H) {
-		code_start = t->IP-ST_H;
+	if(state==STATE_STEPPING||state==STATE_RUNNING) {
+		window_vofs[0]=t->IP;
+	}
+
+	if(window_vofs[0]>ST_H) {
+		code_start = (window_vofs[0]-ST_H)&(~1);
 	} else {
 		code_start = 0;
 	}
 
-	if((long)t->IP>(long)(t->program->code.size-ST_H)) {
+	if((long)code_start>(long)(t->program->code.size-2*ST_H)) {
 		code_end=t->program->code.size;
 	} else {
-		code_end=t->IP+ST_H;
+		code_end=(code_start+2*ST_H)&(~1);
 	}
 
 	wattroff(code,A_STANDOUT);
@@ -184,16 +359,16 @@ void repaint(vm_t vm, thread_t t) {
 	for(i=code_start;i<code_end;i+=2) {
 		disasm = program_disassemble(vm,t->program,i);
 		label = program_lookup_label(t->program,i);
-		if(i==t->IP) {
+		if(i==window_vofs[0]) {
 			wattron(code,A_STANDOUT);
 		}
-		if(label) {
+		if(label&&*label) {
 			sprintf(title,"%s :",label);
-			wprintw(code," \t%-*.*s\n %8.8lx  =>\t%-*.*s\n",j+8,j+8,title,i,j,j,disasm);
+			wprintw(code," \t%-*.*s\n %8.8lx  %s\t%-*.*s\n",j+8,j+8,title,i,i==t->IP?"=>":"",j,j,disasm);
 		} else {
-			wprintw(code," %8.8lx  =>\t%-*.*s\n",i,j,j,disasm);
+			wprintw(code," %8.8lx  %s\t%-*.*s\n",i,i==t->IP?"=>":"",j,j,disasm);
 		}
-		if(i==t->IP) {
+		if(i==window_vofs[0]) {
 			wattroff(code,A_STANDOUT);
 		}
 		free((char*)disasm);
@@ -201,108 +376,115 @@ void repaint(vm_t vm, thread_t t) {
 
 	box(code,0,0);
 	sprintf(title," %s Thread %p CS:%p IP:%lx \n",
-		t->state==ThreadRunning?"Running":
-			t->state==ThreadZombie?"Zombie":
-				t->state==ThreadDying?"Dying":
-					"TODO",
+		state==STATE_DEAD?"Dying":"Running",
 		t,t->program,t->IP);
-	print_centered(code,0,title);
+	print_centered(0,0,title);
 
 	/* render call stack */
 
 	sprintf(title," Call stack [%lu] ", gstack_size(&t->call_stack));
-	render_stack(call_stack,&t->call_stack, gstack_size(&t->call_stack), "  ", (void(*)(WINDOW*,void*)) call_stack_renderer);
+	render_stack(call_stack,&t->call_stack, window_vofs[1], calc_count(1,gstack_size(&t->call_stack)), "  ", (void(*)(WINDOW*,void*)) call_stack_renderer, 0, 1);
 	box(call_stack,0,0);
-	print_centered(call_stack,0,title);
+	print_centered(1,0,title);
 
 	sprintf(title," Data stack [%lu] ", gstack_size(&t->data_stack));
-	render_stack(data_stack,&t->data_stack, gstack_size(&t->data_stack), "  ", (void(*)(WINDOW*,void*)) data_stack_renderer);
+	render_stack(data_stack,&t->data_stack, window_vofs[2], calc_count(2,gstack_size(&t->data_stack)), "  ", (void(*)(WINDOW*,void*)) data_stack_renderer, 0, 1);
 	box(data_stack,0,0);
-	print_centered(data_stack,0,title);
+	print_centered(2,0,title);
 
 	sprintf(title," Closures stack [%lu] ", gstack_size(&t->closures_stack));
-	render_stack(closure_stack,&t->closures_stack, gstack_size(&t->closures_stack), "  ", (void(*)(WINDOW*,void*)) closure_stack_renderer);
+	render_stack(closure_stack,&t->closures_stack, window_vofs[3], calc_count(3,gstack_size(&t->closures_stack)), "  ", (void(*)(WINDOW*,void*)) closure_stack_renderer, 0, 1);
 	box(closure_stack,0,0);
-	print_centered(closure_stack,0,title);
+	print_centered(4,0,title);
 
 	sprintf(title," Locals stack [%lu] ", gstack_size(&t->closures_stack));
-	render_stack(locals_stack,&t->locals_stack, gstack_size(&t->locals_stack), "  ", (void(*)(WINDOW*,void*)) data_stack_renderer);
+	render_stack(locals_stack,&t->locals_stack, window_vofs[4], calc_count(4,gstack_size(&t->locals_stack)), "  ", (void(*)(WINDOW*,void*)) data_stack_renderer, -1, -1);
 	box(locals_stack,0,0);
-	print_centered(locals_stack,0,title);
+	print_centered(3,0,title);
 
-	code_end = t->program->data.size>>1;
+	code_end =t->program->data.size>>1;
 	sprintf(title," Data segment [%lu] ", code_end);
+	if(code_end>getmaxy(data_seg)+window_vofs[5]-2) {
+		code_end=getmaxy(data_seg)+window_vofs[5]-2;
+	}
 	tab = (vm_data_t) t->program->data.data;
-	for(i=0;i<code_end;i+=1) {
+	for(i=window_vofs[5];i<code_end;i+=1) {
 		wprintw(data_seg,"\n  %li : ",i);
 		data_stack_renderer(data_seg,&(tab[i]));
 	}
 	box(data_seg,0,0);
-	print_centered(data_seg,0,title);
+	print_centered(5,0,title);
 
 
 	wnoutrefresh(stdscr);
 	doupdate();
 
-	read_command();
-
-/*	lookup_label_and_ofs(t->program,t->IP,&label,&ofs);
-	fprintf(stderr, "Thread :\t%p\n",t);
-	if(label) {
-		fprintf(stderr,"CS:IP :\t%p:%lXh (%s+%lXh)", t->program, t->IP, label, ofs);
-	} else {
-		fprintf(stderr,"CS:IP :\t%p:%lXh",t->program,t->IP);
+	if(do_command) {
+		read_command(vm,t);
 	}
-	{
-		const char* disasm = program_disassemble(vm,t->program,t->IP);
-		printf("\t# %-40.40s\n",disasm);
-		free((char*)disasm);
-	}*/
-/*	fprintf(stderr,"\nCall stack :\t[%lu]\n", gstack_size(&t->call_stack));
-	render_stack(&t->call_stack, gstack_size(&t->call_stack), "\t", (void(*)(void*)) call_stack_renderer);
-	fprintf(stderr,"\nClosures stack :\t[%lu]\n", gstack_size(&t->data_stack));
-	render_stack(&t->closures_stack, gstack_size(&t->closures_stack), "\t", (void(*)(void*)) closure_stack_renderer);
-	fprintf(stderr,"\nData stack :\t[%lu]\n", gstack_size(&t->data_stack));
-	render_stack(&t->data_stack, t->data_sp_backup, "\t", (void(*)(void*)) data_stack_renderer);
-	fprintf(stderr,"\nLocals stack :\t[%lu]\n", gstack_size(&t->locals_stack));
-	render_stack(&t->locals_stack, gstack_size(&t->locals_stack), "\t", (void(*)(void*)) data_stack_renderer);
-	fprintf(stderr,"\nCatch stack :\t[%lu]\n", gstack_size(&t->catch_stack));
-*/
 }
 
 
+
+
+void read_command(vm_t vm, thread_t t) {
+	int c;
+	int i;
+	if(state==STATE_RUNNING) {
+		return;
+	}
+	if(state==STATE_STEPPING) {
+		state=STATE_IDLE;
+	}
+	while(state==STATE_IDLE||state==STATE_DEAD) {
+		c = getch();
+		i=0;
+		while(commands[cur_win][i].ch && commands[cur_win][i].ch!=c) { i+=1; }
+		if(commands[cur_win][i].ch==c) {
+			commands[cur_win][i].command();
+			repaint(vm,t,0);
+		}
+	}
+}
+
+
+vm_t vm;
+
+extern const vm_engine_t debug_engine;
+
+
+void term() {
+	vm_del(vm);
+	delwin(code);
+	delwin(data_stack);
+	delwin(locals_stack);
+	delwin(closure_stack);
+	delwin(data_seg);
+	delwin(call_stack);
+	delwin(stdscr);
+	endwin();
+	fputs("Thank you for using tinyaml.\n",stdout);
+}
 
 
 
 void init() {
 	initscr(); noecho(); cbreak(); curs_set(0);
+	flushinp();
 
 	x_sz = getmaxx(stdscr);
 	y_sz = getmaxy(stdscr);
 
 	code = subwin(stdscr,y_sz-ST_H, x_sz-ST_W, 0, 0);
-	print_centered(code,0," Code segment ");
-
 	call_stack = subwin(stdscr, ST_H, ST_W, 0, x_sz-ST_W);
-	print_centered(call_stack,0," Call Stack ");
-
 	data_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 0);
-	print_centered(data_stack,0," Data Stack ");
-
 	locals_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, ST_W);
-	print_centered(locals_stack,0," Locals Stack ");
-
 	closure_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 2*ST_W);
-	print_centered(closure_stack,0," Closures Stack ");
-
 	data_seg = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 3*ST_W);
-	print_centered(data_seg,0," Data Segment ");
-}
 
-void term() {
-	endwin();
+	vm = vm_new();
+	vm_set_engine(vm,debug_engine);
 }
-
 
 
 /**************************************************************************
@@ -314,26 +496,18 @@ void term() {
  *                                        
  *************************************************************************/
 
-extern const vm_engine_t debug_engine;
-
 int main(int argc, const char**argv) {
 	reader_t r;
 	program_t p;
 	if(argc==1) {
 		return 1;
 	}
-	vm_t vm = vm_new();
-	vm_set_engine(vm,debug_engine);
 	init();
 	r = file_reader_new(argv[1]);
 	p = vm_unserialize_program(vm,r);
 	reader_close(r);
 	vm_run_program_fg(vm,p,0,50);
-	wnoutrefresh(stdscr);
-	doupdate();
-	getch();
 	term();
-	vm_del(vm);
 	return 0;
 }
 
@@ -387,14 +561,15 @@ void _VM_CALL dbg_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
 
 void _VM_CALL dbg_thread_failed(vm_t vm,thread_t t) {
 	t->data_stack.sp = t->data_sp_backup;
-	repaint(vm,t);
+	state=STATE_DEAD;
+	repaint(vm,t,1);
 	getch();
 }
 
 void _VM_CALL e_stub(vm_engine_t);
 
 void _VM_CALL dbg_debug(vm_engine_t e) {
-	repaint(e->vm,e->vm->current_thread);
+	repaint(e->vm,e->vm->current_thread,1);
 }
 
 /* synchronous engine. init lock unlock and deinit are pointless, and kill can't happen. */

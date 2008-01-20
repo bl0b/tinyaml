@@ -555,7 +555,7 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	{
 		const char* label = program_lookup_label(t->program,t->IP);
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
-		fprintf(stderr,"\nEXEC:%p (%p:%lX)\t%-20.20s %-40.40s | ",t,t->program,t->IP,label?label:"",disasm);
+		fprintf(stdout,"\nEXEC:%p (%p:%lX)\t%-20.20s %-40.40s | ",t,t->program,t->IP,label?label:"",disasm);
 		free((char*)disasm);
 	}
 // */

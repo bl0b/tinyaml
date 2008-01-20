@@ -47,7 +47,7 @@ walker analyzeFuncDecl {
 	end
 
 	default asm
-		push "analyzeFuncDecl default on " astGetOp push "\\n" print 3
+#		push "analyzeFuncDecl default on " astGetOp push "\\n" print 3
 		compileStateNext
 	end
 
@@ -77,7 +77,7 @@ walker analyzeFuncDecl {
 	on script_param_list asm
 		enter 1				# counter
 		push 0 setmem -1
-		pp_curNode
+#		pp_curNode
 	_spl_loop:
 		getmem -1 astGetChildrenCount nEq [
 			+$cur_fname
@@ -127,10 +127,12 @@ walker analyzeFuncDecl {
 			nop
 		]
 		getmem -1 $symMustEnclose eq [
-			push "symbol must be enclosed\n" print 1
+			nop
+#			push "symbol must be enclosed\\n" print 1
 		]
 		getmem -1 $symUnknown eq [
-			push "symbol is unknown\n" print 1
+			nop
+#			push "symbol is unknown\\n" print 1
 		]
 		leave 1
 		compileStateNext
@@ -349,9 +351,9 @@ getSymContext:
 					+$_sym_ofs
 					getmem -5 +(FuncDecl.closure_ofs) arraySize
 				arraySet
-				push "Symbol local '" getmem -1 push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
+#				push "Symbol local '" getmem -1 push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
 				getmem -5 +(FuncDecl.closure) getmem -1 getSym dec -$_sym_ofs
-				push "Symbol '" getmem -1 push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
+#				push "Symbol '" getmem -1 push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
 				$symIsClosure leave 5 ret 0 ]
 	
 			getmem -2 +(FuncDecl.parameters) getmem -1 getSym setmem -3
@@ -366,9 +368,9 @@ getSymContext:
 					+$_sym_ofs
 					getmem -5 +(FuncDecl.closure_ofs) arraySize
 				arraySet
-				push "Symbol param '" getmem -1 push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
+#				push "Symbol param '" getmem -1 push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
 				getmem -5 +(FuncDecl.closure) getmem -1 getSym dec -$_sym_ofs
-				push "Symbol '" getmem -1 push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
+#				push "Symbol '" getmem -1 push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
 				$symIsClosure leave 5 ret 0 ]
 	
 			getmem -2 +(FuncDecl.closure) getmem -1 getSym dec setmem -3
@@ -587,7 +589,7 @@ asm
 	# do "cur_fname = ...fun..."
 	astCompileChild 1
 
-	push "Symbol '" +$cur_fname push "' has index " getmem -1 push "\\n" print 5
+#	push "Symbol '" +$cur_fname push "' has index " getmem -1 push "\\n" print 5
 
 	getmem -1
 	write_oc_Int "setmem"
@@ -608,7 +610,7 @@ end
 
 compile script_fun_decl
 asm
-	push "@@@   at start, $cur_fname = " +$cur_fname push "   @@@\n" print 3
+#	push "@@@   at start, $cur_fname = " +$cur_fname push "   @@@\\n" print 3
 	enter 4
 	+$cur_fname call @gen_label setmem -2
 	push "endfun" call @gen_label setmem -3
@@ -658,7 +660,7 @@ asm
 	getmem -2 write_oc_Label "dynFunNew"
 
 	push 0 setmem -1
-	push "\   @@@   NOW $cur_fname = " +$cur_fname push "   @@@\\n" print 3
+#	push "\   @@@   NOW $cur_fname = " +$cur_fname push "   @@@\\n" print 3
 	+$cur_fname call @funcDeclGet +(FuncDecl.closure_ofs) setmem -2
 _addcls_loop:
 	getmem -2 arraySize getmem -1 sup [
@@ -1074,7 +1076,8 @@ compile script_array_access asm
 		push -1 write_oc_Int "dup"
 		astCompileChild 0
 		write_oc "arraySet"
-		write_oc "pop"
+		push 2
+		write_oc_Int "pop"
 		push 0 -$is_lvalue
 	][
 		astCompileChild 0
