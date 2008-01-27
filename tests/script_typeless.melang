@@ -188,7 +188,8 @@ walker analyzeFuncDecl {
 	on b_or asm compileStateDown end
 	on script_call asm compileStateDown end
 	on script_if asm compileStateDown end
-	on sub_bloc asm compileStateDown end
+	on sb_end asm compileStateDown end
+	on sb_else asm compileStateDown end
 }
 
 asm
@@ -307,13 +308,13 @@ getSymContext:
 
 		getmem -2 +(FuncDecl.locals) getmem -1 getSym setmem -3
 		getmem -3 [
-			push 0 getmem -3 sub -$_sym_ofs
+			push 0 getmem -3 sub +$call_local_ofs sub -$_sym_ofs
 ###			push "Symbol '" getmem -1 push "' is local at ofs " +$_sym_ofs push "\\n" print 5
 			$symIsLocal leave 5 ret 0 ]
 
 		getmem -2 +(FuncDecl.parameters) getmem -1 getSym setmem -3
 		getmem -3 [
-			push 0 getmem -2 +(FuncDecl.locals) symTabSz dec sub getmem -3 sub -$_sym_ofs
+			push 0 getmem -2 +(FuncDecl.locals) symTabSz dec sub getmem -3 sub +$call_local_ofs sub -$_sym_ofs
 ###			push "Symbol '" getmem -1 push "' is a parameter at ofs " +$_sym_ofs push "\\n" print 5
 			$symIsParam leave 5 ret 0 ]
 
@@ -325,7 +326,7 @@ getSymContext:
 
 		push 0 setmem -4
 
-		push 0
+		push 0 +$call_local_ofs sub
 #		getmem -2 +(FuncDecl.locals) symTabSz dec
 #		getmem -2 +(FuncDecl.parameters) symTabSz dec
 #		add sub
@@ -470,10 +471,13 @@ language
 
  script_instruction = ( <script_if> | <script_while> | <script_assign> | <script_call> | <AsmBloc> | <script_print> | <script_return> ).
 
- script_while ::= "while" <b_expr> "do" <sub_bloc> "end".
- script_if ::= "if" <b_expr> "then" <sub_bloc> ( "else" <sub_bloc> "end" | "end" ).
- sub_bloc ::= <sbloop>.
- sbloop = ( <sbloop> <script_instruction> | <script_instruction> ).
+ script_while ::= "while" <b_expr> "do" <sb_end>.
+ script_if ::= "if" <b_expr> "then" ( <sb_else> <sb_end> | <sb_end> ).
+
+ sb_end ::= <sbloop_end>.
+ sb_else ::= <sbloop_else>.
+ sbloop_end = ( <script_instruction> <sbloop_end> | "end" ).
+ sbloop_else = ( <script_instruction> <sbloop_else> | "else" ).
 
  script_call ::= <script_var> "(" ( ")" | <script_expr_loop> ).
  script_expr_loop = <script_expr> ( "," <script_expr_loop> | ")" ).
@@ -483,7 +487,7 @@ language
  script_print_loop = ( <script_expr> "," <script_print_loop> | <script_expr> ).
  script_expr = ( <script_string> | <script_anon_fun> | <b_expr> | <m_expr> ).
 
- script_return = "return" <script_expr>.
+ script_return ::= "return" <script_expr>.
 
  script_assign ::= <script_var> "=" ( <script_expr> ).
 
@@ -610,6 +614,7 @@ end
 
 compile script_fun_decl
 asm
+	#pp_curNode
 #	push "@@@   at start, $cur_fname = " +$cur_fname push "   @@@\\n" print 3
 	enter 4
 	+$cur_fname call @gen_label setmem -2
@@ -746,6 +751,7 @@ asm
 			leave 1
 			compileStateNext
 		][
+			push "At " astGetRow push ":" astGetCol push "\\t: " print 5
 			push "Error with symbol context for sym '" astGetChildString 0 push "' : " print 3
 			getmem -1 $symMustEnclose eq [ push "can't handle recursive closures yet\n" print 1]
 			getmem -1 $symUnknown eq [ push "symbol is unknown.\n" print 1]
@@ -1055,7 +1061,8 @@ asm
 end
 
 
-compile sub_bloc asm compileStateDown end
+compile sb_end asm compileStateDown end
+compile sb_else asm compileStateDown end
 
 compile script_var asm
 	+$is_lvalue astGetChildrenCount push 2 eq and [[

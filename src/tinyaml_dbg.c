@@ -300,11 +300,12 @@ word_t calc_count(int n, word_t sz) {
 }
 
 void repaint(vm_t vm, thread_t t, int do_command) {
-	word_t ofs;
+	/*word_t ofs;*/
 	vm_data_t tab;
 	const char*label;
 	const char*disasm;
-	word_t code_start, code_end,i,j,skip,count;
+	word_t code_start, code_end,i,j;
+	/*word_t skip,count;*/
 	char title[50];
 
 	clear();

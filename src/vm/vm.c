@@ -42,7 +42,7 @@ ast_node_t ast_unserialize(const char*);
 extern const char* ml_core_grammar;
 extern const char* ml_core_lib;
 
-static volatile vm_t _glob_vm = NULL;
+volatile vm_t _glob_vm = NULL;
 
 jmp_buf _glob_vm_jmpbuf;
 
@@ -168,7 +168,12 @@ int comp_prio(dlist_node_t a, dlist_node_t b) {
 
 
 vm_t vm_set_lib_file(vm_t vm, const char*fname) {
-	vm->dl_handle = dlopen(fname, RTLD_LAZY);
+	char buffer[1024];
+	snprintf(buffer,1024,"%s/libtinyaml_%s.so",TINYAML_EXT_DIR,fname);
+	vm->dl_handle = dlopen(buffer, RTLD_LAZY);
+	if(!vm->dl_handle) {
+		fprintf(stderr,"[VM:WARN] Couldn't open library \"%s\"\n",buffer);
+	}
 	return vm;
 }
 
@@ -555,7 +560,7 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	{
 		const char* label = program_lookup_label(t->program,t->IP);
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
-		fprintf(stdout,"\nEXEC:%p (%p:%lX)\t%-20.20s %-40.40s | ",t,t->program,t->IP,label?label:"",disasm);
+		fprintf(stdout,"\nEXEC:%p:%s (%p:%lX)\t%-20.20s %-40.40s | ",t,thread_state_to_str(t->state),t->program,t->IP,label?label:"",disasm);
 		free((char*)disasm);
 	}
 // */
@@ -618,32 +623,37 @@ thread_t _VM_CALL _sched_mono(vm_t vm) {
 			return NULL;
 		}
 	default:
-		return vm->current_thread;
+		if(vm->current_thread->state==ThreadRunning) {
+			return vm->current_thread;
+		}
+		return NULL;
 	};
 }
 
 
 
 thread_t _VM_CALL _sched_rr(vm_t vm) {
-	register thread_t current;
-	if(vm->current_thread) {
-		current = vm->current_thread;
-		/* quick pass if current meets conditions */
+	register thread_t current=vm->current_thread;
+
+	/* quick pass if current meets conditions */
+	if(current) {
 		/*printf("\thave current thread %p, state=%i, remaining=%li\n",current,current->state,current->remaining);*/
-		if(current->state==ThreadRunning) {
-			if(current->remaining!=0/*&&current->remaining<vm->timeslice*/) {
-				/*printf("\tcurrent still running for %lu more cycles\n",current->remaining);*/
-				return current;
-			} else if(vm->current_thread->sched_data.next) {
-				vm->current_thread = (thread_t)vm->current_thread->sched_data.next;
-				/*printf("\tnext thread\n");*/
-			} else {
-				vm->current_thread = NULL;
-			}
+	}
+	if(current&&current->state==ThreadRunning) {
+		if(current->remaining!=0/*&&current->remaining<vm->timeslice*/) {
+			/*printf("\tcurrent still running for %lu more cycles\n",current->remaining);*/
+			return current;
+		} else if(vm->current_thread->sched_data.next) {
+			vm->current_thread = (thread_t)vm->current_thread->sched_data.next;
+			/*printf("\tnext thread\n");*/
+		} else {
+			vm->current_thread = NULL;
 		}
 	} else if(vm->running_threads.head) {
 		vm->current_thread = (thread_t)vm->running_threads.head;
 		/*printf("\tnext thread (looped back to head)\n");*/
+	} else {
+		vm->current_thread=NULL;
 	}
 	/* solve the conflict between next ready and next running threads, if any */
 	if(vm->ready_threads.head) {
@@ -671,7 +681,8 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 
 _sched_method_t schedulers[SchedulerAlgoMax] = {
 	_sched_idle,
-	_sched_mono,
+	/*_sched_mono,*/
+	_sched_rr,
 	_sched_rr,
 };
 

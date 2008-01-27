@@ -225,6 +225,14 @@ void _VM_CALL vm_op_astGetOp(vm_t vm, word_t x) {
 	vm_push_data(vm,DataString,(word_t)wa_op(vm->current_node));
 }
 
+void _VM_CALL vm_op_astGetRow(vm_t vm, word_t x) {
+	vm_push_data(vm,DataInt,(word_t)wa_row(vm->current_node));
+}
+
+void _VM_CALL vm_op_astGetCol(vm_t vm, word_t x) {
+	vm_push_data(vm,DataInt,(word_t)wa_col(vm->current_node));
+}
+
 void vm_dump_data_stack(vm_t vm);
 void _VM_CALL vm_op_astGetChildrenCount(vm_t vm, word_t x) {
 	/*printf("vm_op_astGetChildrenCount => %u\n",wa_opd_count(vm->current_node));*/

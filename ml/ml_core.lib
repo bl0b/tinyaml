@@ -90,6 +90,8 @@
         opcode div:Float
       # AST manipulation
         opcode astGetOp
+        opcode astGetRow
+        opcode astGetCol
         opcode astGetChildString
         opcode astGetChildString:Int
         opcode astGetChildrenCount

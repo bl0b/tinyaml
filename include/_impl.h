@@ -203,6 +203,7 @@ struct _thread_t {
 	struct _mutex_t join_mutex;
 };
 
+extern volatile vm_t _glob_vm;
 
 #endif
 

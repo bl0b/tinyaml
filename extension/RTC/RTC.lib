@@ -1,0 +1,30 @@
+     lib
+        file "rtc"
+
+        opcode RTC_init
+        opcode RTC_term
+
+        opcode RTC_start
+        opcode RTC_stop
+
+        opcode RTC_sched        # pop float, pop dyn_fun
+        opcode RTC_wait         # pop float, hang
+
+        opcode RTC_getDate
+
+        opcode RTC_getBeat
+        opcode RTC_setBeat:Float
+        opcode RTC_setBeat
+
+        opcode RTC_getTempo
+        opcode RTC_setTempo:Float
+        opcode RTC_setTempo
+
+        opcode RTC_getRes
+        opcode RTC_setRes:Float
+        opcode RTC_setRes
+
+        # used by driver thread
+        opcode _RTC_nextTask
+
+     end
