@@ -28,3 +28,43 @@
         opcode _RTC_nextTask
 
      end
+
+#########################################
+# DRIVER CODE                            
+#########################################
+
+data 0 0 end
+
+asm
+        dynFunNew @_init
+        push "rtc_init"
+        envAdd
+
+        dynFunNew @_term
+        push "rtc_term"
+        envAdd
+
+        jmp @_skip0
+
+      _init:
+        RTC_init
+        RTC_start
+
+        push 99
+        newThread @_tasks
+        setmem 1
+        ret 0
+
+      _term:
+        getmem 1 killThread
+        RTC_term
+        ret 0
+
+      _tasks:
+        _RTC_nextTask call
+        jmp @_tasks
+
+      _skip0:
+        nop
+end
+

@@ -53,21 +53,9 @@ void thread_init(thread_t ret, word_t prio, program_t p, word_t ip) {
 	ret->sched_data.value=(word_t)ret;
 }
 
-void deref_stack(vm_t vm, generic_stack_t gs) {
-	long i;
-	vm_data_t dt = (vm_data_t)gs->stack;
-	if(!dt) {
-		return;
-	}
-	for(i=0;i<=(long)gs->sp;i+=1) {
-		if(dt[i].type&DataManagedObjectFlag&&dt[i].type<DataTypeMax) {
-			/*printf("stack-deref::found an object : %p\n",(void*)dt[i].data);*/
-			vm_obj_deref_ptr(vm,(void*)dt[i].data);
-		}
-	}
-}
 
 void thread_deinit(vm_t vm, thread_t t) {
+	/*printf("thread deinit %p\n",t);*/
 	if(t->state==ThreadZombie) {
 		if(t->sched_data.prev) {
 			t->sched_data.prev->next = t->sched_data.next;
@@ -82,15 +70,14 @@ void thread_deinit(vm_t vm, thread_t t) {
 	}
 	mutex_deinit(&t->join_mutex);
 	gstack_deinit(&t->closures_stack,NULL);
-	/*deref_stack(vm,&t->locals_stack);*/
 	/*assert(t->locals_stack.sp==(word_t)-1);*/
-	deref_stack(vm,&t->locals_stack);
 	gstack_deinit(&t->locals_stack,NULL);
-	deref_stack(vm,&t->data_stack);
 	gstack_deinit(&t->data_stack,NULL);
 	gstack_deinit(&t->call_stack,NULL);
 	gstack_deinit(&t->catch_stack,NULL);
 }
+
+
 
 void thread_delete(vm_t vm, thread_t t) {
 	/*printf("\tdel thread\n");*/
@@ -246,6 +233,44 @@ long mutex_unlock(vm_t vm, mutex_t m, thread_t t) {
 	}
 	return m->count;
 }
+
+
+
+vm_blocker_t blocker_new() {
+	return new_gstack(sizeof(thread_t));
+}
+
+
+void bf_kt(thread_t*t) {
+	if((*t)->state!=ThreadDying&&(*t)->state!=ThreadZombie) {
+		/*printf("blocker killing thread %p\n",*t);*/
+		vm_kill_thread(_glob_vm,*t);
+	}
+	vm_obj_deref_ptr(_glob_vm,*t);
+}
+
+void blocker_free(vm_blocker_t b) {
+	gstack_deinit(b,(void(*)(void*))bf_kt);
+	free(b);
+}
+
+void blocker_suspend(vm_t vm,vm_blocker_t b,thread_t t) {
+	gpush(b,&t);
+	vm_obj_ref_ptr(vm,t);
+	thread_set_state(vm,t,ThreadBlocked);
+}
+
+void blocker_resume(vm_t vm,vm_blocker_t b) {
+	thread_t t;
+	while(gstack_size(b)) {
+		t = *(thread_t*)_gpop(b);
+		/*printf("task arrived ! resuming thread %p\n",t);*/
+		t->IP-=2;
+		vm_obj_deref_ptr(vm,t);
+		thread_set_state(vm,t,ThreadReady);
+	}
+}
+
 
 
 

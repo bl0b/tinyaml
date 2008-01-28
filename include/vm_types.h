@@ -105,6 +105,7 @@ typedef enum {
 	DataObjStack,
 	DataObjFun,
 	DataObjVObj,
+	DataObjUser,
 
 	DataTypeMax,
 } vm_data_type_t;
@@ -120,6 +121,8 @@ typedef enum {
 	NodeLabel
 } opcode_chain_node_type_t;
 
+
+typedef generic_stack_t vm_blocker_t;
 
 typedef struct _data_stack_entry_t* vm_data_t;
 typedef struct _call_stack_entry_t* call_stack_entry_t;

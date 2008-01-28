@@ -1,0 +1,58 @@
+script
+	global d#,rtc_init,rtc_term
+
+	function getEnv(sym) asm getmem -1 envGet end end
+
+#	rtc_init=getEnv("rtc_init")
+#	rtc_term=getEnv("rtc_term")
+
+	function rtcDate() asm RTC_getBeat end end
+	function rtcTime() asm RTC_getDate end end
+
+	function rtcSchedule(date,func)
+		asm
+			getmem -2
+			getmem -1
+			RTC_sched
+		end
+	end
+
+	function rtcWait(date)
+		asm
+			getmem -1
+			RTC_wait
+		end
+	end
+
+
+	function genDisp(disp)
+		return function()
+			local date asm setmem -1 end # get date from stack
+			print "Display : ",disp,"\ at ",date,"\n"
+		end
+	end
+
+	function disp(str)
+		local date asm setmem -1 end # get date from stack
+		print "Display : ",str,"\ at ",date,"\n"
+	end
+
+
+	&rtc_init()
+
+	d = rtcDate()
+	rtcSchedule(d+2.0,function() disp("Coucou 1") end)
+	rtcSchedule(d+4.0,function() disp("Coucou 2") end)
+	rtcSchedule(d+6.0,function() disp("Coucou 3") end)
+	rtcSchedule(d+8.0,function() disp("Coucou 4") end)
+	#rtcSchedule(d+2.0,genDisp("Coucou 1"))
+	#rtcSchedule(d+4.0,genDisp("Coucou 2"))
+	#rtcSchedule(d+6.0,genDisp("Coucou 3"))
+	#rtcSchedule(d+8.0,genDisp("Coucou 4"))
+
+	rtcWait(10.0)
+
+	&rtc_term()
+
+end
+

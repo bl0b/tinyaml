@@ -25,7 +25,9 @@
 #include "code.h"
 #include "thread.h"
 
-#define TINYAML_VERSION "0.1"
+#include "../config.h"
+
+#define TINYAML_VERSION PACKAGE_VERSION
 
 vm_t vm_new();
 void vm_del(vm_t);

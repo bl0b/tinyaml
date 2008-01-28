@@ -83,7 +83,8 @@ void gpush(generic_stack_t s, void* w) {
 	printf("\n");
 */	if(s->sz <= s->tok_sp) {
 		s->sz+=1024;
-		s->stack = (word_t*) realloc(s->stack, s->sz*s->token_size);
+		s->stack = realloc(s->stack, s->sz*s->token_size);
+		memset(s->stack+s->tok_sp+s->token_size,0,(s->sz-s->sp-1)*s->token_size);
 	}
 
 	memmove(s->stack+s->tok_sp,w,s->token_size);

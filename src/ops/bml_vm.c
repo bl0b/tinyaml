@@ -90,6 +90,7 @@ void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
 		};
 		k+=1;
 	}
+	fflush(stdout);
 	vm_pop_data(vm,n);
 }
 

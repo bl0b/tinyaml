@@ -1,0 +1,8 @@
+lib
+	file "msgqueue"
+        opcode msgQueueNew
+        opcode msgQueueWrite
+	opcode msgQueueReaderNew
+        opcode msgQueueRead
+end
+

@@ -1,5 +1,6 @@
 #include <curses.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "vm.h"
 #include "fastmath.h"
@@ -464,7 +465,7 @@ void term() {
 	delwin(call_stack);
 	delwin(stdscr);
 	endwin();
-	fputs("Thank you for using tinyaml.\n",stdout);
+	/*fputs("Thank you for using tinyaml.\n",stdout);*/
 }
 
 
@@ -482,9 +483,6 @@ void init() {
 	locals_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, ST_W);
 	closure_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 2*ST_W);
 	data_seg = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 3*ST_W);
-
-	vm = vm_new();
-	vm_set_engine(vm,debug_engine);
 }
 
 
@@ -497,18 +495,73 @@ void init() {
  *                                        
  *************************************************************************/
 
+#define TINYAML_ABOUT	"This is not yet another meta-language -- Interactive Debugger.\n" \
+			"(c) 2007-2008 Damien 'bl0b' Leroux\n\n"
+
+#define cmp_param(_n,_arg_str_long,_arg_str_short) (i<(argc-_n) && (	\
+		(_arg_str_long && !strcmp(_arg_str_long,argv[i]))	\
+					||				\
+		(_arg_str_short && !strcmp(_arg_str_short,argv[i]))	\
+	))
+
+int do_args(vm_t vm, int argc,const char*argv[]) {
+	int i,k;
+	program_t p=NULL;
+	writer_t w=NULL;
+	reader_t r=NULL;
+
+	for(i=1;i<argc;i+=1) {
+		if(cmp_param(1,"--compile","-c")) {
+			i+=1;
+			p = vm_compile_file(vm,argv[i]);
+		} else if(cmp_param(1,"--load","-l")) {
+			i+=1;
+			r = file_reader_new(argv[i]);
+			p=vm_unserialize_program(vm,r);
+			reader_close(r);
+		} else if(cmp_param(0,"--run","-f")) {
+			if(vm->engine!=stub_engine) {
+				vm_set_engine(vm,stub_engine);
+			}
+			vm_run_program_fg(vm,p,0,50);
+		} else if(cmp_param(0,"--debug","-d")) {
+			if(vm->engine!=debug_engine) {
+				init();
+				vm_set_engine(vm,debug_engine);
+				vm_run_program_bg(vm,p,0,50);
+				term();
+			}
+		} else if(cmp_param(0,"--version","-v")) {
+			printf(TINYAML_ABOUT);
+			printf("version " TINYAML_VERSION "\n" );
+			exit(0);
+		} else if(cmp_param(0,"--help","-h")) {
+			printf(TINYAML_ABOUT);
+			printf("Usage : %s [--compile, -c [filename]] [--save, -s [filename]] [--load, -l [filename]] [--run-foreground, -f] [--run-background, -b] [--version, -v] [--help,-h]\n",argv[0]);
+			printf(	"Commands are executed on the fly.\n"
+				"\n\t--compile,-c [filename]\tcompile this file\n"
+				  "\t--load,-l [filename]\tload a serialized program from this file\n"
+				  "\t--run,-f \trun the newest program\n"
+				  "\t--debug,-d \trun the newest program in the debugger\n"
+				  "\t--version,-v \t\tdisplay program version\n"
+				"\n\t--help,-h\t\tdisplay this text\n\n");
+			exit(0);
+		}
+	}
+
+	return 0;
+}
+
+
 int main(int argc, const char**argv) {
 	reader_t r;
 	program_t p;
-	if(argc==1) {
-		return 1;
-	}
-	init();
-	r = file_reader_new(argv[1]);
-	p = vm_unserialize_program(vm,r);
-	reader_close(r);
-	vm_run_program_fg(vm,p,0,50);
-	term();
+	int i;
+
+	vm = vm_new();
+	/*vm_set_engine(vm,debug_engine);*/
+
+	do_args(vm,argc,argv);
 	return 0;
 }
 
@@ -573,23 +626,73 @@ void _VM_CALL dbg_debug(vm_engine_t e) {
 	repaint(e->vm,e->vm->current_thread,1);
 }
 
+
+
+
+struct _thread_engine_t {
+	struct _vm_engine_t _;
+	pthread_t thread;
+	pthread_mutex_t mutex;
+	pthread_mutex_t fg_mutex;
+	volatile int is_running;
+};
+
+void _VM_CALL dbg_cli_lock(struct _thread_engine_t* e) {
+	if(pthread_self()==e->thread) {
+		return;
+	}
+	pthread_mutex_lock(&e->mutex);
+}
+
+void _VM_CALL dbg_cli_unlock(struct _thread_engine_t* e) {
+	if(pthread_self()==e->thread) {
+		return;
+	}
+	pthread_mutex_unlock(&e->mutex);
+}
+
+void _VM_CALL dbg_vm_lock(struct _thread_engine_t* e) {
+	/*if(pthread_self()!=e->thread) {*/
+		/*return;*/
+	/*}*/
+	pthread_mutex_lock(&e->mutex);
+}
+
+void _VM_CALL dbg_vm_unlock(struct _thread_engine_t* e) {
+	/*if(pthread_self()!=e->thread) {*/
+		/*return;*/
+	/*}*/
+	pthread_mutex_unlock(&e->mutex);
+}
+
+
+void _VM_CALL dbg_init(struct _thread_engine_t* e) {
+	e->thread=pthread_self();
+}
+
+
 /* synchronous engine. init lock unlock and deinit are pointless, and kill can't happen. */
-const vm_engine_t debug_engine = (struct _vm_engine_t[])
-{{
-	e_stub,
-	e_stub,
-	dbg_run,
-	e_stub,
+const vm_engine_t debug_engine = (vm_engine_t) (struct _thread_engine_t[])
+{{{
+	dbg_init,
 	e_stub,
 	dbg_run,
 	e_stub,
 	e_stub,
+	dbg_run,
 	e_stub,
-	e_stub,
-	e_stub,
+	(vm_engine_func_t)dbg_cli_lock,
+	(vm_engine_func_t)dbg_cli_unlock,
+	(vm_engine_func_t)dbg_vm_lock,
+	(vm_engine_func_t)dbg_vm_unlock,
 	dbg_thread_failed,
 	dbg_debug,
 	NULL
+},
+	(pthread_t)0,
+	PTHREAD_MUTEX_INITIALIZER,
+	PTHREAD_MUTEX_INITIALIZER,
+	0
 }};
 
 

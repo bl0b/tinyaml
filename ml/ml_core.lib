@@ -139,6 +139,7 @@
 
       # runtime environment
         opcode envLookup                # [symbol] => offset
+        opcode envGet                   # [symbol] => env value
         opcode envGet:EnvSym
         opcode envSet:EnvSym
         opcode envAdd

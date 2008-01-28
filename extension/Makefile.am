@@ -1,1 +1,1 @@
-SUBDIRS = RTC
+SUBDIRS = RTC MessageQueue

@@ -495,7 +495,9 @@ language
  script_float ::= <float>.
  number = ( <script_float> | <script_int> | <script_call> | <script_var> | "(" <m_expr> ")" ).
 
- script_var ::= ( <script_var> (<script_array_access>|<script_struc_access>) | <script_id> ).
+ script_var ::= ( <script_var> (<script_array_access>|<script_struc_access>) | ( <script_env> |<script_id> )).
+
+ script_env ::= "&" <sym>.
 
  script_array_access ::= "[" <m_expr> "]".
  script_struc_access ::= "." <sym>.
@@ -1075,6 +1077,19 @@ compile script_var asm
 	][
 		compileStateDown
 	]]
+end
+
+
+compile script_env asm
+	+$is_lvalue [[
+		astGetChildString 0
+		write_oc_EnvSym "envSet"
+		push 0 -$is_lvalue
+	][
+		astGetChildString 0
+		write_oc_EnvSym "envGet"
+	]]
+	compileStateNext
 end
 
 

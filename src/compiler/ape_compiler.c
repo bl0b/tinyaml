@@ -74,6 +74,7 @@ program_t compile_wast(wast_t node, vm_t vm) {
 	gpush(&vm->cn_stack,&vm->current_node);
 	vm->current_node = node;
 	tinyap_walk(node, "compiler", vm);
+	vm_set_lib_file(vm,NULL);
 	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 	program_t ret = program_new();
 	ret->env = vm->env;

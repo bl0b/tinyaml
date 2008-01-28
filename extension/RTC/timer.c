@@ -2,7 +2,7 @@
 
 #include "timer.h"
 #include "list.h"
-#include "alloc.h"
+#include "rtc_alloc.h"
 #include "priority_queue.h"
 
 #include <stdio.h>
@@ -33,6 +33,8 @@ PQueue tasks;
 
 //pthread_mutex_t mutex;
 Mutex mtx;
+
+pthread_cond_t timer_init_done = PTHREAD_COND_INITIALIZER;
 
 /* FIXME : dirty fix to prevent mutex recursion */
 int __selfcall=0;
@@ -194,7 +196,7 @@ int timer_init() {
 		return 1;
 	}
 
-	timer_is_running=0;
+	/*timer_is_running=0;*/
 
 	if(pthread_create(&rtc_thread,&attr,timer_routine,NULL)) {
 		perror("Error creating thread");
@@ -206,7 +208,14 @@ int timer_init() {
 #endif
 //	sleep(2);
 
-	while(!timer_is_running) sleep(0);
+	/*while(!timer_is_running) sleep(0);*/
+
+	while(!timer_is_running) {
+		mutexLock(mtx);
+		pthread_cond_wait(&timer_init_done, &mtx);
+		mutexUnlock(mtx);
+	}
+
 	if(timer_is_running==-1) {
 		return 1;
 	}
@@ -218,7 +227,8 @@ int timer_init() {
 void timer_terminate() {
 	timer_is_running=0;
 	timer_start();				/* to be sure the flag will be read */
-	while(!timer_is_running) sleep(0);
+	/*while(!timer_is_running) sleep(0);*/
+	pthread_cond_wait(&timer_init_done,&mtx);
 	timer_is_running=0;
 	pqDestroy(tasks);
 }
@@ -256,6 +266,7 @@ float timer_get_seconds() {
 }
 
 float timer_set_resolution(float ms) {
+	int scbak=__selfcall;
 	int i=0;
 	LOCK(mtx);
 	while(i<(N_RES-1)&&ms<allowed_resolutions[i]) ++i;
@@ -264,7 +275,7 @@ float timer_set_resolution(float ms) {
 	timer_resolution=allowed_resolutions[i];
 	__selfcall=1;
 	timer_set_tempo(timer_tempo);	/* update dbeat */
-	__selfcall=0;
+	__selfcall=scbak;
 	ioctl(rtc_fd,RTC_IRQP_SET,res_to_rtc_freq[i]);
 	//pthread_mutex_unlock(&mutex);
 	UNLOCK(mtx);
@@ -331,9 +342,13 @@ void*timer_routine(void*arg) {
 	n_pileups=0;
 	n_ticks=0;
 #endif
-	timer_is_running=1;
 
-	printf("Timer now runs\n");
+	mutexLock(mtx);
+	timer_is_running=1;
+	pthread_cond_signal(&timer_init_done);
+	mutexUnlock(mtx);
+
+	printf("Timer now runs\n"); fflush(stdout);
 	while(timer_is_running) {
 		ret=read(rtc_fd,&data,sizeof(unsigned long));
 		mutexLock(mtx);
@@ -381,7 +396,10 @@ void*timer_routine(void*arg) {
 	n_realticks=n;
 	printf("timer is now terminated.\nmax_pileup=%i average_pileup=%f (%li pileups in %li ticks (%li real))\n",max_pileup,average_pileup,n_pileups,n_ticks,n_realticks);
 #endif
+	mutexLock(mtx);
 	timer_is_running=-1;
+	pthread_cond_signal(&timer_init_done);
+	mutexUnlock(mtx);
 	return NULL;
 }
 

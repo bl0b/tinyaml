@@ -1,23 +1,32 @@
 #include "vm.h"
 #include "fastmath.h"
+#include "thread.h"
 #include "timer.h"
 #include "_impl.h"
 #include "object.h"
+#include "rtc_alloc.h"
 
 static int RTC_is_init=0;
 
-struct _generic_stack_t rtc_pending_threads;
+/*struct _generic_stack_t rtc_pending_threads;*/
+
+vm_blocker_t rtc_nextTask;
 
 void _VM_CALL vm_op_RTC_init(vm_t vm, word_t unused) {
 	if(RTC_is_init) return;
+	init_alloc();
 	timer_init();
-	gstack_init(&rtc_pending_threads,sizeof(thread_t));
+	/*gstack_init(&rtc_pending_threads,sizeof(thread_t));*/
+	rtc_nextTask = blocker_new();
 	RTC_is_init=1;
 }
 
 void _VM_CALL vm_op_RTC_term(vm_t vm, word_t unused) {
 	if(!RTC_is_init) return;
 	timer_terminate();
+	term_alloc();
+	/*gstack_deinit(&rtc_pending_threads,NULL);*/
+	blocker_free(rtc_nextTask);
 	RTC_is_init=0;
 }
 
@@ -35,14 +44,18 @@ void _VM_CALL vm_op_RTC_stop(vm_t vm, word_t unused) {
 
 
 void _VM_CALL vm_op_RTC_getDate(vm_t vm, word_t unused) {
-	vm_push_data(vm, DataFloat, timer_get_seconds());
+	_IFC conv;
+	conv.f=timer_get_seconds();
+	vm_push_data(vm, DataFloat, conv.i);
 }
 
 
 
 
 void _VM_CALL vm_op_RTC_getBeat(vm_t vm, word_t unused) {
-	vm_push_data(vm, DataFloat, timer_get_date());
+	_IFC conv;
+	conv.f=timer_get_date();
+	vm_push_data(vm, DataFloat, conv.i);
 }
 
 
@@ -62,7 +75,9 @@ void _VM_CALL vm_op_RTC_setBeat(vm_t vm, word_t unused) {
 
 
 void _VM_CALL vm_op_RTC_getTempo(vm_t vm, word_t unused) {
-	vm_push_data(vm, DataFloat, timer_get_tempo());
+	_IFC conv;
+	conv.f = timer_get_tempo();
+	vm_push_data(vm, DataFloat, conv.i);
 }
 
 
@@ -81,7 +96,9 @@ void _VM_CALL vm_op_RTC_setTempo(vm_t vm, word_t unused) {
 
 
 void _VM_CALL vm_op_RTC_getRes(vm_t vm, word_t unused) {
-	vm_push_data(vm, DataFloat, timer_get_resolution());
+	_IFC conv;
+	conv.f = timer_get_resolution();
+	vm_push_data(vm, DataFloat, conv.i);
 }
 
 
@@ -132,12 +149,13 @@ void fifo_wr(float d,vm_dyn_func_t df) {
 	thread_t t;
 	fifo_f[wr]=df;
 	fifo_d[wr]=d;
-	while(gstack_size(&rtc_pending_threads)) {
-		t = *(thread_t*)_gpop(&rtc_pending_threads);
+	/*while(gstack_size(&rtc_pending_threads)) {*/
+		/*t = *(thread_t*)_gpop(&rtc_pending_threads);*/
 		/*printf("task arrived ! resuming thread %p\n",t);*/
-		t->IP-=2;
-		thread_set_state(_glob_vm,t,ThreadReady);
-	}
+		/*t->IP-=2;*/
+		/*thread_set_state(_glob_vm,t,ThreadReady);*/
+	/*}*/
+	blocker_resume(_glob_vm,rtc_nextTask);
 	wr=(wr+1)&TASK_FIFO_MASK;
 }
 
@@ -174,15 +192,16 @@ void _VM_CALL vm_op_RTC_sched(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op__RTC_nextTask(vm_t vm, word_t unused) {
 	vm_dyn_func_t df;
-	float d;
-	if(fifo_rd(&df,&d)) {
-		vm_push_data(vm,DataFloat,d);
+	_IFC conv;
+	if(fifo_rd(&df,&conv.f)) {
+		vm_push_data(vm,DataFloat,conv.i);
 		vm_push_data(vm,DataObjFun,df);
 		vm_obj_deref_ptr(vm,df);
 	} else {
 		/*printf("blocking thread %p until a task arrives\n",vm->current_thread);*/
-		gpush(&rtc_pending_threads,&vm->current_thread);
-		thread_set_state(vm,vm->current_thread,ThreadBlocked);
+		/*gpush(&rtc_pending_threads,&vm->current_thread);*/
+		/*thread_set_state(vm,vm->current_thread,ThreadBlocked);*/
+		blocker_suspend(vm,rtc_nextTask,vm->current_thread);
 	}
 }
 

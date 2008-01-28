@@ -36,6 +36,10 @@ void mutex_deinit(mutex_t);
 long mutex_lock(vm_t, mutex_t, thread_t);
 long mutex_unlock(vm_t, mutex_t, thread_t);
 
+vm_blocker_t blocker_new();
+void blocker_free(vm_blocker_t);
+void blocker_suspend(vm_t,vm_blocker_t,thread_t);
+void blocker_resume(vm_t,vm_blocker_t);
 
 
 #endif

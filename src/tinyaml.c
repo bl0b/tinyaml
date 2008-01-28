@@ -45,6 +45,8 @@ program_t compile_wast(wast_t node, vm_t vm);
 
 static int tinyaml_quiet=0;
 
+extern volatile int _vm_trace;
+
 int do_args(vm_t vm, int argc,char*argv[]) {
 	int i,k;
 	program_t p=NULL;
@@ -52,7 +54,11 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 	reader_t r=NULL;
 
 	for(i=1;i<argc;i+=1) {
-		if(cmp_param(1,"--compile","-c")) {
+		if(cmp_param(0,"--trace","-t")) {
+			_vm_trace=1;
+		} else if(cmp_param(1,"--no-trace","-nt")) {
+			_vm_trace=0;
+		} else if(cmp_param(1,"--compile","-c")) {
 			i+=1;
 			p = vm_compile_file(vm,argv[i]);
 		} else if(cmp_param(1,"--save","-s")) {
@@ -97,6 +103,8 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 				  "\t--load,-l [filename]\tload a serialized program from this file\n"
 				  "\t--run-foreground,-f \trun the newest program in foreground\n"
 				  "\t--run-background,-b \trun the newest program in background\n"
+				  "\t--trace,-t \t\tstart tracing execution cycles\n"
+				  "\t--no-trace,-nt \t\tstop tracing execution cycles\n"
 				  "\t--version,-v \t\tdisplay program version\n"
 				"\n\t--help,-h\t\tdisplay this text\n\n");
 			exit(0);

@@ -120,10 +120,9 @@ void _VM_CALL vm_op_write_oc_Label_String(vm_t vm, const char* name) {
 void _VM_CALL vm_op_write_oc_EnvSym_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	char argstr[512];
-	assert(arg->type==DataInt);
-	sprintf(argstr,"%li",(long int)arg->data);
+	assert(arg->type==DataString||arg->type==DataObjStr);
 	/*printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgEnvSym, name, argstr);
+	opcode_chain_add_opcode(vm->result, OpcodeArgEnvSym, name, (char*)arg->data);
 }
 
 void _VM_CALL vm_op_write_oc_Float_String(vm_t vm, const char* name) {

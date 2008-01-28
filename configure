@@ -20736,7 +20736,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile src/Makefile extension/Makefile extension/RTC/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile extension/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -21328,6 +21328,7 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "extension/Makefile") CONFIG_FILES="$CONFIG_FILES extension/Makefile" ;;
     "extension/RTC/Makefile") CONFIG_FILES="$CONFIG_FILES extension/RTC/Makefile" ;;
+    "extension/MessageQueue/Makefile") CONFIG_FILES="$CONFIG_FILES extension/MessageQueue/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

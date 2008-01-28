@@ -138,6 +138,7 @@ struct _vm_t {
 	struct _opcode_dict_t opcodes;
 	/* library management */
 	void* dl_handle;
+	struct _slist_t all_handles;
 	/* all programs */
 	struct _slist_t all_programs;
 	/* globals */
@@ -204,6 +205,7 @@ struct _thread_t {
 };
 
 extern volatile vm_t _glob_vm;
+
 
 #endif
 

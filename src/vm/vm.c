@@ -43,8 +43,11 @@ extern const char* ml_core_grammar;
 extern const char* ml_core_lib;
 
 volatile vm_t _glob_vm = NULL;
+volatile int _vm_trace = 0;
 
 jmp_buf _glob_vm_jmpbuf;
+
+const char* thread_state_to_str(thread_state_t ts);
 
 /* the VM is a singleton */
 vm_t vm_new() {
@@ -74,6 +77,7 @@ vm_t vm_new() {
 	init_hashtab(&ret->compile_vectors.by_text, (hash_func) hash_str, (compare_func) strcmp);
 	dynarray_set(&ret->compile_vectors.by_index,1,0);
 	dynarray_set(&ret->compile_vectors.by_index,0,0);
+	slist_init(&ret->all_handles);
 	slist_init(&ret->all_programs);
 	dlist_init(&ret->ready_threads);
 	dlist_init(&ret->running_threads);
@@ -127,6 +131,12 @@ void vm_del(vm_t ret) {
 	slist_flush(&ret->all_programs);
 	#undef prg_free
 
+	#define dl_cl(_x) if(_x) dlclose(_x)
+	/*slist_forward(&ret->all_handles, void*, dl_cl);*/
+	slist_forward(&ret->all_handles, void*, dlclose);
+	slist_flush(&ret->all_handles);
+	#undef dl_cl
+
 	dynarray_deinit(&ret->compile_vectors.by_index,NULL);
 	clean_hashtab(&ret->compile_vectors.by_text,htab_free_dict);
 
@@ -169,6 +179,13 @@ int comp_prio(dlist_node_t a, dlist_node_t b) {
 
 vm_t vm_set_lib_file(vm_t vm, const char*fname) {
 	char buffer[1024];
+	if(vm->dl_handle) {
+		slist_insert_tail(&vm->all_handles,vm->dl_handle);
+	}
+	if(!fname) {
+		vm->dl_handle=NULL;
+		return vm;
+	}
 	snprintf(buffer,1024,"%s/libtinyaml_%s.so",TINYAML_EXT_DIR,fname);
 	vm->dl_handle = dlopen(buffer, RTLD_LAZY);
 	if(!vm->dl_handle) {
@@ -297,6 +314,7 @@ thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {
 	}
 	vm->engine->_client_lock(vm->engine);
 	t = vm_thread_new(vm,prio,p,ip);
+	vm_obj_ref_ptr(vm, t);
 	t->state=ThreadStateMax;
 	t->_sync=fg;
 	mutex_lock(vm,&t->join_mutex,t);
@@ -349,6 +367,23 @@ word_t _VM_CALL vm_get_IP(vm_t vm) {
 	return vm->current_thread->IP;
 }
 
+
+
+void deref_stack(vm_t vm, generic_stack_t gs) {
+	long i;
+	vm_data_t dt = (vm_data_t)gs->stack;
+	if(!dt) {
+		return;
+	}
+	for(i=0;i<=(long)gs->sp;i+=1) {
+		if(dt[i].type&DataManagedObjectFlag&&dt[i].type<DataTypeMax) {
+			/*printf("stack-deref::found an object : %p\n",(void*)dt[i].data);*/
+			vm_obj_deref_ptr(vm,(void*)dt[i].data);
+		}
+	}
+}
+
+
 vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	/*printf("KILLing thread %p\n",t);*/
 	vm->engine->_client_lock(vm->engine);
@@ -358,6 +393,8 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	}
 	vm_obj_deref_ptr(vm, t);
 	thread_set_state(vm, t, ThreadZombie);
+	deref_stack(vm,&t->locals_stack);
+	deref_stack(vm,&t->data_stack);
 	mutex_unlock(vm,&t->join_mutex,t);
 	if(vm->threads_count==1) {
 		/*printf("SchedulerMonoThread\n");*/
@@ -556,8 +593,8 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	/*program_fetch(t->program, t->IP, (word_t*)&op, &arg);*/
 	array = t->program->code.data+t->IP;
 
-/*
-	{
+//*
+	if(_vm_trace) {
 		const char* label = program_lookup_label(t->program,t->IP);
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
 		fprintf(stdout,"\nEXEC:%p:%s (%p:%lX)\t%-20.20s %-40.40s | ",t,thread_state_to_str(t->state),t->program,t->IP,label?label:"",disasm);

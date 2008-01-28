@@ -237,6 +237,20 @@ void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index) {
 
 
 
+
+void _VM_CALL vm_op_envGet(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	const char*key = d->data;
+	long index;
+	assert(d->type==DataString);
+	index = text_seg_text_to_index(&vm->env->symbols,key);
+	index<<=1;
+	vm_push_data(vm,vm->env->data.data[index],vm->env->data.data[index+1]);
+}
+
+
+
+
 void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 	vm_data_t dk = _vm_pop(vm);
 	vm_data_t dc = _vm_pop(vm);
