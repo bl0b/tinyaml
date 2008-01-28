@@ -20,7 +20,7 @@
  */
  
 #include "list.h"
-#include "alloc.h"
+#include "rtc_alloc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,8 +52,14 @@ GenericList qWordBufs={NULL,NULL,0},oWordBufs={NULL,NULL,0},paraBufs={NULL,NULL,
 
 #define _offset(_p,_o,_sz) (((char*)(_p))+(_o)*(_sz))
 
+static volatile int alloc_is_init=0;
+
 void term_alloc() {
 	GenericListNode* gln;
+	if(!alloc_is_init) {
+		return;
+	}
+	/*printf("freeing alloc blocs.\n");*/
 	while(qWordBufs.head) {
 		gln=qWordBufs.head->next;
 		free(qWordBufs.head);
@@ -69,6 +75,7 @@ void term_alloc() {
 		free(paraBufs.head);
 		paraBufs.head=gln;
 	}
+	alloc_is_init=0;
 }
 
 
@@ -148,17 +155,21 @@ void _free_16w(void*p) { __collect_(&allocmutex16,p,&paraBufs,&paragraphs); }
 
 
 void init_alloc() {
+	if(alloc_is_init) {
+		return;
+	}
+	alloc_is_init=1;
 	pthread_mutex_init(&allocmutex4,NULL);
-	pthread_mutex_trylock(&allocmutex4);
-	pthread_mutex_unlock(&allocmutex4);
+	/*pthread_mutex_trylock(&allocmutex4);*/
+	/*pthread_mutex_unlock(&allocmutex4);*/
 	pthread_mutex_init(&allocmutex8,NULL);
-	pthread_mutex_trylock(&allocmutex8);
-	pthread_mutex_unlock(&allocmutex8);
+	/*pthread_mutex_trylock(&allocmutex8);*/
+	/*pthread_mutex_unlock(&allocmutex8);*/
 	pthread_mutex_init(&allocmutex16,NULL);
-	pthread_mutex_trylock(&allocmutex16);
-	pthread_mutex_unlock(&allocmutex16);
+	/*pthread_mutex_trylock(&allocmutex16);*/
+	/*pthread_mutex_unlock(&allocmutex16);*/
 
-	atexit(term_alloc);
+	/*atexit(term_alloc);*/
 }
 
 
