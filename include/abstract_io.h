@@ -19,24 +19,45 @@
 #ifndef _BML_ABSTRACT_IO_H_
 #define _BML_ABSTRACT_IO_H_
 
+/*! \addtogroup abstract_io Tinyaml file and buffer IO
+ * Abstract readers and writers can handle 32-bit words and character strings.
+ * They provide a single interface for file and memory buffer I/O.
+ * Internals are not discussed here.
+ * @{
+ */
+
+/*! \brief opaque type : generic reader */
 typedef struct _reader_t* reader_t;
+/*! \brief opaque type : generic writer */
 typedef struct _writer_t* writer_t;
 
+/*! \brief create a new writer associated to given file. */
 writer_t file_writer_new(const char*);
+/*! \brief create a new writer associated to given buffer of given length. */
 writer_t buffer_writer_new(char*, word_t);
+/*! \brief close the given writer. */
 void writer_close(writer_t);
 
+/*! \brief create a new reader associated to given file. */
 reader_t file_reader_new(const char*);
+/*! \brief create a new reader associated to given buffer of given length. */
 reader_t buffer_reader_new(const char*, word_t);
+/*! \brief toggle endian swapping for the given reader. */
 void reader_swap_endian(reader_t);
+/*! \brief close the given reader. */
 void reader_close(reader_t);
 
+/*! write a single word */
 word_t write_word(writer_t, word_t);
+/*! write a character string */
 word_t write_string(writer_t, const char*);
 
+/*! read a single word */
 word_t read_word(reader_t);
+/*! read a character string */
 const char* read_string(reader_t);
 
+/*@}*/
 
 #endif
 

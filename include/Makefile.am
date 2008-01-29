@@ -14,7 +14,6 @@ include_HEADERS = \
                 opcode_chain.h \
                 opcode_dict.h \
                 program.h \
-                scheduler.h \
                 text_seg.h \
                 thread.h \
                 vm_assert.h \

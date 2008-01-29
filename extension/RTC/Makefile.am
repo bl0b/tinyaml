@@ -1,4 +1,6 @@
 rtcdir=$(pkglibdir)
+EXTRA_DIST = list.h  mutex.h  priority_queue.h  rtc_alloc.h  timer.h
+
 
 rtcldflags=-module -ffast-math -pthread
 

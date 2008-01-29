@@ -29,6 +29,9 @@
 #define _VM_CALL
 #endif
 
+/*! \addtogroup data_struc Data Structures and Representations
+ * @{
+ */
 typedef unsigned long int word_t;
 
 typedef word_t value_t;
@@ -141,6 +144,7 @@ typedef void _VM_CALL (*opcode_stub_t) (vm_t, word_t t);
 
 #define MAKE_WC(_a,_op) (((_a)<<_WC_ARGTYPE_SHIFT)|(_op))
 
+/*@}*/
 
 #endif
 

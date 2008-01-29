@@ -1,5 +1,5 @@
 #require "test_lang_struc.wc"
-#require "tests/test_struc.melang"
+#require "test_struc.melang"
 require "ml/ml_core.lib"
 
 #struc foobar {

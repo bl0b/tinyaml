@@ -19,8 +19,18 @@
 #ifndef _BML_OPS_H_
 #define _BML_OPS_H_
 
+/*! \addtogroup vm_core_ops Core Opcodes
+ * @{
+ */
+
+/*! \brief do NOTHING. */
 void _VM_CALL vm_op_nop(vm_t vm, word_t data);
+/*! \brief define a new AST compiler vector (\c data is the offset in current program's code and the vector name is popped from the stack).
+ * FIXME Why is it in .h ?
+ */
 void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, word_t data);
+
+/*@}*/
 
 #endif
 

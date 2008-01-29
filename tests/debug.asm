@@ -1,6 +1,6 @@
-#require "tests/struc.melang"
+#require "struc.melang"
 #require "melang_struc.wc"
-require "tests/struc.routines"
+require "struc.routines"
 
 #data 0 0 "\\t" "\\n" end
 glob

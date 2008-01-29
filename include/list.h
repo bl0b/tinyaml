@@ -21,6 +21,18 @@
 
 #include "vm_assert.h"
 
+/*! \addtogroup data_struc
+ * @{
+ * \addtogroup data_containers
+ * @{
+ * \addtogroup vm_env_t Environment/Map
+ * @{
+ * \brief Both a \ref symtab_t and a \ref dynarray_t.
+ *
+ * The VM creates its own environment, which is used to (un)serialize programs.
+ * The map supports indexed access to keys and values and random access by key lookup.
+ */
+
 typedef struct _slist_node_t* slist_node_t;
 typedef struct _slist_t* slist_t;
 typedef struct _dlist_node_t* dlist_node_t;
@@ -319,6 +331,8 @@ slist_t slist_new();
 void slist_del(slist_t);
 dlist_t dlist_new();
 void dlist_del(dlist_t);
+
+/*@}@}@}*/
 
 #endif
 

@@ -22,17 +22,34 @@
 
 #include "vm_types.h"
 
+/*! \addtogroup vm
+ * @{
+ * \addtogroup vm_engine Engine
+ * @{
+ * \brief The engine implements the actual VM execution by providing the necessary methods listed in \ref _vm_engine_t.
+ *
+ * \c tinyaml defines two engines :
+ * - \ref stub_engine, the default, runs synchronously (that means that every call to \ref vm_run_program_fg and \ref vm_run_program_bg is blocking).
+ * - \ref thread_engine runs in a separate thread.
+ *
+ * \c tinyaml_dbg defines another engine :
+ * - \ref debug_engine, which also runs synchronously and lets the user step (and someday define break points and break conditions) through the code.
+ */
+
+/*! \brief Standard engine call. */
 typedef void(*_VM_CALL vm_engine_func_t )(vm_engine_t);
 
 
-vm_engine_t vm_engine_archetype_new(vm_engine_func_t _init, vm_engine_func_t _run, vm_engine_func_t _pause, vm_engine_func_t _stop, vm_engine_func_t _free);
-vm_engine_t vm_engine_new(vm_engine_t archetype, vm_t);
-void vm_engine_del(vm_engine_t);
+/*vm_engine_t vm_engine_archetype_new(vm_engine_func_t _init, vm_engine_func_t _run, vm_engine_func_t _pause, vm_engine_func_t _stop, vm_engine_func_t _free);*/
+/*vm_engine_t vm_engine_new(vm_engine_t archetype, vm_t);*/
+/*void vm_engine_del(vm_engine_t);*/
 
 
 extern const vm_engine_t
 	stub_engine,
 	thread_engine;
+
+/*@}@}*/
 
 #endif
 

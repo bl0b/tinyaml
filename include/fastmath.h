@@ -1,23 +1,41 @@
 #ifndef _BML_FAST_MATH_H_
 #define _BML_FAST_MATH_H_
 
+/*! \addtogroup misc
+ * @{
+ * \addtogroup fast_math Fast 32-bit maths
+ * @{
+ * \brief Fast conversions.
+ *
+ * The VM creates its own environment, which is used to (un)serialize programs.
+ * The map supports indexed access to keys and values and random access by key lookup.
+ */
+
 /* 32-bit floats and ints only ! */
+/*! \brief Magic converting bias, hex version. */
 #define BIAS_HEX ( ((23+127)<<23) + (1<<22) )
+/*! \brief Converting bias as an int */
 #define BIAS_INT ((long int)BIAS_HEX)
+/*! \brief Converting bias as a float */
 #define BIAS_FLOAT ((float)12582912.0f)
 
+/*! \brief union to reinterpret bits in a word as an integer and a float. */
+union _intfloat_conv {
+	long int i;	/*!< \brief bits as integer */
+	float f;	/*!< \brief bits as floating point */
+};
 
-typedef union _intfloat_conv {
-	long int i;
-	float f;
-} _IFC;
+/*! _brief Public type for conversion union. */
+typedef union _intfloat_conv _IFC;
 
+/*! \brief Convert from float to int. */
 static inline long int f2i(float f) {
 	_IFC c;
 	c.f=f+BIAS_FLOAT;
 	return c.i-BIAS_INT;
 }
 
+/*! \brief Convert from int to float. */
 static inline float i2f(long int i) {
 	_IFC c;
 	c.i=i+BIAS_INT;
@@ -25,31 +43,7 @@ static inline float i2f(long int i) {
 }
 
 
-
-#define fast_apply_binop(_ta,_a,_tb,_b,_op,_ret,_ret_typ)	do {\
-		_IFC _R;\
-		switch((((word_t)_ta)<<1)|((word_t)_tb)) {\
-		case 0:\
-			printf("int int\n");\
-			_R.i = (_a) _op (_b);\
-			break;\
-		case 1:\
-			printf("int float\n");\
-			_R.f = i2f(_a) _op (_b);\
-			break;\
-		case 2:\
-			printf("float int\n");\
-			_R.f = (_a) _op i2f(_b);\
-			break;\
-		case 3:\
-			printf("float float\n");\
-			_R.f = (_a) _op (_b);\
-		};\
-		_ret_typ=(_ta|_tb);\
-		_ret=_R.i;\
-	} while(0)
-
-
+/*! @{ \brief Ease writing of arithmetic functions */
 #define fast_apply_bin_int_func(_ta,_a,_tb,_b,_op,_ret)	do {\
 		_IFC _R;\
 		switch((((word_t)_ta)<<1)|((word_t)_tb)) {\
@@ -91,7 +85,9 @@ static inline float i2f(long int i) {
 		_ret_typ=(_ta|_tb);\
 		_ret=_R.i;\
 	} while(0)
+/*@}*/
 
+/*@}@}*/
 
 
 #endif

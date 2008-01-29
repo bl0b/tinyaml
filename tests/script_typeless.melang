@@ -1,4 +1,4 @@
-require "tests/struc.melang"
+require "struc.melang"
 
 glob
 	glob_dic = 0

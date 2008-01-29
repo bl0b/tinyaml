@@ -20,6 +20,14 @@
 #ifndef _BML_THREAD_H_
 #define _BML_THREAD_H_
 
+/*! \addtogroup data_struc Data Structures and Representations
+ * @{
+ * \defgroup thread Thread
+ * @{
+ * \brief Implements an execution context for programs to execute.
+ */
+
+
 thread_t thread_new(word_t prio, program_t p, word_t ip);
 void thread_init(thread_t,word_t prio, program_t p, word_t ip);
 void thread_delete(vm_t,thread_t);
@@ -41,6 +49,7 @@ void blocker_free(vm_blocker_t);
 void blocker_suspend(vm_t,vm_blocker_t,thread_t);
 void blocker_resume(vm_t,vm_blocker_t);
 
+/*@}@}*/
 
 #endif
 

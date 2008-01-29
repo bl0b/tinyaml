@@ -21,6 +21,15 @@
 
 #include <stdlib.h>
 
+/*! \addtogroup data_struc
+ * @{
+ * \addtogroup data_containers
+ * @{
+ * \addtogroup hashtab_t Hashtable
+ * @{
+ * A generic hashtable. One must provide key_cmp() and key_hash() functions.
+ */
+
 #define HASH_SIZE 137
 
 typedef struct _htab_entry_struct *htab_entry_t;
@@ -51,13 +60,6 @@ struct _hashtab_t {
 };
 
 
-
-struct _htab_iterator {
-	hashtab_t tab;
-	word_t row;
-	struct _htab_entry_struct*entry;
-};
-
 #define HASH_NOVAL ((hash_elem)0)
 
 
@@ -68,7 +70,18 @@ word_t hash_str(char*);
 word_t hash_ptr(void*);
 int cmp_ptr(void*,void*);
 
+/*! \addtogroup htab_iterator Hashtable iterator
+ * @{
+ */
 
+/*! \brief TODO */
+struct _htab_iterator {
+	hashtab_t tab;
+	word_t row;
+	struct _htab_entry_struct*entry;
+};
+
+/*! \brief TODO */
 static __inline int hi_incr(htab_iterator_t hi) {
 	if(hi->entry&&hi->entry->next)
 		hi->entry=hi->entry->next;
@@ -84,6 +97,7 @@ static __inline int hi_incr(htab_iterator_t hi) {
 }
 
 
+/*! \brief TODO */
 static __inline void hi_init(htab_iterator_t hi,hashtab_t t) {
 	hi->tab=t;
 	hi->row=(word_t)-1;
@@ -92,14 +106,19 @@ static __inline void hi_init(htab_iterator_t hi,hashtab_t t) {
 }
 
 
+/*! \brief TODO */
 static __inline int hi_is_valid(htab_iterator_t hi) { return hi->entry!=NULL; }
 
+/*! \brief TODO */
 static __inline hash_key hi_key(htab_iterator_t hi) { return hi->entry->key; }
 
+/*! \brief TODO */
 static __inline hash_elem hi_value(htab_iterator_t hi) { return hi->entry->e; }
 
+/*! \brief TODO */
 static __inline htab_entry_t hi_entry(htab_iterator_t hi) { return hi->entry; }
 
+/*@}*/
 
 
 
@@ -108,7 +127,7 @@ static __inline htab_entry_t hi_entry(htab_iterator_t hi) { return hi->entry; }
 
 
 
-
+/*! \brief TODO */
 static __inline void init_hashtab(hashtab_t tab,hash_func hash,compare_func cmp) {
 	int i;
 	for(i=0;i<HASH_SIZE;i++)
@@ -119,6 +138,7 @@ static __inline void init_hashtab(hashtab_t tab,hash_func hash,compare_func cmp)
 
 
 
+/*! \brief TODO */
 static __inline void hash_addelem(hashtab_t tab,hash_key key,hash_elem elem) {
 	word_t i=tab->hash(key);
 /* 	TRACE(&quot;HASH_ADDELEM [%X]`%s' [%X] hashed as %u\n&quot;,key,key,elem,i); */
@@ -134,6 +154,7 @@ static __inline void hash_addelem(hashtab_t tab,hash_key key,hash_elem elem) {
 
 
 
+/*! \brief TODO */
 static __inline htab_entry_t hash_find_e(hashtab_t tab,hash_key key) {
 	int i=tab->hash(key);
 	htab_entry_t s=tab->table[i];
@@ -142,6 +163,7 @@ static __inline htab_entry_t hash_find_e(hashtab_t tab,hash_key key) {
 	return s;
 }
 
+/*! \brief TODO */
 static __inline hash_elem hash_find(hashtab_t tab,hash_key key) {
 	htab_entry_t s;
 /* 	TRACE(&quot;   calling hash_find with [%X]`%s'\n&quot;,key,key); */
@@ -151,6 +173,7 @@ static __inline hash_elem hash_find(hashtab_t tab,hash_key key) {
 }
 
 
+/*! \brief TODO */
 static __inline void hash_delelem(hashtab_t tab,hash_key key) {
 	htab_entry_t p=NULL;
 	word_t i=tab->hash(key);
@@ -168,6 +191,7 @@ static __inline void hash_delelem(hashtab_t tab,hash_key key) {
 	}
 }
 
+/*! \brief TODO */
 static __inline void clean_hashtab(hashtab_t tab,void(*callback)(htab_entry_t)) {
 	int i;
 	htab_entry_t s,p;
@@ -183,6 +207,8 @@ static __inline void clean_hashtab(hashtab_t tab,void(*callback)(htab_entry_t)) 
 		tab->table[i]=(htab_entry_t)HASH_NOVAL;
 	}
 }
+
+/*@}@}@}*/
 
 #endif
 

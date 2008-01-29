@@ -19,6 +19,12 @@
 #ifndef _BML_PROGRAM_H_
 #define _BML_PROGRAM_H_
 
+/*! \addtogroup data_struc Data Structures and Representations
+ * @{
+ * \defgroup program Program
+ * @{
+ */
+
 program_t program_new();
 void program_free(vm_t, program_t);
 
@@ -40,6 +46,8 @@ const char* program_lookup_label(program_t p, word_t IP);
 const char* program_disassemble(vm_t vm, program_t p, word_t IP);
 
 void program_dump_stats(program_t p);
+
+/*@}@}*/
 
 #endif
 
