@@ -22,7 +22,7 @@
 
 /*! \addtogroup data_struc Data Structures and Representations
  * @{
- * \defgroup data_containers Base containers
+ * \addtogroup data_containers Base containers
  * @{
  * These are the base container structures used in Tinyaml.
  * @}

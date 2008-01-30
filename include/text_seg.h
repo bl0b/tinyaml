@@ -26,7 +26,7 @@
  * @{
  * \addtogroup data_containers
  * @{
- * \defgroup symtab_t Text segment / Symbol table
+ * \addtogroup symtab_t Text segment / Symbol table
  * @{
  * \brief The text segment associates a string with an index. It can also serve as a symbol table.
  */

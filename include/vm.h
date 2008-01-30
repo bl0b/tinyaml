@@ -27,6 +27,28 @@
 
 #include "../config.h"
 
+/*!
+ * \defgroup abstract_io
+ * \defgroup data_struc
+ * @{
+ * 	\defgroup containers
+ * 	@{
+ * 	@}
+ * 	\defgroup objects
+ * @}
+ * \defgroup vm
+ * @{
+ * 	\defgroup vm_mgmt
+ * 	\defgroup vm_engine
+ * 	\defgroup opcode_dict
+ * 	\defgroup vm_prgs
+ * 	\defgroup Threads
+ * 	\defgroup lolvl
+ * @}
+ * \defgroup misc
+ * \defgroup vm_core_ops
+ */
+
 /*! \addtogroup misc Miscellaneous
  * @{
  */
@@ -144,7 +166,7 @@ vm_data_t _VM_CALL _vm_peek(vm_t vm);
 
 /*@}*/
 
-/*! \addtogroup vm_exec Runtime
+/*! \addtogroup vm_engine
  * @{
  */
 

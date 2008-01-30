@@ -29,30 +29,49 @@
 #define _VM_CALL
 #endif
 
+/*! \addtogroup vm */
+typedef struct _vm_t* vm_t;
+
+/*! \addtogroup vm */
+typedef struct _opcode_t* opcode_t;
+
+/*! \addtogroup vm_prgs */
+typedef struct _program_t* program_t;
+
 /*! \addtogroup data_struc Data Structures and Representations
  * @{
  */
+
 typedef unsigned long int word_t;
 
 typedef word_t value_t;
 
+/*@}*/
+
+/*! \addtogroup objects */
+/*! \brief A managed object. */
 typedef struct _vm_obj_t* vm_obj_t;
+/*! \addtogroup objects */
+/*! \brief A map */
 typedef struct _vm_dyn_env_t* vm_dyn_env_t;
+/*! \addtogroup objects */
+/*! \brief A function object. */
 typedef struct _vm_dyn_func_t* vm_dyn_func_t;
 
-typedef struct _vm_t* vm_t;
 
-typedef struct _program_t* program_t;
-typedef struct _opcode_t* opcode_t;
-
+/*! \addtogroup dynarray_t
+ * @{
+ */
 typedef struct _dynarray_t* dynarray_t;
 typedef word_t dynarray_index_t;
 typedef word_t dynarray_value_t;
+/*@}*/
 
+/*! \addtogroup gstack_t */
 typedef struct _generic_stack_t* generic_stack_t;
 
-
 typedef dynarray_t code_seg_t;
+/*! \addtogroup symtab_t */
 typedef struct _text_seg_t* text_seg_t;
 
 typedef enum {
@@ -144,7 +163,6 @@ typedef void _VM_CALL (*opcode_stub_t) (vm_t, word_t t);
 
 #define MAKE_WC(_a,_op) (((_a)<<_WC_ARGTYPE_SHIFT)|(_op))
 
-/*@}*/
 
 #endif
 

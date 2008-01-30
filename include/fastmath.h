@@ -43,7 +43,7 @@ static inline float i2f(long int i) {
 }
 
 
-/*! @{ \brief Ease writing of arithmetic functions */
+/*! @{ \brief Ease writing of arithmetic opcodes. */
 #define fast_apply_bin_int_func(_ta,_a,_tb,_b,_op,_ret)	do {\
 		_IFC _R;\
 		switch((((word_t)_ta)<<1)|((word_t)_tb)) {\

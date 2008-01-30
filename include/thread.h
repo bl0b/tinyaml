@@ -20,9 +20,7 @@
 #ifndef _BML_THREAD_H_
 #define _BML_THREAD_H_
 
-/*! \addtogroup data_struc Data Structures and Representations
- * @{
- * \defgroup thread Thread
+/*! \addtogroup Threads
  * @{
  * \brief Implements an execution context for programs to execute.
  */
@@ -49,7 +47,7 @@ void blocker_free(vm_blocker_t);
 void blocker_suspend(vm_t,vm_blocker_t,thread_t);
 void blocker_resume(vm_t,vm_blocker_t);
 
-/*@}@}*/
+/*@}*/
 
 #endif
 

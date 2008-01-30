@@ -6,7 +6,7 @@
 
 /*! \addtogroup misc
  * @{
- * \defgroup assert Assertions
+ * \addtogroup assert Assertions
  * @{
  */
 
@@ -26,7 +26,8 @@ extern void _vm_assert_fail(const char* assertion, const char*file, unsigned int
 /*! \brief Trig a failure by hand. */
 #define vm_fatal(_str) _vm_assert_fail( _str , __FILE__, __LINE__, __func__ )
 
-/*@}@}*/
+/*@}*/
+/*@}*/
 
 #endif
 

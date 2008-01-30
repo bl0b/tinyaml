@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 
-/*! \addtogroup compiler
+/*! \addtogroup vm
  * @{
  * \addtogroup opcode_dict Opcode Dictionary
  * @{

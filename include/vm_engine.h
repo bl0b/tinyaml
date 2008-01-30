@@ -49,7 +49,8 @@ extern const vm_engine_t
 	stub_engine,
 	thread_engine;
 
-/*@}@}*/
+/*@}*/
+/*@}*/
 
 #endif
 

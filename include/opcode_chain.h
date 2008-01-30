@@ -19,11 +19,9 @@
 #ifndef _BML_OPCODE_CHAIN_H_
 #define _BML_OPCODE_CHAIN_H_
 
-/*! \addtogroup compiler
- * @{
- * \addtogroup opcode_chain Opcode Chain
- * @{
+/*! \addtogroup vm
  * \brief Opcode chain symbolically describes a program's contents.
+ * @{
  */
 
 
@@ -40,7 +38,7 @@ void opcode_chain_serialize(opcode_chain_t, opcode_dict_t, program_t, void*);
 
 void opcode_chain_apply(opcode_chain_t oc, void(*fun)(opcode_chain_node_t));
 
-/*@}@}*/
+/*@}*/
 
 #endif
 

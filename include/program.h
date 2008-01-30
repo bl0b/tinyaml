@@ -19,9 +19,7 @@
 #ifndef _BML_PROGRAM_H_
 #define _BML_PROGRAM_H_
 
-/*! \addtogroup data_struc Data Structures and Representations
- * @{
- * \defgroup program Program
+/*! \addtogroup vm_prgs
  * @{
  */
 
@@ -47,7 +45,7 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP);
 
 void program_dump_stats(program_t p);
 
-/*@}@}*/
+/*@}*/
 
 #endif
 
