@@ -19,7 +19,7 @@
 #ifndef _BML_OPCODE_CHAIN_H_
 #define _BML_OPCODE_CHAIN_H_
 
-/*! \addtogroup vm
+/*! \addtogroup compil_ch
  * \brief Opcode chain symbolically describes a program's contents.
  * @{
  */

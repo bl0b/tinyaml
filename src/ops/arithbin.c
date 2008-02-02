@@ -1,6 +1,6 @@
 /* TinyaML
  * Copyright (C) 2007 Damien Leroux
- *
+ 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -24,6 +24,29 @@
 #include <math.h>
 #include "fastmath.h"
 
+/*! \addtogroup vcop_arit
+ * @{
+ * Arithmetic (integer/floating point mixed) and bitwise operations.
+ *
+ * \defgroup _defines Internal defines
+ * @{
+ */
+
+#define m_mod(_a,_b) (_a%_b)
+
+#define _add(_a,_b) ((_a)+(_b))
+#define _sub(_a,_b) ((_a)-(_b))
+#define _mul(_a,_b) ((_a)*(_b))
+#define _div(_a,_b) ((_a)/(_b))
+
+#define _inf(_a,_b) ((_a)<(_b))
+#define _sup(_a,_b) ((_a)>(_b))
+#define _eq(_a,_b) ((_a)==(_b))
+#define _neq(_a,_b) ((_a)!=(_b))
+#define _infeq(_a,_b) ((_a)<=(_b))
+#define _supeq(_a,_b) ((_a)>=(_b))
+
+/*@}*/
 
 /*
  * Bin & Arith
@@ -165,8 +188,6 @@ void _VM_CALL vm_op_dec(vm_t vm, word_t immed) {
 }
 
 
-#define m_mod(_a,_b) (_a%_b)
-
 void _VM_CALL vm_op_mod(vm_t vm, word_t immed) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
@@ -193,11 +214,6 @@ void _VM_CALL vm_op_mod_Float(vm_t vm, int b) {
 	vm_poke_data(vm,dta,a);
 }
 
-
-#define _add(_a,_b) ((_a)+(_b))
-#define _sub(_a,_b) ((_a)-(_b))
-#define _mul(_a,_b) ((_a)*(_b))
-#define _div(_a,_b) ((_a)/(_b))
 
 
 void _VM_CALL vm_op_add(vm_t vm, word_t immed) {
@@ -319,14 +335,6 @@ void _VM_CALL vm_op_div_Float(vm_t vm, word_t b) {
 	vm_poke_data(vm,dta,a);
 }
 
-
-#define _inf(_a,_b) ((_a)<(_b))
-#define _sup(_a,_b) ((_a)>(_b))
-#define _eq(_a,_b) ((_a)==(_b))
-#define _neq(_a,_b) ((_a)!=(_b))
-#define _infeq(_a,_b) ((_a)<=(_b))
-#define _supeq(_a,_b) ((_a)>=(_b))
-
 void _VM_CALL vm_op_inf(vm_t vm, word_t unused) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
@@ -389,4 +397,5 @@ void _VM_CALL vm_op_nEq(vm_t vm, word_t unused) {
 	/*printf("%li\n",a);*/
 }
 
+/*@}*/
 

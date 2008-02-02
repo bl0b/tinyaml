@@ -26,15 +26,77 @@
 #include "opcode_chain.h"
 #include "object.h"
 
-void _VM_CALL vm_op_nop(vm_t vm, word_t unused) {
-	/* mimics /bin/true's behaviour */
-}
-
-
+/*! \addtogroup vcop_data
+ * @{
+ */
 void _VM_CALL vm_op_clone(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type&DataManagedObjectFlag);
 	vm_push_data(vm, d->type, (word_t)vm_obj_clone_obj(vm,PTR_TO_OBJ(d->data)));
+}
+
+void _VM_CALL vm_op_push_Int(vm_t vm, word_t data) {
+	vm_push_data(vm, DataInt, data);
+}
+
+void _VM_CALL vm_op_push_Float(vm_t vm, word_t data) {
+	vm_push_data(vm, DataFloat, data);
+}
+
+void _VM_CALL vm_op_push_String(vm_t vm, word_t data) {
+	vm_push_data(vm, DataString, data);
+}
+
+void _VM_CALL vm_op_push_Opcode(vm_t vm, word_t data) {
+	vm_push_data(vm, DataInt, data);
+}
+
+void _VM_CALL vm_op_pop(vm_t vm, word_t unused) {
+	vm_pop_data(vm,1);
+}
+
+void _VM_CALL vm_op_pop_Int(vm_t vm, word_t data) {
+	vm_pop_data(vm,data);
+}
+
+void _VM_CALL vm_op_dup_Int(vm_t vm, int data) {
+	vm_data_type_t a;
+	word_t b;
+	vm_peek_data(vm,data,&a,&b);
+	vm_push_data(vm, a, b);
+}
+
+
+void _VM_CALL vm_op_enter_Int(vm_t vm, word_t size) {
+	thread_t t=vm->current_thread;
+	gstack_grow(&t->locals_stack,size);
+}
+
+void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
+	thread_t t=vm->current_thread;
+	vm_data_t local;
+	long i,min=-size;
+	for(i=0;i>min;i-=1) {
+		local = _gpeek(&t->locals_stack,i);	/* -1 becomes 0 */
+		if(local->type&DataManagedObjectFlag) {
+			vm_obj_deref_ptr(vm,(void*)local->data);
+			local->type=DataInt;
+			local->data=0;
+		}
+	}
+	gstack_shrink(&t->locals_stack,size);
+}
+
+
+
+/*@}*/
+
+
+/*! \addtogroup vm_core_ops
+ * @{
+ */
+void _VM_CALL vm_op_nop(vm_t vm, word_t unused) {
+	/* mimics /bin/true's behaviour */
 }
 
 
@@ -93,40 +155,12 @@ void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
 	fflush(stdout);
 	vm_pop_data(vm,n);
 }
+/*@}*/
 
 
-
-void _VM_CALL vm_op_push_Int(vm_t vm, word_t data) {
-	vm_push_data(vm, DataInt, data);
-}
-
-void _VM_CALL vm_op_push_Float(vm_t vm, word_t data) {
-	vm_push_data(vm, DataFloat, data);
-}
-
-void _VM_CALL vm_op_push_String(vm_t vm, word_t data) {
-	vm_push_data(vm, DataString, data);
-}
-
-void _VM_CALL vm_op_push_Opcode(vm_t vm, word_t data) {
-	vm_push_data(vm, DataInt, data);
-}
-
-void _VM_CALL vm_op_pop(vm_t vm, word_t unused) {
-	vm_pop_data(vm,1);
-}
-
-void _VM_CALL vm_op_pop_Int(vm_t vm, word_t data) {
-	vm_pop_data(vm,data);
-}
-
-void _VM_CALL vm_op_dup_Int(vm_t vm, int data) {
-	vm_data_type_t a;
-	word_t b;
-	vm_peek_data(vm,data,&a,&b);
-	vm_push_data(vm, a, b);
-}
-
+/*! \addtogroup vcop_ctrl
+ * @{
+ */
 void _VM_CALL vm_op_SNZ(vm_t vm, int data) {
 	vm_data_type_t a;
 	word_t b;
@@ -155,11 +189,15 @@ void _VM_CALL vm_op_jmp_Label(vm_t vm, word_t data) {
 	thread_t t=vm->current_thread;
 	t->jmp_ofs=t->IP+data;
 }
+/*@}*/
 
 /*
  * Call stack
  */
 
+/*! \addtogroup vcop_df
+ * @{
+ */
 void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	thread_t t=vm->current_thread;
@@ -175,46 +213,27 @@ void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
 	t->jmp_seg=fun->cs;
 	t->jmp_ofs=fun->ip;
 }
+/*@}*/
 
+/*! \addtogroup vcop_ctrl
+ * @{
+ */
 void _VM_CALL vm_op_call_Label(vm_t vm, word_t data) {
 	thread_t t=vm->current_thread;
 	vm_push_caller(vm, t->program, t->IP, 0);
 	t->jmp_ofs=t->IP+data;
 }
 
-void _VM_CALL vm_op_lcall_Label(vm_t vm, word_t data) {
-	thread_t t=vm->current_thread;
-	vm_data_type_t a;
-	word_t b;
-	vm_peek_data(vm,0,&a,&b);
-	vm_push_caller(vm, t->program, t->IP, 0);
-	t->jmp_seg=(program_t)b;
+/*void _VM_CALL vm_op_lcall_Label(vm_t vm, word_t data) {*/
+	/*thread_t t=vm->current_thread;*/
+	/*vm_data_type_t a;*/
+	/*word_t b;*/
+	/*vm_peek_data(vm,0,&a,&b);*/
+	/*vm_push_caller(vm, t->program, t->IP, 0);*/
+	/*t->jmp_seg=(program_t)b;*/
 	/* FIXME : can resolve_label() set up correct data value ? */
-	t->jmp_ofs=data;
-}
-
-
-void _VM_CALL vm_op_enter_Int(vm_t vm, word_t size) {
-	thread_t t=vm->current_thread;
-	gstack_grow(&t->locals_stack,size);
-}
-
-void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
-	thread_t t=vm->current_thread;
-	vm_data_t local;
-	long i,min=-size;
-	for(i=0;i>min;i-=1) {
-		local = _gpeek(&t->locals_stack,i);	/* -1 becomes 0 */
-		if(local->type&DataManagedObjectFlag) {
-			vm_obj_deref_ptr(vm,(void*)local->data);
-			local->type=DataInt;
-			local->data=0;
-		}
-	}
-	gstack_shrink(&t->locals_stack,size);
-}
-
-
+	/*t->jmp_ofs=data;*/
+/*}*/
 
 
 
@@ -254,10 +273,16 @@ void _VM_CALL vm_op_ret_Int(vm_t vm, word_t n) {
 		thread_set_state(vm,t,ThreadDying);
 	}
 }
+/*@}*/
 
 
 
+void _VM_CALL vm_op_getmem_Int(vm_t vm, int n);
 
+
+/*! \addtogroup vcop_thrd
+ * @{
+ */
 void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 	vm_data_t d = _vm_pop(vm);
 	thread_t t=vm->current_thread;
@@ -278,9 +303,6 @@ void _VM_CALL vm_op_newMtx(vm_t vm, word_t unused) {
 	/*printf("push new mutex %lx\n",handle);*/
 	vm_push_data(vm, DataObjMutex, handle);
 }
-
-
-void _VM_CALL vm_op_getmem_Int(vm_t vm, int n);
 
 
 void _VM_CALL vm_op_lockMtx_Int(vm_t vm, long memcell) {
@@ -339,7 +361,7 @@ void _VM_CALL vm_op_unlockMtx(vm_t vm, word_t unused) {
 	mutex_unlock(vm,m,t);
 }
 
-/* dirty hack : compute thread_t address from thread->join_mutex address. requires a local thread_t variable. */
+/*! \brief dirty hack : compute thread_t address from thread->join_mutex address. requires a local thread_t variable. */
 #define join_lock_to_thread(_t,_m) ((thread_t) (((char*)(_m)) - ( ((char*)&(_t)->join_mutex) - ((char*)(_t)) ) ))
 
 void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
@@ -384,8 +406,12 @@ void _VM_CALL vm_op_yield(vm_t vm, word_t unused) {
 	vm->current_thread->remaining=0;
 	/*printf("YIELD %p\n",vm->current_thread);*/
 }
+/*@}*/
 
 
+/*! \addtogroup vcop_df
+ * @{
+ */
 
 void _VM_CALL vm_op_dynFunNew_Label(vm_t vm, word_t rel_ofs) {
 	vm_dyn_func_t handle = vm_dyn_fun_new();
@@ -419,4 +445,5 @@ void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
 	/*printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);*/
 }
 
+/*@}*/
 

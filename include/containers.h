@@ -20,12 +20,9 @@
 #ifndef _BML_CONTAINERS_H_
 #define _BML_CONTAINERS_H_
 
-/*! \addtogroup data_struc Data Structures and Representations
- * @{
- * \addtogroup data_containers Base containers
+/*! \addtogroup data_containers
  * @{
  * These are the base container structures used in Tinyaml.
- * @}
  * @}
  */
 

@@ -21,11 +21,7 @@
 
 #include "vm_types.h"
 
-/*! \addtogroup data_struc
- * @{
- * \addtogroup data_containers
- * @{
- * \addtogroup gstack_t Generic stack
+/*! \addtogroup gstack_t
  * @{
  * \brief A dynamic stack with configurable token size.
  */
@@ -64,7 +60,7 @@ void gstack_shrink(generic_stack_t s, word_t count);
 /*! \brief Predicate. */
 #define gstack_is_not_empty(_s) (_s->sp!=((word_t)-1))
 
-/*@}@}@}*/
+/*@}*/
 
 #endif
 

@@ -20,17 +20,12 @@
 #define _BML_OBJ_H_
 
 #include <stdio.h>
-/*! \addtogroup data_struc
- * @{
- */
-
-/*! \addtogroup objects Managed Objects
+/*! \addtogroup objects
  * \brief This page describes what a managed object is, how the VM manages objects, and the corresponding API.
  *
  * TODO
  * \section obj_howto How to write user managed objects
  * TODO
- * \endsection
  * @{*/
 
 
@@ -178,7 +173,6 @@ generic_stack_t vm_stack_new();
  */
 vm_dyn_func_t vm_dyn_fun_new();
 
-/*@}*/
 /*@}*/
 
 #endif

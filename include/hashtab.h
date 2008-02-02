@@ -21,11 +21,7 @@
 
 #include <stdlib.h>
 
-/*! \addtogroup data_struc
- * @{
- * \addtogroup data_containers
- * @{
- * \addtogroup hashtab_t Hashtable
+/*! \addtogroup hashtab_t
  * @{
  * A generic hashtable. One must provide key_cmp() and key_hash() functions.
  */
@@ -208,7 +204,7 @@ static __inline void clean_hashtab(hashtab_t tab,void(*callback)(htab_entry_t)) 
 	}
 }
 
-/*@}@}@}*/
+/*@}*/
 
 #endif
 

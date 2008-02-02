@@ -24,12 +24,19 @@
 #include <tinyape.h>
 
 
+/*! \weakgroup dynarray_t
+ * @{
+ */
 struct _dynarray_t {
 	word_t reserved;
 	word_t size;
 	dynarray_value_t* data;
 };
+/*@}*/
 
+/*! \weakgroup gstack_t
+ * @{
+ */
 struct _generic_stack_t {
 	word_t sz;
 	word_t sp;
@@ -37,7 +44,11 @@ struct _generic_stack_t {
 	word_t token_size;
 	void* stack;
 };
+/*@}*/
 
+/*! \weakgroup vm
+ * @{
+ */
 struct _vm_engine_t {
 	void(*_VM_CALL _init)(vm_engine_t);
 	void(*_VM_CALL _deinit)(vm_engine_t);
@@ -54,9 +65,13 @@ struct _vm_engine_t {
 	void(*_VM_CALL _debug)(vm_engine_t);
 	volatile vm_t vm;
 };
+/*@}*/
 
 
 
+/*! \weakgroup compilation
+ * @{
+ */
 struct _opcode_chain_node_t {
 	opcode_chain_node_type_t type;
 	const char* name;
@@ -64,9 +79,13 @@ struct _opcode_chain_node_t {
 	opcode_arg_t arg_type;
 	word_t lofs;
 };
+/*@}*/
 
 
 
+/*! \weakgroup vm
+ * @{
+ */
 struct _opcode_dict_t {
 	struct _dynarray_t stub_by_index[OpcodeTypeMax];
 	/* mnemonic lookup */
@@ -75,51 +94,83 @@ struct _opcode_dict_t {
 	struct _hashtab_t wordcode_by_stub;
 	struct _hashtab_t name_by_stub;
 };
+/*@}*/
 
 
 
+/*! \weakgroup symtab_t
+ * @{
+ */
 struct _text_seg_t {
 	struct _dynarray_t by_index;
 	struct _hashtab_t by_text;
 };
+/*@}*/
 
+/*! \weakgroup thread_t
+ * @{
+ */
 struct _mutex_t {
 	struct _dlist_t pending;
 	long int count;
 	thread_t owner;
 };
+/*@}*/
 
+/*! \weakgroup thread_t
+ * @{
+ */
 struct _data_stack_entry_t {
 	vm_data_type_t type;
 	word_t data;
 };
+/*@}*/
 
+/*! \weakgroup thread_t
+ * @{
+ */
 struct _call_stack_entry_t {
 	program_t cs;
 	word_t ip;
 	word_t has_closure;	/* FIXME : this should be a set of flags, not just one flag */
 };
+/*@}*/
 
 
+/*! \weakgroup objects
+ * @{
+ */
 struct _vm_obj_t {
 	long ref_count;
 	void (*_free)(vm_t,void*);
 	void* (*_clone)(vm_t,void*);
 	word_t magic;
 };
+/*@}*/
 
+/*! \weakgroup vm_env_t
+ * @{
+ */
 struct _vm_dyn_env_t {
 	vm_dyn_env_t parent;
 	struct _text_seg_t symbols;
 	struct _dynarray_t data;
 };
+/*@}*/
 
+/*! \weakgroup dyn_func_t
+ * @{
+ */
 struct _vm_dyn_func_t {
 	program_t cs;
 	word_t ip;
 	dynarray_t closure;
 };
+/*@}*/
 
+/*! \weakgroup vm
+ * @{
+ */
 struct _vm_t {
 	/* embedded parser */
 	tinyap_t parser;
@@ -159,15 +210,23 @@ struct _vm_t {
 	/* garbage collecting */
 	struct _dlist_t gc_pending;
 };
+/*@}*/
 
 
 
+/*! \weakgroup vm_prgs
+ * @{
+ */
 struct _label_tab_t {
 	struct _text_seg_t labels;
 	struct _dynarray_t offsets;
 };
+/*@}*/
 
 
+/*! \weakgroup vm_prgs
+ * @{
+ */
 struct _program_t {
 	/* globals */
 	vm_dyn_env_t env;
@@ -178,7 +237,11 @@ struct _program_t {
 	struct _dynarray_t data;
 	struct _dynarray_t code;
 };
+/*@}*/
 
+/*! \weakgroup thread_t
+ * @{
+ */
 struct _thread_t {
 	/* thread is aliased to a dlist_node */
 	struct _dlist_node_t sched_data;
@@ -203,8 +266,13 @@ struct _thread_t {
 	volatile mutex_t pending_lock;
 	struct _mutex_t join_mutex;
 };
+/*@}*/
 
+/*! \weakgroup vm
+ * @{
+ */
 extern volatile vm_t _glob_vm;
+/*@}*/
 
 
 #endif

@@ -28,7 +28,6 @@
       # call stack
         opcode call             # call a function object
         opcode call:Label       # intra-segment call
-        opcode lcall:Label      # pop segment then perform long call
         opcode retval:Int       # copy stack top then pop out n values
                                 # then poke old stack top then return
         opcode ret:Int          # pop out n values then return

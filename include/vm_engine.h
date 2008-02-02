@@ -22,9 +22,7 @@
 
 #include "vm_types.h"
 
-/*! \addtogroup vm
- * @{
- * \addtogroup vm_engine Engine
+/*! \addtogroup vm_engine
  * @{
  * \brief The engine implements the actual VM execution by providing the necessary methods listed in \ref _vm_engine_t.
  *
@@ -49,7 +47,6 @@ extern const vm_engine_t
 	stub_engine,
 	thread_engine;
 
-/*@}*/
 /*@}*/
 
 #endif

@@ -23,11 +23,7 @@
 
 #include <sys/types.h>
 
-/*! \addtogroup data_struc
- * @{
- * \addtogroup data_containers
- * @{
- * \addtogroup dynarray_t Dynamic Array
+/*! \addtogroup dynarray_t
  * @{
  * \brief A dynamic indexed array of \ref _data_stack_entry_t "VM data".
  * The dynamic array grows automatically when set index is out of range.
@@ -51,8 +47,6 @@ dynarray_value_t dynarray_get(dynarray_t,dynarray_index_t);
 /*! \brief Get elements count. */
 word_t dynarray_size(dynarray_t);
 
-/*@}*/
-/*@}*/
 /*@}*/
 
 #endif

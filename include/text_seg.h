@@ -22,11 +22,7 @@
 
 #include "abstract_io.h"
 
-/*! \addtogroup data_struc
- * @{
- * \addtogroup data_containers
- * @{
- * \addtogroup symtab_t Text segment / Symbol table
+/*! \addtogroup symtab_t
  * @{
  * \brief The text segment associates a string with an index. It can also serve as a symbol table.
  */
@@ -47,7 +43,7 @@ const char* env_index_to_sym(vm_dyn_env_t env, word_t index);
 vm_data_t env_get(vm_dyn_env_t env, word_t index);
 void env_set(vm_t vm, vm_dyn_env_t env, word_t index,vm_data_t data);
 
-/*@}@}@}*/
+/*@}*/
 
 #endif
 

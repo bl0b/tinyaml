@@ -1,9 +1,7 @@
 #ifndef _BML_FAST_MATH_H_
 #define _BML_FAST_MATH_H_
 
-/*! \addtogroup misc
- * @{
- * \addtogroup fast_math Fast 32-bit maths
+/*! \addtogroup fast_math Fast 32-bit maths
  * @{
  * \brief Fast conversions.
  *
@@ -87,7 +85,7 @@ static inline float i2f(long int i) {
 	} while(0)
 /*@}*/
 
-/*@}@}*/
+/*@}*/
 
 
 #endif

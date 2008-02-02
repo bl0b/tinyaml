@@ -29,6 +29,11 @@
 
 ast_node_t ast_unserialize(const char*);
 
+/*! \addtogroup vcop_comp
+ * @{
+ */
+
+
 void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
 	word_t test = text_seg_text_to_index(&vm->gram_nodes,sernode);
 	if(!test) {
@@ -164,41 +169,6 @@ void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, int rel_ofs) {
 
 
 
-void _VM_CALL vm_op_newSymTab(vm_t vm, int rel_ofs) {
-	vm_push_data(vm, DataObjSymTab, (word_t) vm_symtab_new(vm));
-}
-
-
-void _VM_CALL vm_op_symTabSz(vm_t vm, word_t x) {
-	vm_data_t t = _vm_pop(vm);
-	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObjSymTab);
-	vm_push_data(vm,DataInt,ts->by_index.size);
-}
-
-
-void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
-	vm_data_t k = _vm_pop(vm);
-	vm_data_t t = _vm_pop(vm);
-	word_t idx;
-	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObjSymTab);
-	assert(k->type==DataString||k->type==DataObjStr);
-	idx=text_seg_text_to_index(ts, (const char*)k->data);
-	/*printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
-	vm_push_data(vm,DataInt, idx);
-}
-
-void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
-	vm_data_t k = _vm_pop(vm);
-	vm_data_t t = _vm_pop(vm);
-	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObjSymTab);
-	assert(k->type==DataString||k->type==DataObjStr);
-	(void)text_seg_find_by_text(ts, (const char*)k->data);
-	/*printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
-}
-
 
 void _VM_CALL vm_op_compileStateNext(vm_t vm, word_t x) {
 	vm->compile_state=Next;
@@ -323,4 +293,45 @@ void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
 		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
 }
+
+/*@}*/
+
+/*! \addtogroup vcop_st
+ * @{
+ */
+void _VM_CALL vm_op_newSymTab(vm_t vm, int rel_ofs) {
+	vm_push_data(vm, DataObjSymTab, (word_t) vm_symtab_new(vm));
+}
+
+
+void _VM_CALL vm_op_symTabSz(vm_t vm, word_t x) {
+	vm_data_t t = _vm_pop(vm);
+	text_seg_t ts = (text_seg_t) t->data;
+	assert(t->type==DataObjSymTab);
+	vm_push_data(vm,DataInt,ts->by_index.size);
+}
+
+
+void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
+	vm_data_t k = _vm_pop(vm);
+	vm_data_t t = _vm_pop(vm);
+	word_t idx;
+	text_seg_t ts = (text_seg_t) t->data;
+	assert(t->type==DataObjSymTab);
+	assert(k->type==DataString||k->type==DataObjStr);
+	idx=text_seg_text_to_index(ts, (const char*)k->data);
+	/*printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
+	vm_push_data(vm,DataInt, idx);
+}
+
+void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
+	vm_data_t k = _vm_pop(vm);
+	vm_data_t t = _vm_pop(vm);
+	text_seg_t ts = (text_seg_t) t->data;
+	assert(t->type==DataObjSymTab);
+	assert(k->type==DataString||k->type==DataObjStr);
+	(void)text_seg_find_by_text(ts, (const char*)k->data);
+	/*printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
+}
+/*@}*/
 

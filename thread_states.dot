@@ -2,5 +2,5 @@ digraph Thread_States {
 
 Ready->Running->Dying;
 Running->Blocked->Ready;
-Dying->Dead;
+Blocked->Dying->Dead;
 }

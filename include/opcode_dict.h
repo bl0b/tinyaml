@@ -21,9 +21,7 @@
 
 #include <stdio.h>
 
-/*! \addtogroup vm
- * @{
- * \addtogroup opcode_dict Opcode Dictionary
+/*! \addtogroup opcode_dict
  * @{
  * \brief Opcode dictionary associates opcodes name and arg type, C function, and wordcode.
  */
@@ -51,7 +49,7 @@ void opcode_dict_unserialize(opcode_dict_t od, reader_t, void*);
 opcode_dict_t opcode_dict_optimize(vm_t vm, program_t prog);
 
 
-/*@}@}*/
+/*@}*/
 
 #endif
 

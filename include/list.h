@@ -21,32 +21,21 @@
 
 #include "vm_assert.h"
 
-/*! \addtogroup data_struc
+/*! \addtogroup list_t
  * @{
- * \addtogroup data_containers
- * @{
- * \addtogroup vm_env_t Environment/Map
- * @{
- * \brief Both a \ref symtab_t and a \ref dynarray_t.
- *
- * The VM creates its own environment, which is used to (un)serialize programs.
- * The map supports indexed access to keys and values and random access by key lookup.
+ * \brief Single- and double-chained lists.
+ * \defgroup slist_t Single-Chained List
+ * \defgroup dlist_t Double-Chained List
  */
 
+/*! \weakgroup slist_t
+ * @{
+ */
 typedef struct _slist_node_t* slist_node_t;
 typedef struct _slist_t* slist_t;
-typedef struct _dlist_node_t* dlist_node_t;
-typedef struct _dlist_t* dlist_t;
-
 
 struct _slist_node_t {
 	slist_node_t next;
-	word_t value;
-};
-
-struct _dlist_node_t {
-	dlist_node_t prev;
-	dlist_node_t next;
 	word_t value;
 };
 
@@ -55,21 +44,46 @@ struct _slist_t {
 	slist_node_t tail;
 };
 
+/*! \internal \brief */
+#define _snode_local_new(_n) slist_node_t _n = malloc(sizeof(struct _slist_node_t))
+/*! \internal \brief */
+#define snode_del free
+
+/*@}*/
+
+/*! \weakgroup dlist_t
+ * @{
+ */
+typedef struct _dlist_node_t* dlist_node_t;
+typedef struct _dlist_t* dlist_t;
+
+struct _dlist_node_t {
+	dlist_node_t prev;
+	dlist_node_t next;
+	word_t value;
+};
+
 struct _dlist_t {
 	dlist_node_t head;
 	dlist_node_t tail;
 };
+
+/*! \internal */
+#define _dnode_local_new(_n) dlist_node_t _n = malloc(sizeof(struct _dlist_node_t))
+/*! \internal */
+#define dnode_del free
+
+/*@}*/
+
 
 
 /*
  * Adding values
  */
 
-#define _dnode_local_new(_n) dlist_node_t _n = malloc(sizeof(struct _dlist_node_t))
-#define _snode_local_new(_n) slist_node_t _n = malloc(sizeof(struct _slist_node_t))
-
-#define dnode_del free
-#define snode_del free
+/*! \weakgroup dlist_t
+ * @{
+ */
 
 #define dlist_insert_head_node(_l,_n)	do {\
 		_n->next=(_l)->head;\
@@ -103,34 +117,6 @@ struct _dlist_t {
 		_dnode_local_new(n);\
 		n->value=(word_t)(_v);\
 		dlist_insert_tail_node(_l,n);\
-	} while(0)
-
-#define slist_insert_head(_l,_v)	do {\
-		_snode_local_new(n);\
-		n->value=(word_t)(_v);\
-		n->next=(_l)->head;\
-		if((_l)->tail==NULL) {\
-			(_l)->tail=n;\
-		}\
-		(_l)->head=n;\
-	} while(0)
-
-#define slist_insert_tail(_l,_v)	do {\
-		_snode_local_new(n);\
-		n->value=(word_t)(_v);\
-		n->next=NULL;\
-		if((_l)->tail!=NULL) {\
-			(_l)->tail->next=n;\
-		} else {\
-			(_l)->head=n;\
-		}\
-		(_l)->tail=n;\
-	} while(0)
-
-#define slist_remove_head(_l)	do {\
-		slist_node_t n=(_l)->head;\
-		(_l)->head = (_l)->head->next;\
-		snode_del(n);\
 	} while(0)
 
 #define dlist_remove_head(_l)	do {\
@@ -201,6 +187,41 @@ struct _dlist_t {
 			(_n)->prev->next=(_n)->next;\
 		}\
 	} while(0)
+/*@}*/
+
+
+/*! \weakgroup slist_t
+ * @{
+ */
+#define slist_insert_head(_l,_v)	do {\
+		_snode_local_new(n);\
+		n->value=(word_t)(_v);\
+		n->next=(_l)->head;\
+		if((_l)->tail==NULL) {\
+			(_l)->tail=n;\
+		}\
+		(_l)->head=n;\
+	} while(0)
+
+#define slist_insert_tail(_l,_v)	do {\
+		_snode_local_new(n);\
+		n->value=(word_t)(_v);\
+		n->next=NULL;\
+		if((_l)->tail!=NULL) {\
+			(_l)->tail->next=n;\
+		} else {\
+			(_l)->head=n;\
+		}\
+		(_l)->tail=n;\
+	} while(0)
+
+#define slist_remove_head(_l)	do {\
+		slist_node_t n=(_l)->head;\
+		(_l)->head = (_l)->head->next;\
+		snode_del(n);\
+	} while(0)
+/*@}*/
+
 /*
  * Iterating over a list
  */
@@ -233,6 +254,9 @@ struct _dlist_t {
  * Typical algorithms
  */
 
+/*! \weakgroup slist_t
+ * @{
+ */
 #define slist_forward(_l,_t,_f)	do {\
 		slist_node_t n=list_head(_l);\
 		while(n!=NULL) {\
@@ -241,7 +265,27 @@ struct _dlist_t {
 		}\
 	} while(0)
 
+#define slist_flush(_l)	do {\
+		slist_node_t q,n=list_head(_l);\
+		while(n!=NULL) {\
+			q=n->next;\
+			free(n);\
+			n=q;\
+		}\
+	} while(0)
+/*
+ * Creating and destroying Lists
+ */
 
+inline void slist_init(slist_t);
+slist_t slist_new();
+void slist_del(slist_t);
+/*@}*/
+
+
+/*! \weakgroup dlist_t
+ * @{
+ */
 #define dlist_forward(_l,_t,_f)	do {\
 		dlist_node_t n=list_head(_l);\
 		while(n!=NULL) {\
@@ -255,24 +299,6 @@ struct _dlist_t {
 		while(n!=NULL) {\
 			_f(node_value(_t,n));\
 			n=n->prev;\
-		}\
-	} while(0)
-
-#define slist_flush(_l)	do {\
-		slist_node_t q,n=list_head(_l);\
-		while(n!=NULL) {\
-			q=n->next;\
-			free(n);\
-			n=q;\
-		}\
-	} while(0)
-
-#define dlist_flush(_l)	do {\
-		dlist_node_t q,n=list_head(_l);\
-		while(n!=NULL) {\
-			q=n->next;\
-			free(n);\
-			n=q;\
 		}\
 	} while(0)
 
@@ -291,6 +317,15 @@ struct _dlist_t {
 				(_l)->tail=(_n);\
 			}\
 			r->next=(_n);\
+		}\
+	} while(0)
+
+#define dlist_flush(_l)	do {\
+		dlist_node_t q,n=list_head(_l);\
+		while(n!=NULL) {\
+			q=n->next;\
+			free(n);\
+			n=q;\
 		}\
 	} while(0)
 
@@ -320,19 +355,18 @@ struct _dlist_t {
 		}\
 	} while(0)
 
-
 /*
  * Creating and destroying Lists
  */
 
-inline void slist_init(slist_t);
 inline void dlist_init(dlist_t); 
-slist_t slist_new();
-void slist_del(slist_t);
 dlist_t dlist_new();
 void dlist_del(dlist_t);
 
-/*@}@}@}*/
+/*@}*/
+
+
+/*@}*/
 
 #endif
 

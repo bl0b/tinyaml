@@ -27,29 +27,71 @@
 
 #include "../config.h"
 
-/*!
- * \defgroup abstract_io
- * \defgroup data_struc
- * @{
- * 	\defgroup containers
- * 	@{
- * 	@}
- * 	\defgroup objects
- * @}
- * \defgroup vm
- * @{
- * 	\defgroup vm_mgmt
- * 	\defgroup vm_engine
- * 	\defgroup opcode_dict
- * 	\defgroup vm_prgs
- * 	\defgroup Threads
- * 	\defgroup lolvl
- * @}
- * \defgroup misc
- * \defgroup vm_core_ops
+/*! \addtogroup _pad _
+ * \brief f***ing bug in doxygen's grouping
  */
 
-/*! \addtogroup misc Miscellaneous
+/*! \defgroup abstract_io Tinyaml file and buffer IO */
+/*! \defgroup data_struc Data Structures and Representations
+ * @{
+ * 	\defgroup data_containers Base containers
+ * 	@{
+ * 		\defgroup dynarray_t Dynamic Array
+ * 		\defgroup gstack_t Generic stack
+ * 		\defgroup list_t Chained lists
+ * 		\defgroup hashtab_t Hashtable
+ * 		\defgroup symtab_t Text segment / Symbol table
+ * 		\defgroup vm_env_t Environment/Map
+ * 	\defgroup objects Managed Objects
+ * 	@}
+ * 	\weakgroup _pad
+ * @}
+ */
+/*! \defgroup vm Virtual Machine
+ * @{
+ * 	\defgroup vm_mgmt Management
+ * 	\defgroup vm_engine Engine
+ * 	\defgroup compilation Compiler
+ * 	@{
+ * 		\defgroup compil_ch Opcode chain
+ * 		\defgroup opcode_dict Opcode dictionary
+ * 	\defgroup vm_prgs Programs : reading, compiling, executing
+ * 	@}
+ * 	\defgroup Threads Threads
+ * 	\defgroup dyn_func_t Function objects (dynamic functions)
+ * 	\defgroup lolvl At opcode level
+ * 	\weakgroup _pad
+ * @}
+ */
+/*! \defgroup misc Miscellaneous
+ * @{
+ * 	\defgroup vm_assert Assertions
+ * 	\defgroup fast_math Fast 32-bit maths
+ * 	\weakgroup _pad
+ * @}
+ */
+/*! \defgroup vm_core_ops Core Opcodes
+ * @{
+ * 	\defgroup vcop_data Handling data
+ * 	@{
+ * 		\defgroup vcop_mem Memory operations
+ * 		\defgroup vcop_da Arrays
+ * 		\defgroup vcop_stack Stacks
+ * 		\defgroup vcop_st Symtabs
+ * 		\defgroup vcop_map Maps
+ * 		\defgroup vcop_df Function objects
+ * 	\defgroup vcop_ctrl Control flow
+ * 	@}
+ * 	\defgroup vcop_str String operations
+ * 	\defgroup vcop_thrd Threading
+ * 	\defgroup vcop_comp Compiling
+ * 	\defgroup vcop_arit Arithmetic & bitwise operations
+ * 	\weakgroup _pad
+ * @}
+ *
+ */
+
+/*! \addtogroup misc
  * @{
  */
 
@@ -57,12 +99,12 @@
 
 /*@}*/
 
-/*! \addtogroup vm Virtual Machine
+/*! \addtogroup vm
  * The VM blabla TODO
  * @{
  */
 
-/*! \addtogroup vm_mgmt Management
+/*! \addtogroup vm_mgmt
  * @{
  */
 
@@ -86,7 +128,7 @@ opcode_t vm_get_opcode_by_name(vm_t, const char*);
 /*@}*/
 
 
-/*! \addtogroup vm_prgs Programs : reading, compiling, executing
+/*! \addtogroup vm_prgs
  * @{
  */
 
@@ -129,7 +171,7 @@ vm_t vm_kill_thread(vm_t,thread_t);
 
 /*@}*/
 
-/*! \addtogroup lolvl At opcode level
+/*! \addtogroup lolvl
  * @{
  */
 

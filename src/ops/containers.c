@@ -27,6 +27,11 @@
 #include "object.h"
 #include "text_seg.h"
 
+/*! \addtogroup vcop_da
+ * @{
+ */
+
+
 /**********************************************************
  * arrayNew
  * creates a managed array
@@ -143,9 +148,12 @@ void _VM_CALL vm_op_arraySize(vm_t vm, word_t unused) {
 	assert(_is_a_ptr(da,DataObjArray));
 	vm_push_data(vm,DataInt,dynarray_size(da)>>1);
 }
+/*@}*/
 
 
-
+/*! \addtogroup vcop_map
+ * @{
+ */
 void _VM_CALL vm_op_mapNew(vm_t vm, word_t unused) {
 	vm_dyn_env_t env = vm_env_new();
 	vm_push_data(vm,DataObjEnv,(word_t)env);
@@ -310,9 +318,13 @@ void _VM_CALL vm_op_envLookup(vm_t vm, long index) {
 	}
 	vm_push_data(vm,DataInt,index);
 }
+/*@}*/
 
 
 
+/*! \addtogroup vcop_stack
+ * @{
+ */
 void _VM_CALL vm_op_stackNew(vm_t vm, word_t unused) {
 	vm_push_data(vm,DataObjStack,(word_t)vm_stack_new());
 }
@@ -364,4 +376,5 @@ void _VM_CALL vm_op_stackSize(vm_t vm, word_t unused) {
 	vm_push_data(vm,DataInt,gstack_size((generic_stack_t)sk->data));
 }
 
+/*@}*/
 
