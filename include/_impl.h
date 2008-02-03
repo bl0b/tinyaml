@@ -133,6 +133,7 @@ struct _call_stack_entry_t {
 	program_t cs;
 	word_t ip;
 	word_t has_closure;	/* FIXME : this should be a set of flags, not just one flag */
+	/* FIXME again : has_closure is used to store call_stack.sp in catch stack */
 };
 /*@}*/
 
@@ -194,6 +195,7 @@ struct _vm_t {
 	struct _slist_t all_programs;
 	/* globals */
 	vm_dyn_env_t env;
+	vm_data_t exception;
 	/* threads */
 	scheduler_algorithm_t scheduler;
 	word_t threads_count;

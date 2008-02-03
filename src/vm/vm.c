@@ -63,6 +63,7 @@ vm_t vm_new() {
 	ret->engine=stub_engine;
 	ret->engine->vm=ret;
 	ret->result=NULL;
+	ret->exception=NULL;
 	ret->parser = tinyap_new();
 	tinyap_set_grammar_ast(ret->parser,ast_unserialize(ml_core_grammar));
 	opcode_dict_init(&ret->opcodes);
@@ -453,6 +454,7 @@ vm_t vm_push_catcher(vm_t vm, program_t seg, word_t ofs) {
 	generic_stack_t stack = &vm->current_thread->catch_stack;
 	e.cs = seg;
 	e.ip = ofs;
+	e.has_closure = vm->current_thread->call_stack.sp;
 	gpush( stack, &e );
 	return vm;
 }
@@ -807,7 +809,11 @@ vm_t vm_set_engine(vm_t vm, vm_engine_t e) {
 
 
 void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, const char* function) {
-	fprintf(stderr, "[VM:FATAL] Assertion failed in function `%s' at %s:%u : %s\n", function, file, line, assertion);
+	if(strncmp(function,"vm_op_",6)) {
+		fprintf(stderr, "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
+	} else {
+		fprintf(stderr, "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
+	}
 	if(_glob_vm&&_glob_vm->current_thread) {
 		fprintf(stderr,"[VM:NOTICE] Killing current thread %p\n", _glob_vm->current_thread);
 		_glob_vm->engine->_thread_failed(_glob_vm,_glob_vm->current_thread);

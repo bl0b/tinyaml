@@ -23,10 +23,20 @@
 
         opcode SZ               # skip next instruction if zero
         opcode SNZ              # skip next instruction if non zero
+      # raw exception handling
+        opcode instCatcher:Label        # try {         # label is catch address
+        opcode uninstCatcher:Label      # }             # label is end
+                                                        # of catch bloc
+        opcode throw                    # try and pop data and jump to
+                                        # top catcher or fail
+        
       # jumps
         opcode jmp:Label        # relative intra-segment jump
       # call stack
         opcode call             # call a function object
+        opcode call_vc          # pop function object, pop array or
+                                # VObj, use the latter as closure and
+                                # call the former.
         opcode call:Label       # intra-segment call
         opcode retval:Int       # copy stack top then pop out n values
                                 # then poke old stack top then return

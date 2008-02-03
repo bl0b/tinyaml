@@ -213,6 +213,28 @@ void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
 	t->jmp_seg=fun->cs;
 	t->jmp_ofs=fun->ip;
 }
+
+void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused) {
+	vm_data_t d;
+	vm_dyn_func_t fun;
+	dynarray_t da;
+	thread_t t=vm->current_thread;
+	/* pop dynfun */
+	d = _vm_pop(vm);
+	assert(d->type==DataObjFun);
+	fun = (vm_dyn_func_t) d->data;
+	assert(fun->closure==NULL);
+	/* pop closure */
+	d = _vm_pop(vm);
+	assert(d->type==DataObjArray||d->type==DataObjVObj);
+	da = (dynarray_t) d->data;
+	/* perform call */
+	vm_push_caller(vm,t->program, t->IP, 1);
+	gpush(&t->closures_stack,&da);
+	t->jmp_seg=fun->cs;
+	t->jmp_ofs=fun->ip;
+}
+
 /*@}*/
 
 /*! \addtogroup vcop_ctrl
@@ -273,6 +295,41 @@ void _VM_CALL vm_op_ret_Int(vm_t vm, word_t n) {
 		thread_set_state(vm,t,ThreadDying);
 	}
 }
+
+
+void _VM_CALL vm_op_instCatcher_Label(vm_t vm, long rel_ofs) {
+	vm_push_catcher(vm,vm->current_thread->program,vm->current_thread->IP+rel_ofs);
+}
+
+void _VM_CALL vm_op_uninstCatcher_Label(vm_t vm, long rel_ofs) {
+	(void)_gpop(&vm->current_thread->catch_stack);
+	vm->current_thread->jmp_seg=vm->current_thread->program;
+	vm->current_thread->jmp_ofs=vm->current_thread->IP+rel_ofs;
+}
+
+void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
+	call_stack_entry_t cse;
+	vm_data_t e;
+	if((long)vm->current_thread->data_stack.sp>=0) {
+		e = _vm_pop(vm);
+	} else {
+		e = (struct _data_stack_entry_t[]){{ DataString, (word_t)"Global failure"}};
+	}
+	if(e->type&&DataManagedObjectFlag) {
+		vm_obj_ref_ptr(vm,(void*)e->data);
+	}
+	vm->exception = e;
+	if((long)vm->current_thread->catch_stack.sp>=0) {
+		cse = _gpop(&vm->current_thread->catch_stack);
+		vm->current_thread->jmp_seg=cse->cs;
+		vm->current_thread->jmp_ofs=cse->ip;
+		vm->current_thread->call_stack.sp = cse->has_closure;
+		vm_push_data(vm,e->type,e->data);
+	} else {
+		vm_fatal("Uncaught exception");
+	}
+}
+
 /*@}*/
 
 

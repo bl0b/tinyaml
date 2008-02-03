@@ -18,7 +18,7 @@ extern void _vm_assert_fail(const char* assertion, const char*file, unsigned int
 #define assert(_x_)						\
 	((_x_)							\
 	? ((void)0)						\
-	: _vm_assert_fail( #_x_ , __FILE__, __LINE__, __func__ ))
+	: _vm_assert_fail( "Assertion failed : " #_x_ , __FILE__, __LINE__, __func__ ))
 #endif
 
 /*! \brief Trig a failure by hand. */

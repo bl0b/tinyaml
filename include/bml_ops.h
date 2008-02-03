@@ -21,6 +21,7 @@
 
 /*! \addtogroup vm_core_ops
  * @{
+ * \todo FINISH THIS DOC.
  */
 
 /*! \brief do NOTHING. */

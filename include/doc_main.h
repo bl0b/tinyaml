@@ -290,22 +290,68 @@ Syntax : @my_label
  * \endcode
  *
  * \section sec_ll Binding new libraries
- * \todo FINISH THIS DOC.
  *
- * Two files are necessary to define a Tinyaml extension.
+ * Two files are necessary to define a Tinyaml extension, a binary shared object containing the C opcode routines, and
+ * a tinyaml source file starting with a \c lib section.
  *
- * - writing a library file
- * - writing opcodes in C
- * - building the extension
- * - using the extension
+ * The \c lib section contains \c file statements (generally one) and \c opcode statements.
+ * \c file followed by a string opens the corresponding shared object. Currently on *NIX it
+ * is $pkglibdir/libtinyaml_ <em>string</em>.so. The \c opcode keyword is followed by the
+ * opcode mnemonic without quotes. If the opcode has an argument, the mnemonic is followed
+ * by a colon ":" and the argument type \c Int, \c Float, \c String, \c EnvSym, or \c Label.
+ *
+ * The argument word for \c EnvSym is the index of the symbol in the current environment, computed at compile/unserialize-time.
+ *
+ * The argument word for \c Label is the relative offset of the label, computed at compile/unserialize-time.
+ *
+ * When the tinyaml library file is compiled, the opcodes are added to the dictionary and their C functions are resolved. Tinyaml searches for a function named vm_op_MNEMONIC_ARGTYPE or vm_op_MNEMONIC if the opcode has no argument. Such a function must be of type compatible with \ref opcode_stub_t.
+ *
+ * Here is a quick foobar example :
+ * - foobar.lib
+ *   \code
+ *   lib
+ *   	file "foobar"
+ *   	opcode foo
+ *   	opcode bar:Int
+ *   end
+ *   \endcode
+ * - foobar.c
+ *   \code
+ * #include <tinyaml/vm.h>
+ * #include <stdio.h>
+ * void _VM_CALL vm_op_foo(vm_t vm, word_t unused) {
+ * 	printf("foo\n");
+ * }
+ *
+ * void _VM_CALL vm_op_bar_Int(vm_t vm, long myArg) {
+ * 	printf("pressure : %i mbar\n", myArg);
+ * }
+ * \endcode
+ * - compile and install the extension (quick and dirty way)
+ *   \code
+ * $ gcc -shared -Wall foobar.c -ltinyaml -o libtinyaml_foobar.so
+ * $ sudo cp !$ /usr/local/lib/tinyaml/
+ * \endcode
+ * - foobar.asm
+ *   \code asm foo bar 42 end \endcode
+ * - running tinyaml to test it out (provided foobar.c has been compiled and installed)
+ *   \code
+ * $ tinyaml -q -c foobar.lib -c foobar.asm -f
+ * foo
+ * pressure : 42 mbar
+ * \endcode
+ *
+ *
  *
  * \section sec_op Core library
+ * Tinyaml comes with a small set of opcodes to handle the basic data and containers it defines, and to perform
+ * arithmetic boolean and bitwise operations. All the opcodes are listed in the module \ref vm_core_ops.
  *
- * \see ml/ml_core.lib
+ * \see The corresponding library file is ml/ml_core.lib
  *
  * \section sec_ext Bundled extensions
  * 	\subsection ext_rtc Real-Time Clock (GNU/Linux)
- * - Purpose : allow real-time sequencing of tasks and blocking i/o.
+ * - Purpose : allow real-time sequencing of tasks and blocking waits.
  * - Opcodes :
  *   - TODO
  * 	\subsection ext_msg Message Queues

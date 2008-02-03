@@ -6,7 +6,7 @@ asm
 
 	#call @_nops
 	yield
-	getmem 0 push "Hello, world.\n" msgQueueWrite
+	getmem 0 push "   Hello, world." msgQueueWrite
 	#call @_nops
 	yield
 	getmem 0 push 23 msgQueueWrite
