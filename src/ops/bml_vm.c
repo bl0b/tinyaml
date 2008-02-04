@@ -298,13 +298,16 @@ void _VM_CALL vm_op_ret_Int(vm_t vm, word_t n) {
 
 
 void _VM_CALL vm_op_instCatcher_Label(vm_t vm, long rel_ofs) {
+	/*printf("install catcher %p:%lu\n",vm->current_thread->program,vm->current_thread->IP+rel_ofs);*/
 	vm_push_catcher(vm,vm->current_thread->program,vm->current_thread->IP+rel_ofs);
 }
 
 void _VM_CALL vm_op_uninstCatcher_Label(vm_t vm, long rel_ofs) {
-	(void)_gpop(&vm->current_thread->catch_stack);
+	call_stack_entry_t cse = _gpop(&vm->current_thread->catch_stack);
+	/*printf("uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
 	vm->current_thread->jmp_seg=vm->current_thread->program;
 	vm->current_thread->jmp_ofs=vm->current_thread->IP+rel_ofs;
+	/*vm->current_thread->call_stack.sp = cse->has_closure;*/
 }
 
 void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
@@ -313,17 +316,20 @@ void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
 	if((long)vm->current_thread->data_stack.sp>=0) {
 		e = _vm_pop(vm);
 	} else {
-		e = (struct _data_stack_entry_t[]){{ DataString, (word_t)"Global failure"}};
+		e = (struct _data_stack_entry_t[]){{ DataString, (word_t)"Global failure : throw without data."}};
 	}
-	if(e->type&&DataManagedObjectFlag) {
-		vm_obj_ref_ptr(vm,(void*)e->data);
-	}
+	/*if(e->type&DataManagedObjectFlag) {*/
+		/*vm_obj_ref_ptr(vm,(void*)e->data);*/
+	/*}*/
 	vm->exception = e;
 	if((long)vm->current_thread->catch_stack.sp>=0) {
 		cse = _gpop(&vm->current_thread->catch_stack);
+		/*printf("throw : uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
 		vm->current_thread->jmp_seg=cse->cs;
 		vm->current_thread->jmp_ofs=cse->ip;
-		vm->current_thread->call_stack.sp = cse->has_closure;
+		while((long)vm->current_thread->call_stack.sp>(long)cse->has_closure) {
+			(void)vm_pop_caller(vm,1);
+		}
 		vm_push_data(vm,e->type,e->data);
 	} else {
 		vm_fatal("Uncaught exception");

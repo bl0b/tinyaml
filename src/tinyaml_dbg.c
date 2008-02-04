@@ -83,6 +83,18 @@ static void call_stack_renderer(WINDOW* w,struct _call_stack_entry_t* cse) {
 }
 
 
+static void catch_stack_renderer(WINDOW* w,struct _call_stack_entry_t* cse) {
+	word_t ofs;
+	const char*label;
+	lookup_label_and_ofs(cse->cs,cse->ip,&label,&ofs);
+	if(label) {
+		wprintw(w,"%p:%lx [%li]\n     (%s+%lu)",cse->ip, cse->cs, (long)cse->has_closure, label, ofs);
+	} else {
+		wprintw(w,"%p:%lu [%li]",cse->cs, cse->ip, (long)cse->has_closure);
+	}
+}
+
+
 static void render_stack(WINDOW* w, generic_stack_t s, word_t skip, word_t count, const char*prefix, void(*renderer)(WINDOW*,void*), int disp_start, int disp_incr) {
 	long counter = -skip;
 	long stop = -(skip+count);
@@ -115,19 +127,20 @@ WINDOW* data_stack;
 WINDOW* data_seg;
 WINDOW* locals_stack;
 WINDOW* closure_stack;
+WINDOW* catch_stack;
 
 WINDOW* code;
 
-#define N_WINDOWS 6
+#define N_WINDOWS 7
 
 
-#define ST_W ((getmaxx(stdscr)>>2))
-#define ST_H ((getmaxy(stdscr)>>1))
+#define ST_W ((getmaxx(stdscr)-1)/5)
+#define ST_H ((getmaxy(stdscr)-1)>>1)
 
 
 int cur_win=0;
 
-int window_vofs[N_WINDOWS] = { 0,0,0,0,0,0, };
+int window_vofs[N_WINDOWS] = { 0,0,0,0,0,0,0, };
 
 WINDOW** windows[N_WINDOWS] = {
 	&code,
@@ -136,6 +149,7 @@ WINDOW** windows[N_WINDOWS] = {
 	&locals_stack,
 	&closure_stack,
 	&data_seg,
+	&catch_stack,
 };
 
 #define STATE_IDLE 0
@@ -203,42 +217,50 @@ command_t commands[N_WINDOWS][10] = {
 	{ 'q', "quit", do_quit },
 { 0, NULL, NULL}}, /* call_stack */ {
 	{ 'h', "display this popup", do_help },
-	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
-	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
-	{ 'm', "scroll down by one opcode", do_scroll_down },
-	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ KEY_DOWN, "scroll down by one line", do_scroll_down },
+	{ KEY_UP, "scroll up by one line", do_scroll_up },
+	{ 'm', "scroll down by one line", do_scroll_down },
+	{ 'p', "scroll up by one line", do_scroll_up },
 	{ '\t', "cycle through windows", do_cycle_win },
 	{ 'q', "quit", do_quit },
 { 0, NULL, NULL}}, /* data_stack */ {
 	{ 'h', "display this popup", do_help },
-	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
-	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
-	{ 'm', "scroll down by one opcode", do_scroll_down },
-	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ KEY_DOWN, "scroll down by one line", do_scroll_down },
+	{ KEY_UP, "scroll up by one line", do_scroll_up },
+	{ 'm', "scroll down by one line", do_scroll_down },
+	{ 'p', "scroll up by one line", do_scroll_up },
 	{ '\t', "cycle through windows", do_cycle_win },
 	{ 'q', "quit", do_quit },
 { 0, NULL, NULL}}, /* locals_stack */ {
 	{ 'h', "display this popup", do_help },
-	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
-	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
-	{ 'm', "scroll down by one opcode", do_scroll_down },
-	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ KEY_DOWN, "scroll down by one line", do_scroll_down },
+	{ KEY_UP, "scroll up by one line", do_scroll_up },
+	{ 'm', "scroll down by one line", do_scroll_down },
+	{ 'p', "scroll up by one line", do_scroll_up },
 	{ '\t', "cycle through windows", do_cycle_win },
 	{ 'q', "quit", do_quit },
 { 0, NULL, NULL}}, /* closure_stack */ {
 	{ 'h', "display this popup", do_help },
-	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
-	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
-	{ 'm', "scroll down by one opcode", do_scroll_down },
-	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ KEY_DOWN, "scroll down by one line", do_scroll_down },
+	{ KEY_UP, "scroll up by one line", do_scroll_up },
+	{ 'm', "scroll down by one line", do_scroll_down },
+	{ 'p', "scroll up by one line", do_scroll_up },
 	{ '\t', "cycle through windows", do_cycle_win },
 	{ 'q', "quit", do_quit },
 { 0, NULL, NULL}}, /* data_seg */ {
 	{ 'h', "display this popup", do_help },
-	{ KEY_DOWN, "scroll down by one opcode", do_scroll_down },
-	{ KEY_UP, "scroll up by one opcode", do_scroll_up },
-	{ 'm', "scroll down by one opcode", do_scroll_down },
-	{ 'p', "scroll up by one opcode", do_scroll_up },
+	{ KEY_DOWN, "scroll down by one line", do_scroll_down },
+	{ KEY_UP, "scroll up by one line", do_scroll_up },
+	{ 'm', "scroll down by one line", do_scroll_down },
+	{ 'p', "scroll up by one line", do_scroll_up },
+	{ '\t', "cycle through windows", do_cycle_win },
+	{ 'q', "quit", do_quit },
+{ 0, NULL, NULL}}, /* catch_stack */ {
+	{ 'h', "display this popup", do_help },
+	{ KEY_DOWN, "scroll down by one line", do_scroll_down },
+	{ KEY_UP, "scroll up by one line", do_scroll_up },
+	{ 'm', "scroll down by one line", do_scroll_down },
+	{ 'p', "scroll up by one line", do_scroll_up },
 	{ '\t', "cycle through windows", do_cycle_win },
 	{ 'q', "quit", do_quit },
 { 0, NULL, NULL},
@@ -316,6 +338,7 @@ void repaint(vm_t vm, thread_t t, int do_command) {
 		box(code,0,0);
 		print_centered(0,0," No running thread ");
 		box(call_stack,0,0);
+		box(catch_stack,0,0);
 
 		box(data_stack,0,0);
 		box(locals_stack,0,0);
@@ -388,6 +411,11 @@ void repaint(vm_t vm, thread_t t, int do_command) {
 	render_stack(call_stack,&t->call_stack, window_vofs[1], calc_count(1,gstack_size(&t->call_stack)), "  ", (void(*)(WINDOW*,void*)) call_stack_renderer, 0, 1);
 	box(call_stack,0,0);
 	print_centered(1,0,title);
+
+	sprintf(title," Catch stack [%lu] ", gstack_size(&t->catch_stack));
+	render_stack(catch_stack,&t->catch_stack, window_vofs[1], calc_count(1,gstack_size(&t->catch_stack)), "  ", (void(*)(WINDOW*,void*)) catch_stack_renderer, 0, 1);
+	box(catch_stack,0,0);
+	print_centered(6,0,title);
 
 	sprintf(title," Data stack [%lu] ", gstack_size(&t->data_stack));
 	render_stack(data_stack,&t->data_stack, window_vofs[2], calc_count(2,gstack_size(&t->data_stack)), "  ", (void(*)(WINDOW*,void*)) data_stack_renderer, 0, 1);
@@ -474,15 +502,16 @@ void init() {
 	initscr(); noecho(); cbreak(); curs_set(0);
 	flushinp();
 
-	x_sz = getmaxx(stdscr);
-	y_sz = getmaxy(stdscr);
+	x_sz = getmaxx(stdscr)-1;
+	y_sz = getmaxy(stdscr)-1;
 
-	code = subwin(stdscr,y_sz-ST_H, x_sz-ST_W, 0, 0);
-	call_stack = subwin(stdscr, ST_H, ST_W, 0, x_sz-ST_W);
+	code = subwin(stdscr, ST_H, x_sz-ST_W, 0, 0);
+	data_seg = subwin(stdscr, ST_H, ST_W, x_sz-ST_W, 0);
 	data_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 0);
 	locals_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, ST_W);
 	closure_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 2*ST_W);
-	data_seg = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 3*ST_W);
+	call_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 3*ST_W);
+	catch_stack = subwin(stdscr, ST_H, ST_W, y_sz-ST_H, 4*ST_W);
 }
 
 

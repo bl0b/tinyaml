@@ -23,6 +23,7 @@ glob
 
 	call_local_ofs = 0
 	is_lvalue = 0
+	current_end_tc = 0
 end
 
 
@@ -175,6 +176,7 @@ walker analyzeFuncDecl {
 	on script_fun_body asm compileStateDown end
 
 	on script_print asm compileStateDown end
+	on instruction_seq asm compileStateDown end
 
 	on m_expr asm compileStateDown end
 	on b_expr asm compileStateDown end
@@ -469,7 +471,15 @@ language
  sfb_loop = ( <script_instruction> <sfb_loop> | "end" ).
  script_local ::= "local" <script_sym_loop>.
 
- script_instruction = ( <script_if> | <script_while> | <script_assign> | <script_call> | <AsmBloc> | <script_print> | <script_return> ).
+ script_instruction = ( <script_if> | <script_while> | <AsmBloc> | <script_print> | <script_return> | <script_throw> | <script_try> | <script_assign> | <script_call> ).
+ instruction_seq = ( <script_instruction> <instruction_seq> | <script_instruction> ).
+ instruction_bloc ::= <instruction_seq>.
+
+ script_try ::= "try" <instruction_bloc> "catch" <catch_bloc>.
+ catch_bloc ::= <catch_bloc_loop>.
+ catch_bloc_loop = ( <catch_statement> <catch_bloc_loop> | "end" ).
+ catch_statement ::= <sym> ":" <instruction_bloc>.
+ script_throw ::= "throw" <sym>.
 
  script_while ::= "while" <b_expr> "do" <sb_end>.
  script_if ::= "if" <b_expr> "then" ( <sb_else> <sb_end> | <sb_end> ).
@@ -534,14 +544,82 @@ bexpr4 = ( <comp> | <bexpr2> ).
 end
 
 
-
 plug Script into p_Code
+
+
 
 compile Script asm
 	#pp_curNode
 	compileStateDown
 end
 
+compile instruction_bloc asm compileStateDown end
+
+
+compile script_throw asm
+	astGetChildString 0
+	write_oc_String "push"
+	write_oc "throw"
+	compileStateNext
+end
+
+compile script_try asm
+	enter 3
+	push "try" call @gen_label setmem -1
+	push "catch" call @gen_label setmem -2
+	push "end_trycatch" call @gen_label setmem -3
+
+	# try: instCatcher @catch
+	getmem -1 write_label
+	getmem -2 write_oc_Label "instCatcher"
+	# ...
+	astCompileChild 0
+	# jmp @end_trycatch catch:
+	getmem -3 write_oc_Label "uninstCatcher"
+	getmem -2 write_label
+	# ...
+	getmem -3 -$current_end_tc
+	astCompileChild 1
+	# end_trycatch:
+	getmem -3 write_label
+	leave 3
+	compileStateNext
+end
+
+
+compile catch_statement asm
+	enter 2
+	push "endcatch_" astGetChildString 0 strcat call @gen_label setmem -1
+
+	push 0 write_oc_Int "dup"
+	astGetChildString 0 write_oc_String "strcmp"
+	write_oc "SZ"
+	getmem -1 write_oc_Label "jmp"
+
+	astCompileChild 1
+
+	write_oc "pop"
+	+$current_end_tc write_oc_Label "jmp"
+	getmem -1 write_label
+	leave 2
+	compileStateNext
+end
+
+compile catch_bloc asm
+	enter 1
+	push 0 setmem -1
+catch_bloc_loop:
+	getmem -1 astGetChildrenCount inf [
+		getmem -1 astCompileChild
+		getmem -1 inc setmem -1
+		jmp @catch_bloc_loop
+	]
+
+	# default: propagate exception
+	write_oc "throw"
+	leave 1
+	compileStateNext
+end
 
 
 compile script_glob
