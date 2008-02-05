@@ -20,9 +20,6 @@
 #define _BML_ABSTRACT_IO_H_
 
 /*! \addtogroup abstract_io
- * Abstract readers and writers can handle 32-bit words and character strings.
- * They provide a single interface for file and memory buffer I/O.
- * Internals are not discussed here.
  * @{
  */
 

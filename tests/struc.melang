@@ -86,9 +86,14 @@ language
 	newstruc_loop = ( <struc_item> <newstruc_loop> | "}" ).
 	struc_item = <sym> ":" ( <AsmBloc> | <p_Opcode> ).
 
-	SubAsmBloc ::= <asm_contents>.
-	IfElseNZ ::= "[[" <SubAsmBloc> "][" <SubAsmBloc> "]]".
-	IfNZ ::= "[" <SubAsmBloc> "]".
+	SubAsmBloc::=epsilon.
+	IfElseNZ ::= "[[" [<sab_co>]<SubAsmBloc> [<sab_cc>]<SubAsmBloc>.
+	IfNZ ::= "[" [<sab_c>]<SubAsmBloc>.
+
+	sab_c = ( "]" | <asm_statement> <sab_c> ).
+	sab_cc = ( "]]" | <asm_statement> <sab_cc> ).
+	sab_co = ( "][" | <asm_statement> <sab_co> ).
+
 end
 
 plug IfNZ into p_Opcode

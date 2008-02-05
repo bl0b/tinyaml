@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(tinyaml, 0.2, damien.leroux@gmail.com)
+AC_INIT(tinyaml, 0.3, damien.leroux@gmail.com)
 AC_CONFIG_SRCDIR([src])
 AM_CONFIG_HEADER([config.h])
 

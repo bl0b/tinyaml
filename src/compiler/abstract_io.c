@@ -78,9 +78,9 @@ word_t file_read_word(reader_t r) {
 	_(file,reader,fr,r);
 	word_t w;
 	if(fread(&w,1,sizeof(word_t),fr->f)!=sizeof(word_t)) {
-		printf("READ WORD :: FAILURE\n");
+		vm_printf("READ WORD :: FAILURE\n");
 	}
-	/*printf("file_reader read word %8.8lX\n",w);*/
+	/*vm_printf("file_reader read word %8.8lX\n",w);*/
 	return w;
 }
 
@@ -104,7 +104,7 @@ const char* file_read_string(reader_t r) {
 		c=*(_rdr_buffy+i);
 		i+=1;
 	}
-	/*printf("file_reader read string (%i) \"%s\"\n",i,buffy);*/
+	/*vm_printf("file_reader read string (%i) \"%s\"\n",i,buffy);*/
 	return _rdr_buffy;
 }
 #undef BUFFY_SZ

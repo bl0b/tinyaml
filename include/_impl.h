@@ -63,6 +63,8 @@ struct _vm_engine_t {
 	void(*_VM_CALL _vm_unlock)(vm_engine_t);
 	void(*_VM_CALL _thread_failed)(vm_t,thread_t);
 	void(*_VM_CALL _debug)(vm_engine_t);
+	void(*_VM_CALL _put_std)(const char*);
+	void(*_VM_CALL _put_err)(const char*);
 	volatile vm_t vm;
 };
 /*@}*/
@@ -78,6 +80,7 @@ struct _opcode_chain_node_t {
 	const char* arg;
 	opcode_arg_t arg_type;
 	word_t lofs;
+	int row,col;
 };
 /*@}*/
 

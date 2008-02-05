@@ -50,7 +50,7 @@ void gstack_deinit(generic_stack_t s, void (*callback)(void*)) {
 
 
 word_t gstack_size(generic_stack_t s) {
-/*	printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
+/*	vm_printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
 */	return s->sp+1;
 }
 
@@ -74,13 +74,13 @@ void gstack_shrink(generic_stack_t s, word_t count) {
 }
 
 void gpush(generic_stack_t s, void* w) {
-/*	printf("gpush\n");
+/*	vm_printf("gpush\n");
 */	s->sp += 1;
 	s->tok_sp += s->token_size;
 /*	for(i=0;i<s->token_size;i+=sizeof(word_t)) {
-		printf("%8.8lX ",*(((word_t*)w)+i));
+		vm_printf("%8.8lX ",*(((word_t*)w)+i));
 	}
-	printf("\n");
+	vm_printf("\n");
 */	if(s->sz <= s->tok_sp) {
 		s->sz+=1024;
 		s->stack = realloc(s->stack, s->sz*s->token_size);
@@ -88,29 +88,29 @@ void gpush(generic_stack_t s, void* w) {
 	}
 
 	memmove(s->stack+s->tok_sp,w,s->token_size);
-/*	printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
+/*	vm_printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
 	//s->stack[s->sp] = w;
 */}
 
 void* _gpop(generic_stack_t s) {
 	void* ret = s->stack+s->tok_sp;
-/*	printf("gpop\n");
+/*	vm_printf("gpop\n");
 */	assert(s->sp!=(word_t)-1);
 	s->sp -= 1;
 	s->tok_sp -= s->token_size;
-/*	printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
+/*	vm_printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
 */	return ret;
 }
 
 void* _gpeek(generic_stack_t s, int rel_ofs) {
 	assert(s->sp>=(word_t)-rel_ofs);
-/*	printf("gpeek\n");
-	printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
+/*	vm_printf("gpeek\n");
+	vm_printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
 */	return s->stack+s->tok_sp+(rel_ofs*s->token_size);
 }
 
 void free_gstack(generic_stack_t s) {
-/*	printf("free_stack\n");
+/*	vm_printf("free_stack\n");
 */	if(s->stack) {
 		free(s->stack);
 	}

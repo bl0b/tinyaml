@@ -21,12 +21,8 @@
 
 #include <stdio.h>
 /*! \addtogroup objects
- * \brief This page describes what a managed object is, how the VM manages objects, and the corresponding API.
- *
- * TODO
- * \section obj_howto How to write user managed objects
- * TODO
- * @{*/
+ * @{
+ */
 
 
 /*! \brief size of the object header */
@@ -45,14 +41,14 @@
 /*! \brief retrieve the type of managed object (DataObj* constant) */
 #define _obj_type(_x) (((vm_obj_t)(_x))->magic^VM_OBJ_MAGIC)
 
-/*\@{*/
 /*! \brief assertions */
-#define _is_obj_obj(_x) (((_x)&&(((_x)->magic&VM_OBJ_MASK) == VM_OBJ_MAGIC)) || (fprintf(stderr,"Data at %p is not a managed object (magic = %8.8lX)\n",(_x),(_x)?(_x)->magic:0) && 0))
+/*@{*/
+#define _is_obj_obj(_x) (((_x)&&(((_x)->magic&VM_OBJ_MASK) == VM_OBJ_MAGIC)) || (vm_printerrf("Data at %p is not a managed object (magic = %8.8lX)\n",(_x),(_x)?(_x)->magic:0) && 0))
 #define _is_a_obj(_x,_t) (_is_obj(_x) && (_obj_type(_x)==(_t)))
 
 #define _is_obj_ptr(_x) ((_x)&&((PTR_TO_OBJ(_x)->magic&VM_OBJ_MASK) == VM_OBJ_MAGIC))
 #define _is_a_ptr(_x,_t) (_is_obj_ptr(_x) && (_obj_type(PTR_TO_OBJ(_x))==(_t)))
-/*\@}*/
+/*@}*/
 
 /*! \brief allocate a new managed buffer.
  * \param struc_size the size of the buffer to allocate
@@ -67,7 +63,7 @@ static inline void* vm_obj_new(word_t struc_size, void(*_free)(vm_t,void*), void
 	o->magic = VM_OBJ_MAGIC | obj_type;
 	o->_free=_free;
 	o->_clone=_clone;
-	/*printf("obj new, %u+%lu bytes long at %p ; magic is %8.8lX\n",VM_OBJ_OFS,struc_size,o,o->magic);*/
+	/*vm_printf("obj new, %u+%lu bytes long at %p ; magic is %8.8lX\n",VM_OBJ_OFS,struc_size,o,o->magic);*/
 	return (void*)(((char*)o)+VM_OBJ_OFS);
 }
 
@@ -76,11 +72,11 @@ static inline void* vm_obj_new(word_t struc_size, void(*_free)(vm_t,void*), void
  */
 static inline void vm_obj_free_obj(vm_t vm, vm_obj_t o) {
 	if(!_is_obj_obj(o)) {
-		fprintf(stderr,"[VM:ERR] trying to free something not a managed object (%p).\n",o);
+		vm_printerrf("[VM:ERR] trying to free something not a managed object (%p).\n",o);
 		return;
 	}
 	/*assert(o->magic==VM_OBJ_MAGIC);*/
-	/*printf("obj free %p (%li refs)\n",o,o->ref_count);*/
+	/*vm_printf("obj free %p (%li refs)\n",o,o->ref_count);*/
 	if(o->_free) {
 		o->_free(vm, (void*)(((char*)o)+VM_OBJ_OFS));
 	}
@@ -113,7 +109,7 @@ static inline void vm_obj_ref_ptr(vm_t vm, void* ptr) {
 	assert(_is_obj_obj(o)/*||(1/0)*/);
 	assert(o->ref_count>=0);
 	o->ref_count+=1;
-	/*printf("obj ref %p => %li\n",o,o->ref_count);*/
+	/*vm_printf("obj ref %p => %li\n",o,o->ref_count);*/
 	if(o->ref_count==1) {
 		vm_uncollect(vm, o);
 	}
@@ -128,7 +124,7 @@ static inline void vm_obj_deref_ptr(vm_t vm, void* ptr) {
 	/*assert(o->ref_count>0);*/
 	if(o->ref_count>0) {
 		o->ref_count-=1;
-		/*printf("obj deref %p => %li\n",o,o->ref_count);*/
+		/*vm_printf("obj deref %p => %li\n",o,o->ref_count);*/
 		if(o->ref_count==0) {
 			vm_collect(vm, o);
 		}

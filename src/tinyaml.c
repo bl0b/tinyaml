@@ -87,7 +87,7 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			for(k=0;k<p->code.size;k+=2) {
 				const char* label = program_lookup_label(p,k);
 				const char* disasm = program_disassemble(vm,p,k);
-				printf("%8.8lX %-32.32s%s %-60.60s\n",(long)k,label?label:"",label&&*label?":":" ",disasm);
+				vm_printf("%8.8lX %-32.32s%s %-60.60s\n",(long)k,label?label:"",label&&*label?":":" ",disasm);
 				free((char*)disasm);
 			}
 		} else if(cmp_param(0,"--version","-v")) {
@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
 	/*vm_set_engine(vm, thread_engine);*/
 	do_args(vm,argc,argv);
 	if(!tinyaml_quiet) {
-		printf("\nVM runned for %lu cycles.\n",vm->cycles);
+		vm_printf("\nVM runned for %lu cycles.\n",vm->cycles);
 	}
 	vm_del(vm);
 	return 0;

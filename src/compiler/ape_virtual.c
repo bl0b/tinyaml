@@ -52,18 +52,18 @@ WalkDirection try_method(const char*op, vm_t vm, wast_t node) {
 		WalkDirection backup = vm->compile_state;
 		program_t p = (program_t)*(vm->compile_vectors.by_index.data+vec_ofs);
 		word_t ip = *(vm->compile_vectors.by_index.data+vec_ofs+1);
-		/*printf("virtual walker calling %p:%lX (%s)\n",p,ip,op);*/
+		/*vm_printf("virtual walker calling %p:%lX (%s)\n",p,ip,op);*/
 		gpush(&vm->cn_stack,&vm->current_node);
 		vm->current_node = node;
 		vm_run_program_fg(vm,p,ip,50);
 		vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 		vm->virt_walker_state=vm->compile_state;
 		vm->compile_state=backup;
-		/*printf("   vm return state : %i\n",vm->virt_walker_state);*/
+		/*vm_printf("   vm return state : %i\n",vm->virt_walker_state);*/
 		return vm->virt_walker_state;
 	}
 
-	fprintf(stderr,"In walker '%s' : Node '%s' is not known.\n",vm->virt_walker,op);
+	vm_printerrf("In walker '%s' : Node '%s' is not known.\n",vm->virt_walker,op);
 	return Error;
 }
 
@@ -84,7 +84,7 @@ void ape_virtual_free(vm_t vm) {
 
 
 WalkDirection ape_virtual_default(wast_t node, vm_t vm) {
-	/*printf("search for vector %s in %p gave %lu\n",vec_name, vm->result, vec_ofs);*/
+	/*vm_printf("search for vector %s in %p gave %lu\n",vec_name, vm->result, vec_ofs);*/
 	return try_method(wa_op(node),vm,node);
 }
 

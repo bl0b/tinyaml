@@ -13,7 +13,7 @@ void* vm_string_dup(vm_t vm, void*src) {
 
 char* vm_string_new(const char*src) {
 	char* str = (char*)vm_obj_new(strlen(src)+1, NULL, vm_string_dup, DataObjStr);
-	/*printf("new String\n");*/
+	/*vm_printf("new String\n");*/
 	strcpy(str,src?src:"");
 	return str;
 }
@@ -36,7 +36,7 @@ text_seg_t vm_symtab_new() {
 			(void (*)(vm_t,void*))	symtab_deinit,
 			(void*(*)(vm_t,void*))	vm_symtab_clone,
 			DataObjSymTab);
-	/*printf("new SymTab\n");*/
+	/*vm_printf("new SymTab\n");*/
 	text_seg_init(handle);
 	return handle;
 }
@@ -50,9 +50,9 @@ mutex_t vm_mutex_new() {
 			(void (*)(vm_t,void*)) mutex_deinit,
 			(void*(*)(vm_t,void*)) mutex_clone,
 			DataObjMutex);
-	/*printf("new Mutex\n");*/
+	/*vm_printf("new Mutex\n");*/
 	mutex_init(handle);
-	/*printf("new mutex => %p\n",handle);*/
+	/*vm_printf("new mutex => %p\n",handle);*/
 	return handle;
 }
 
@@ -68,7 +68,7 @@ thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip) {
 			(void (*)(vm_t,void*)) thread_deinit,
 			(void*(*)(vm_t,void*)) thread_clone,
 			DataObjThread);
-	/*printf("new Thread\n");*/
+	/*vm_printf("new Thread\n");*/
 	thread_init(ret,prio,p,ip);
 	/*vm_obj_ref_ptr(vm,ret);*/
 	return ret;
@@ -79,11 +79,11 @@ thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip) {
 
 void vm_da_deinit(vm_t vm, dynarray_t da) {
 	word_t i;
-	/*printf("deinit Array\n");*/
+	/*vm_printf("deinit Array\n");*/
 	/* FIXME : too heavy to be done at once */
 	for(i=0;i<da->size;i+=2) {
 		if((vm_data_type_t)da->data[i] &DataManagedObjectFlag) {
-			/*printf(" Array : dereffing object %p\n",(void*)da->data[i+1]);*/
+			/*vm_printf(" Array : dereffing object %p\n",(void*)da->data[i+1]);*/
 			vm_obj_deref_ptr(vm,(void*)da->data[i+1]);
 		}
 	}
@@ -114,7 +114,7 @@ dynarray_t vm_array_new() {
 			(void (*)(vm_t,void*)) vm_da_deinit,
 			(void*(*)(vm_t,void*)) vm_da_clone,
 			DataObjArray);
-	/*printf("new Array\n");*/
+	/*vm_printf("new Array\n");*/
 	dynarray_init(ret);
 	return ret;
 }
@@ -122,7 +122,7 @@ dynarray_t vm_array_new() {
 
 
 void vm_env_deinit(vm_t vm, vm_dyn_env_t env) {
-	/*printf("deinit Env\n");*/
+	/*vm_printf("deinit Env\n");*/
 	vm_da_deinit(vm,&env->data);
 	symtab_deinit(vm,&env->symbols);
 }
@@ -137,7 +137,7 @@ vm_dyn_env_t vm_env_new() {
 			(void (*)(vm_t,void*)) vm_env_deinit,
 			(void*(*)(vm_t,void*)) vm_env_clone,
 			DataObjEnv);
-	/*printf("new Env\n");*/
+	/*vm_printf("new Env\n");*/
 	dynarray_init(&ret->data);
 	dynarray_set(&ret->data,0,0);
 	text_seg_init(&ret->symbols);
@@ -162,21 +162,21 @@ generic_stack_t vm_stack_new() {
 			(void (*)(vm_t,void*)) vm_stack_deinit,
 			(void*(*)(vm_t,void*)) vm_stack_clone,
 			DataObjStack);
-	/*printf("new Stack\n");*/
+	/*vm_printf("new Stack\n");*/
 	gstack_init(ret,sizeof(struct _data_stack_entry_t));
 	return ret;
 }
 
 
 void vm_df_deinit(vm_t vm, vm_dyn_func_t src) {
-	/*printf("deinit DynFun %p\n",src);*/
+	/*vm_printf("deinit DynFun %p\n",src);*/
 	/* TODO */
 	if(src->closure) {
 		/*vm_da_deinit(vm,src->closure);*/
 		/*free(PTR_TO_OBJ(src->closure));*/
-		/*printf("DynFun has closure, dereff'ing\n");*/
+		/*vm_printf("DynFun has closure, dereff'ing\n");*/
 		vm_obj_deref_ptr(vm,src->closure);
-		/*printf("DynFun closure is reff'ed %ld times\n",vm_obj_refcount_ptr(src->closure));*/
+		/*vm_printf("DynFun closure is reff'ed %ld times\n",vm_obj_refcount_ptr(src->closure));*/
 	}
 }
 
@@ -190,7 +190,7 @@ vm_dyn_func_t vm_dyn_fun_new() {
 			(void (*)(vm_t,void*)) vm_df_deinit,
 			(void*(*)(vm_t,void*)) vm_df_clone,
 			DataObjFun);
-	/*printf("new DynFun\n");*/
+	/*vm_printf("new DynFun\n");*/
 	memset(ret,0,sizeof(struct _vm_dyn_func_t));
 	return ret;
 }

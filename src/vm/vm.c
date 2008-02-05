@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <stdarg.h>
 #include "vm_assert.h"
 
 #include "bml_ops.h"
@@ -116,7 +117,7 @@ void vm_del(vm_t ret) {
 	ret->engine->_kill(ret->engine);
 	ret->engine=stub_engine;
 	ret->engine->vm=ret;
-	/*printf("delete vm\n");*/
+	/*vm_printf("delete vm\n");*/
 	ret->engine->_vm_lock(ret->engine);
 	#define thd_del(_x) vm_kill_thread(ret,_x)
 	dlist_forward(&ret->ready_threads,thread_t,thd_del);
@@ -190,7 +191,7 @@ vm_t vm_set_lib_file(vm_t vm, const char*fname) {
 	snprintf(buffer,1024,"%s/libtinyaml_%s.so",TINYAML_EXT_DIR,fname);
 	vm->dl_handle = dlopen(buffer, RTLD_LAZY);
 	if(!vm->dl_handle) {
-		fprintf(stderr,"[VM:WARN] Couldn't open library \"%s\"\n",buffer);
+		vm_printerrf("[VM:WARN] Couldn't open library \"%s\"\n",buffer);
 	}
 	return vm;
 }
@@ -254,7 +255,7 @@ void wa_del(wast_t w);
 program_t vm_compile_file(vm_t vm, const char* fname) {
 	program_t p=NULL;
 
-	/*printf("vm_compile_file(%s)\n",fname);*/
+	/*vm_printf("vm_compile_file(%s)\n",fname);*/
 
 	tinyap_set_source_file(vm->parser,fname);
 	tinyap_parse(vm->parser);
@@ -268,7 +269,7 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 		vm->engine->_client_unlock(vm->engine);
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	} else {
-		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
 	return p;
 }
@@ -276,7 +277,7 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 
 program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 	program_t p=NULL;
-	/*printf("vm_compile_buffer(%s)\n",buffer);*/
+	/*vm_printf("vm_compile_buffer(%s)\n",buffer);*/
 	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
 	tinyap_parse(vm->parser);
 
@@ -289,7 +290,7 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 		vm->engine->_client_unlock(vm->engine);
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	} else {
-		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
 	return p;
 }
@@ -322,11 +323,11 @@ thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {
 	/* FIXME : this should go into thread_new() */
 	vm->threads_count += 1;
 	if(vm->threads_count==1) {
-		/*printf("SchedulerMonoThread\n");*/
+		/*vm_printf("SchedulerMonoThread\n");*/
 		vm->scheduler = SchedulerMonoThread;
 		vm->engine->_init(vm->engine);
 	} else if(vm->threads_count==2) {
-		/*printf("SchedulerRoundRobin\n");*/
+		/*vm_printf("SchedulerRoundRobin\n");*/
 		vm->scheduler = SchedulerRoundRobin;
 	}
 
@@ -378,7 +379,7 @@ void deref_stack(vm_t vm, generic_stack_t gs) {
 	}
 	for(i=0;i<=(long)gs->sp;i+=1) {
 		if(dt[i].type&DataManagedObjectFlag&&dt[i].type<DataTypeMax) {
-			/*printf("stack-deref::found an object : %p\n",(void*)dt[i].data);*/
+			/*vm_printf("stack-deref::found an object : %p\n",(void*)dt[i].data);*/
 			vm_obj_deref_ptr(vm,(void*)dt[i].data);
 		}
 	}
@@ -386,7 +387,7 @@ void deref_stack(vm_t vm, generic_stack_t gs) {
 
 
 vm_t vm_kill_thread(vm_t vm, thread_t t) {
-	/*printf("KILLing thread %p\n",t);*/
+	/*vm_printf("KILLing thread %p\n",t);*/
 	vm->engine->_client_lock(vm->engine);
 	vm->threads_count-=1;
 	if(vm->current_thread&&t==vm->current_thread) {
@@ -398,11 +399,11 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 	deref_stack(vm,&t->data_stack);
 	mutex_unlock(vm,&t->join_mutex,t);
 	if(vm->threads_count==1) {
-		/*printf("SchedulerMonoThread\n");*/
+		/*vm_printf("SchedulerMonoThread\n");*/
 		vm->scheduler = SchedulerMonoThread;
 		vm->engine->_client_unlock(vm->engine);
 	} else if(vm->threads_count==0) {
-		/*printf("SchedulerIdle\n");*/
+		/*vm_printf("SchedulerIdle\n");*/
 		vm->scheduler = SchedulerIdle;
 		vm->engine->_client_unlock(vm->engine);
 		vm->engine->_deinit(vm->engine);
@@ -418,17 +419,17 @@ void vm_dump_data_stack(vm_t vm) {
 	int sz = gstack_size(stack);
 	int i;
 
-	printf("sz = %i\n",sz);
+	vm_printf("sz = %i\n",sz);
 	for(i=0;i<sz;i+=1) {
 		e = (vm_data_t ) gpeek(vm_data_t ,stack,-i);
-		printf("#%i : %4.4X %8.8lX\n",i,e->type, e->data);
+		vm_printf("#%i : %4.4X %8.8lX\n",i,e->type, e->data);
 	}
 }
 
 vm_t vm_push_data(vm_t vm, vm_data_type_t type, word_t value) {
 	struct _data_stack_entry_t e;
 	generic_stack_t stack = &vm->current_thread->data_stack;
-	/*printf("vm push data : %lu %lu\n",type,value);*/
+	/*vm_printf("vm push data : %lu %lu\n",type,value);*/
 	e.type = type;
 	e.data = value;
 	if(type&DataManagedObjectFlag) {
@@ -518,7 +519,7 @@ vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o) {
 	dlist_node_t dn;
 	assert(o->ref_count==0);
 	/* also assert that obj is not yet collected */
-	/*printf("vm collect %p\n",o);*/
+	/*vm_printf("vm collect %p\n",o);*/
 	dn = vm->gc_pending.head;
 	while(dn&&(void*)dn->value!=o) { dn = dn->next; }
 	if(dn) {
@@ -531,9 +532,9 @@ vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o) {
 
 vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
 	dlist_node_t dn;
-	/*printf("vm uncollect %p\n",o);*/
+	/*vm_printf("vm uncollect %p\n",o);*/
 	if(!vm->gc_pending.head) {
-		/*printf("   => nothing to do.\n");*/
+		/*vm_printf("   => nothing to do.\n");*/
 		return vm;
 	}
 	dn = vm->gc_pending.head;
@@ -544,7 +545,7 @@ vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o) {
 		}
 		dn = dn->next;
 	} while(dn);
-	/*printf("   => failed.\n");*/
+	/*vm_printf("   => failed.\n");*/
 	return vm;
 }
 
@@ -676,21 +677,21 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 
 	/* quick pass if current meets conditions */
 	if(current) {
-		/*printf("\thave current thread %p, state=%i, remaining=%li\n",current,current->state,current->remaining);*/
+		/*vm_printf("\thave current thread %p, state=%i, remaining=%li\n",current,current->state,current->remaining);*/
 	}
 	if(current&&current->state==ThreadRunning) {
 		if(current->remaining!=0/*&&current->remaining<vm->timeslice*/) {
-			/*printf("\tcurrent still running for %lu more cycles\n",current->remaining);*/
+			/*vm_printf("\tcurrent still running for %lu more cycles\n",current->remaining);*/
 			return current;
 		} else if(vm->current_thread->sched_data.next) {
 			vm->current_thread = (thread_t)vm->current_thread->sched_data.next;
-			/*printf("\tnext thread\n");*/
+			/*vm_printf("\tnext thread\n");*/
 		} else {
 			vm->current_thread = NULL;
 		}
 	} else if(vm->running_threads.head) {
 		vm->current_thread = (thread_t)vm->running_threads.head;
-		/*printf("\tnext thread (looped back to head)\n");*/
+		/*vm_printf("\tnext thread (looped back to head)\n");*/
 	} else {
 		vm->current_thread=NULL;
 	}
@@ -703,13 +704,13 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 			/* thread is no more ready */
 			thread_set_state(vm,tb,ThreadRunning);
 			vm->current_thread = (thread_t)b;
-			/*printf("\trunning next ready thread\n");*/
+			/*vm_printf("\trunning next ready thread\n");*/
 		}
 	}
 
 	if(vm->current_thread) {
 		vm->current_thread->remaining=vm->timeslice;
-		/*printf("\tthread %p restarts for %li cycles\n",vm->current_thread,vm->current_thread->remaining);*/
+		/*vm_printf("\tthread %p restarts for %li cycles\n",vm->current_thread,vm->current_thread->remaining);*/
 		return vm->current_thread;
 	} else {
 		return NULL;
@@ -736,8 +737,8 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 
 	current = schedulers[vm->scheduler](vm);
 
-/*	printf("CURRENT THREAD %p\n",current);
-	printf("CURRENT PROGRAM %p\n",current->program);
+/*	vm_printf("CURRENT THREAD %p\n",current);
+	vm_printf("CURRENT PROGRAM %p\n",current->program);
 	if(current) {
 */
 	if(current) {
@@ -748,7 +749,7 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 		if(current&&vm_exec_cycle(vm,current)==ThreadDying) {
 			/* current thread may be already dead */
 			if(vm->current_thread) {
-				/*printf("Dead zombie\n");*/
+				/*vm_printf("Dead zombie\n");*/
 				vm_kill_thread(vm, current);
 			}
 			if(vm->zombie_threads.head) {
@@ -765,9 +766,9 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 /*
 		do {
 			dlist_node_t dn = vm->gc_pending.head;
-			printf(" *** - gc_pending :");
+			vm_printf(" *** - gc_pending :");
 			while(dn) {
-				printf(" 0x%lx",dn->value);
+				vm_printf(" 0x%lx",dn->value);
 				dn = dn->next;
 			}
 			puts(" - ***");
@@ -810,12 +811,12 @@ vm_t vm_set_engine(vm_t vm, vm_engine_t e) {
 
 void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, const char* function) {
 	if(strncmp(function,"vm_op_",6)) {
-		fprintf(stderr, "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
+		vm_printerrf( "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
 	} else {
-		fprintf(stderr, "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
+		vm_printerrf( "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
 	}
 	if(_glob_vm&&_glob_vm->current_thread) {
-		fprintf(stderr,"[VM:NOTICE] Killing current thread %p\n", _glob_vm->current_thread);
+		vm_printerrf("[VM:NOTICE] Killing current thread %p\n", _glob_vm->current_thread);
 		_glob_vm->engine->_thread_failed(_glob_vm,_glob_vm->current_thread);
 		vm_kill_thread(_glob_vm,_glob_vm->current_thread);
 		_glob_vm->current_thread = NULL;
@@ -825,4 +826,26 @@ void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, 
 	}
 }
 
+
+
+int vm_printf(const char* fmt, ...) {
+	char buffer[4096];
+	va_list ap;
+	va_start(ap,fmt);
+	vsnprintf(buffer, 4096, fmt, ap);
+	va_end(ap);
+	_glob_vm->engine->_put_std(buffer);
+	return strlen(buffer);
+}
+
+
+int vm_printerrf(const char* fmt, ...) {
+	char buffer[4096];
+	va_list ap;
+	va_start(ap,fmt);
+	vsnprintf(buffer, 4096, fmt, ap);
+	va_end(ap);
+	_glob_vm->engine->_put_err(buffer);
+	return strlen(buffer);
+}
 

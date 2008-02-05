@@ -20,11 +20,6 @@
 #ifndef _BML_CONTAINERS_H_
 #define _BML_CONTAINERS_H_
 
-/*! \addtogroup data_containers
- * @{
- * These are the base container structures used in Tinyaml.
- * @}
- */
 
 #include "dynarray.h"
 #include "generic_stack.h"

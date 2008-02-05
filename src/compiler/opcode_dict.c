@@ -68,13 +68,13 @@ opcode_dict_t opcode_dict_optimize(vm_t vm, program_t prog) {
 	opcode_arg_t arg_type;
 	opcode_stub_t stub;
 	int i;
-	/*printf("Opcode dictionary :\n");*/
+	/*vm_printf("Opcode dictionary :\n");*/
 	for(i=0;i<prog->code.size;i+=2) {
 		stub = (opcode_stub_t)prog->code.data[i];
 		name = opcode_name_by_stub(glob,stub);
 		arg_type = WC_GET_ARGTYPE(opcode_code_by_stub(glob,stub));
 		opcode_dict_add(od, arg_type, name, stub);
-		/*printf("- %s:%i [%p]\n",name,arg_type,stub);*/
+		/*vm_printf("- %s:%i [%p]\n",name,arg_type,stub);*/
 	}
 	return od;
 }

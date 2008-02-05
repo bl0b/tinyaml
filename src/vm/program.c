@@ -64,13 +64,13 @@ program_t program_new() {
 	dynarray_init(&ret->data);
 	dynarray_init(&ret->code);
 	/*program_write_code(ret, (word_t)vm_op_nop, 0);*/
-	/*printf("PROGRAM NEW %p\n",ret);*/
+	/*vm_printf("PROGRAM NEW %p\n",ret);*/
 	return ret;
 }
 
 
 void program_free(vm_t vm, program_t p) {
-	/*printf("program_free %p\n",p);*/
+	/*vm_printf("program_free %p\n",p);*/
 	text_seg_deinit(&p->strings);
 	dynarray_deinit(&p->code,NULL);
 	if(p->data.size) {
@@ -78,13 +78,13 @@ void program_free(vm_t vm, program_t p) {
 		/*p->code.reserved=0;*/
 		/*p->code.data=clean_data_seg;*/
 		/*clean_data_seg[1]=p->data.size>>1;*/
-		/*printf("cleaning %lu data items\n",clean_data_seg[1]);*/
+		/*vm_printf("cleaning %lu data items\n",clean_data_seg[1]);*/
 		/*vm_run_program_fg(vm,p,0,99);*/
 		int i;
-		/*printf("dereff'ing data segment (%lu items)\n",p->data.size>>1);*/
+		/*vm_printf("dereff'ing data segment (%lu items)\n",p->data.size>>1);*/
 		for(i=0;i<p->data.size;i+=2) {
 			if((vm_data_type_t)p->data.data[i]&DataManagedObjectFlag) {
-				/*printf("found an object : %p\n",(void*)p->data.data[i+1]);*/
+				/*vm_printf("found an object : %p\n",(void*)p->data.data[i+1]);*/
 				vm_obj_deref_ptr(vm,(void*)p->data.data[i+1]);
 			}
 		}
@@ -183,12 +183,12 @@ void program_serialize(vm_t vm, program_t p, writer_t w) {
 	for(i=0;i<dynarray_size(&p->code);i+=2) {
 		op = opcode_code_by_stub(odopt, (opcode_stub_t)dynarray_get(&p->code,i));
 		arg = opcode_arg_serialize(p, WC_GET_ARGTYPE(op), dynarray_get(&p->code,i+1), env);
-		/*printf("%8.8lX %8.8lX  ",op,arg);*/
-		/*if(i%8==6) printf("\n");*/
+		/*vm_printf("%8.8lX %8.8lX  ",op,arg);*/
+		/*if(i%8==6) vm_printf("\n");*/
 		write_word(w,op);
 		write_word(w,arg);
 	}
-	/*printf("\n");*/
+	/*vm_printf("\n");*/
 	opcode_dict_free(odopt);
 	write_word(w,0xFFFFFFFF);
 	write_string(w,"DATA---");
@@ -215,7 +215,7 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	word_t arg;
 	vm_dyn_env_t env = vm_env_new();
 
-	/*printf("program_unserialize\n");*/
+	/*vm_printf("program_unserialize\n");*/
 	p=program_new();
 	p->env=vm->env;
 	od = opcode_dict_new();
@@ -241,13 +241,13 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	assert(!strcmp(str,"CODE---"));
 	tot = read_word(r);
 	dynarray_reserve(&p->code,tot+2);
-	/*printf("going for %lu (%lX) words\n",tot,tot);*/
+	/*vm_printf("going for %lu (%lX) words\n",tot,tot);*/
 	for(i=0;i<tot;i+=2) {
 		wc = read_word(r);
 		op = (word_t) opcode_stub_by_code(od, wc);
 		arg = opcode_arg_unserialize(p, WC_GET_ARGTYPE(wc), read_word(r), env);
 		program_write_code(p,op,arg);
-		/*printf("unserialized (%p,%lX) at %lu (%lX) (code size=%lu (%lX))\n",op,arg,i,i,p->code.size,p->code.size);*/
+		/*vm_printf("unserialized (%p,%lX) at %lu (%lX) (code size=%lu (%lX))\n",op,arg,i,i,p->code.size,p->code.size);*/
 	}
 	opcode_dict_free(od);
 	wc = read_word(r);
@@ -275,7 +275,7 @@ void program_add_label(program_t p, word_t ip, const char* label) {
 	if(index>=dynarray_size(&p->labels.offsets)) {
 		dynarray_set(&p->labels.offsets,index,ip);
 	} else {
-		fprintf(stderr,"error : label %s is already defined.\n",label);
+		vm_printerrf("error : label %s is already defined.\n",label);
 	}
 }
 
@@ -283,7 +283,7 @@ void program_add_label(program_t p, word_t ip, const char* label) {
 word_t program_label_to_ofs(program_t p, const char* label) {
 	word_t index = text_seg_text_to_index(&p->labels.labels,label);
 	if(index==0) {
-		fprintf(stderr,"warning : label unknown '%s'.\n",label);
+		vm_printerrf("warning : label unknown '%s'.\n",label);
 		return 0;
 	} else {
 		return p->labels.offsets.data[index];
@@ -306,7 +306,7 @@ const char* program_ofs_to_label(program_t p, word_t ip) {
 
 
 void program_fetch(program_t p, word_t ip, word_t* op, word_t* arg) {
-/*	printf("fetch at @%p:%8.8lX : %8.8lX %8.8lX\n",p,ip,dynarray_get(&p->code,ip),dynarray_get(&p->code,ip+1));
+/*	vm_printf("fetch at @%p:%8.8lX : %8.8lX %8.8lX\n",p,ip,dynarray_get(&p->code,ip),dynarray_get(&p->code,ip+1));
 */	*arg = dynarray_get(&p->code,ip+1);
 	*op = dynarray_get(&p->code,ip);
 }
@@ -323,16 +323,16 @@ void program_reserve_data(program_t p, word_t sz) {
 
 void program_write_code(program_t p, word_t op, word_t arg) {
 	word_t ip = dynarray_size(&p->code);
-/*	printf("writing %8.8lX:%8.8lX into code seg at %p (%lu words long)\n",op,arg,p,dynarray_size(&p->code));
+/*	vm_printf("writing %8.8lX:%8.8lX into code seg at %p (%lu words long)\n",op,arg,p,dynarray_size(&p->code));
 */	dynarray_set(&p->code,ip+1,arg);
 	dynarray_set(&p->code,ip,op);
 /*	{
 		int i;
 		for(i=0;i<dynarray_size(&p->code);i+=2) {
-			printf("%8.8lX %8.8lX   ",dynarray_get(&p->code,i),dynarray_get(&p->code,i+1));
-			if(i%8==6) printf("\n");
+			vm_printf("%8.8lX %8.8lX   ",dynarray_get(&p->code,i),dynarray_get(&p->code,i+1));
+			if(i%8==6) vm_printf("\n");
 		}
-		printf("\n");
+		vm_printf("\n");
 	}
 */}
 
@@ -447,12 +447,12 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 
 void program_dump_stats(program_t p) {
 	word_t sz=0,i;
-	printf("Program statistics for %p :\n",p);
-	printf("    Data size : %lu (%lX)\n",p->data.size,p->data.size);
-	printf("    Code size : %lu (%lX)\n",p->code.size,p->code.size);
+	vm_printf("Program statistics for %p :\n",p);
+	vm_printf("    Data size : %lu (%lX)\n",p->data.size,p->data.size);
+	vm_printf("    Code size : %lu (%lX)\n",p->code.size,p->code.size);
 	for(i=1;i<p->strings.by_index.size;i+=1) {
 		sz += 1+strlen((const char*)p->strings.by_index.data[i]);
 	}
-	printf("    Strings size : %lu strings, %lu bytes (%lX)\n",p->strings.by_index.size-1,sz,sz);
+	vm_printf("    Strings size : %lu strings, %lu bytes (%lX)\n",p->strings.by_index.size-1,sz,sz);
 }
 

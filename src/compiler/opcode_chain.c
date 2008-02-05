@@ -27,37 +27,45 @@
 #include <stdio.h>
 #include <dlfcn.h>
 
-opcode_chain_node_t ochain_new_opcode(opcode_arg_t arg_type, const char* opcode, const char* arg) {
+opcode_chain_node_t ochain_new_opcode(opcode_arg_t arg_type, const char* opcode, const char* arg,int row,int col) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeOpcode;
 	ocn->arg=NULL;
 	//ocn->name=strdup(opcode);
 	ocn->arg_type=arg_type;
 	//ocn->arg=strdup(opcode);
+	ocn->row=row;
+	ocn->col=col;
 	return ocn;
 }
 
-opcode_chain_node_t ochain_new_label(const char* label) {
+opcode_chain_node_t ochain_new_label(const char* label,int row,int col) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeLabel;
 	ocn->arg=NULL;
 	ocn->name=strdup(label);
+	ocn->row=row;
+	ocn->col=col;
 	return ocn;
 }
 
-opcode_chain_node_t ochain_new_langdef(const char* nodestr) {
+opcode_chain_node_t ochain_new_langdef(const char* nodestr,int row,int col) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeLangDef;
 	ocn->arg=NULL;
 	ocn->name=nodestr;
+	ocn->row=row;
+	ocn->col=col;
 	return ocn;
 }
 
-opcode_chain_node_t ochain_new_langplug(const char* plugin, const char* plug) {
+opcode_chain_node_t ochain_new_langplug(const char* plugin, const char* plug,int row,int col) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeLangPlug;
 	ocn->arg=strdup(plug);
 	ocn->name=strdup(plugin);
+	ocn->row=row;
+	ocn->col=col;
 	return ocn;
 }
 
@@ -76,33 +84,33 @@ opcode_chain_t opcode_chain_new() {
 	return oc;
 }
 
-opcode_chain_t opcode_chain_add_label(opcode_chain_t oc, const char*label) {
-	opcode_chain_node_t ocn = ochain_new_label(label);
+opcode_chain_t opcode_chain_add_label(opcode_chain_t oc, const char*label,int row,int col) {
+	opcode_chain_node_t ocn = ochain_new_label(label,row,col);
 	slist_insert_tail(oc, ocn);
 	return oc;
 }
 
 void delete_node(ast_node_t);
 
-opcode_chain_t opcode_chain_add_langdef(opcode_chain_t oc, wast_t node) {
+opcode_chain_t opcode_chain_add_langdef(opcode_chain_t oc, wast_t node,int row,int col) {
 	ast_node_t n = make_ast(node);
 	const char* str = tinyap_serialize_to_string(n);
-	opcode_chain_node_t ocn = ochain_new_langdef(str);
+	opcode_chain_node_t ocn = ochain_new_langdef(str,row,col);
 	delete_node(n);
 	slist_insert_tail(oc, ocn);
 	return oc;
 }
 
-opcode_chain_t opcode_chain_add_langplug(opcode_chain_t oc, const char* plugin, const char*plug) {
-	opcode_chain_node_t ocn = ochain_new_langplug(plugin,plug);
+opcode_chain_t opcode_chain_add_langplug(opcode_chain_t oc, const char* plugin, const char*plug,int row,int col) {
+	opcode_chain_node_t ocn = ochain_new_langplug(plugin,plug,row,col);
 	slist_insert_tail(oc, ocn);
 	return oc;
 }
 
-opcode_chain_t opcode_chain_add_data(opcode_chain_t oc, vm_data_type_t argtyp, const char* data, const char* rep) {
+opcode_chain_t opcode_chain_add_data(opcode_chain_t oc, vm_data_type_t argtyp, const char* data, const char* rep,int row,int col) {
 	const char*repdup;
 	/* FIXME : this should be ochain_new_data() */
-	opcode_chain_node_t ocn = ochain_new_opcode(argtyp,data,rep);
+	opcode_chain_node_t ocn = ochain_new_opcode(argtyp,data,rep,row,col);
 	/* FIXME : this should go into ochain_new_data() */
 	ocn->type = NodeData;
 	ocn->name=strdup(data);
@@ -117,9 +125,9 @@ opcode_chain_t opcode_chain_add_data(opcode_chain_t oc, vm_data_type_t argtyp, c
 	return oc;
 }
 
-opcode_chain_t opcode_chain_add_opcode(opcode_chain_t oc, opcode_arg_t argtyp, const char* opcode, const char* arg) {
+opcode_chain_t opcode_chain_add_opcode(opcode_chain_t oc, opcode_arg_t argtyp, const char* opcode, const char* arg,int row,int col) {
 	const char*argdup;
-	opcode_chain_node_t ocn = ochain_new_opcode(argtyp,opcode,arg);
+	opcode_chain_node_t ocn = ochain_new_opcode(argtyp,opcode,arg,row,col);
 	/* FIXME : this should go into ochain_new_opcode() */
 	ocn->name=strdup(opcode);
 	ocn->arg_type=argtyp;
@@ -186,30 +194,30 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	union { word_t i; float f; } conv;
 	/*char*str;*/
 	if(!op) {
-		fprintf(stderr,"Warning : opcode not found %s:%i\n",ocn->name,ocn->arg_type);
+		vm_printerrf("[COMP:ERR] : at %i:%i : illegal opcode %s:%i\n",ocn->row,ocn->col,ocn->name,ocn->arg_type);
 		op=(word_t)vm_op_nop;
 	}
-	/*printf("got opcode %s.",ocn->name);*/
+	/*vm_printf("got opcode %s.",ocn->name);*/
 	switch(ocn->arg_type) {
 	case OpcodeNoArg:
-		/*printf("noArg      ");*/
+		/*vm_printf("noArg      ");*/
 		arg=0;
 		break;
 	case OpcodeArgInt:
-		/*printf("Int   \t(%s)",ocn->arg);*/
+		/*vm_printf("Int   \t(%s)",ocn->arg);*/
 		arg=(word_t)atoi(ocn->arg);
 		break;
 	case OpcodeArgFloat:
-		/*printf("Float \t(%s)", ocn->arg);*/
+		/*vm_printf("Float \t(%s)", ocn->arg);*/
 		conv.f=(float)atof(ocn->arg);
 		arg=conv.i;
 		break;
 	case OpcodeArgString:
-		/*printf("String\t(%s)", ocn->arg);*/
+		/*vm_printf("String\t(%s)", ocn->arg);*/
 		arg = program_find_string(p, ocn->arg);
 		break;
 	case OpcodeArgLabel:
-		/*printf("Label \t(%s)", ocn->arg);*/
+		/*vm_printf("Label \t(%s)", ocn->arg);*/
 		if(ocn->arg[0]=='+'||ocn->arg[0]=='-') {
 			arg = atoi(ocn->arg);
 		} else {
@@ -219,9 +227,9 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	case OpcodeArgEnvSym:
 		arg = (word_t) env_sym_to_index(p->env, ocn->arg);
 		if(!arg) {
-			fprintf(stderr,"[VM:ERR] Symbol '%s' doesn't exist in environment !\n",ocn->arg);
+			vm_printerrf("[VM:ERR] Symbol '%s' doesn't exist in environment !\n",ocn->arg);
 		}
-		/*printf("Opcode\t(%s)", ocn->arg);*/
+		/*vm_printf("Opcode\t(%s)", ocn->arg);*/
 		/*str = (char*)malloc(strlen(ocn->arg)+8);*/
 		/*sprintf(str,"vm_op_%s",ocn->arg);*/
 		/*arg = (word_t) dlsym(dl_handle,str);*/
@@ -231,9 +239,9 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 		break;
 	default:;
 		arg=0;
-		printf("[ERROR:VM] Arg type not supported %X\n",ocn->arg_type);
+		vm_printf("[ERROR:VM] Arg type not supported %X\n",ocn->arg_type);
 	};
-	/*printf("\tserialized %8.8lX : %8.8lX\n",op,arg);*/
+	/*vm_printf("\tserialized %8.8lX : %8.8lX\n",op,arg);*/
 	program_write_code(p,op,arg);
 }
 
@@ -271,7 +279,7 @@ void opcode_chain_serialize(opcode_chain_t oc, opcode_dict_t od, program_t p, vo
 			break;
 		case NodeData:
 			data_sz+= 2*atoi(ocn->arg);
-			/*printf("data rep %i\n",atoi(ocn->arg));*/
+			/*vm_printf("data rep %i\n",atoi(ocn->arg));*/
 			break;
 		case NodeOpcode:
 			ofs+=2;	/* two words per instruction */

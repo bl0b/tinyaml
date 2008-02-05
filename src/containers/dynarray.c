@@ -56,7 +56,7 @@ void dynarray_del(dynarray_t d) {
 }
 
 void dynarray_reserve(dynarray_t d, word_t new_size) {
-	/*printf("realloc'ing dynarray %p from %lu to %lu words\n",d, d->reserved, new_size);*/
+	/*vm_printf("realloc'ing dynarray %p from %lu to %lu words\n",d, d->reserved, new_size);*/
 	if(new_size>d->reserved) {
 		d->data = realloc(d->data, new_size*sizeof(dynarray_value_t));
 		memset(d->data+d->reserved,0,(new_size-d->reserved)*sizeof(dynarray_value_t));
@@ -77,9 +77,9 @@ void dynarray_reserve(dynarray_t d, word_t new_size) {
  */
 void dynarray_set(dynarray_t d, dynarray_index_t index, dynarray_value_t v) {
 	assert( index < DYNARRAY_ALERT_SIZE );
-/*	printf("dynarray has %u, %u, %p\n",d->reserved, d->size, d->data);
-	printf("index %u required to be set\n",index);
-	printf("d->reserved <= index : %i\n",d->reserved<=index);
+/*	vm_printf("dynarray has %u, %u, %p\n",d->reserved, d->size, d->data);
+	vm_printf("index %u required to be set\n",index);
+	vm_printf("d->reserved <= index : %i\n",d->reserved<=index);
 */
 	if(d->reserved <= index) {
 		word_t new_size = DYNARRAY_QUANTIZE(index);
@@ -93,7 +93,7 @@ void dynarray_set(dynarray_t d, dynarray_index_t index, dynarray_value_t v) {
 		d->size = index+1;
 	}
 	d->data[index] = v;
-	//printf("dynarray %p has now %lu words reserved and %lu words used.\n",d, d->reserved, d->size);
+	//vm_printf("dynarray %p has now %lu words reserved and %lu words used.\n",d, d->reserved, d->size);
 }
 
 dynarray_value_t dynarray_get(dynarray_t d,dynarray_index_t index) {
@@ -101,7 +101,7 @@ dynarray_value_t dynarray_get(dynarray_t d,dynarray_index_t index) {
 	if(index<d->size) {
 		return d->data[index];
 	} else {
-		//printf("warning : access out of dynarray bounds\n");
+		//vm_printf("warning : access out of dynarray bounds\n");
 	}
 	return 0;
 }

@@ -26,8 +26,8 @@
 
 thread_t thread_new(word_t prio, program_t p, word_t ip) {
 	thread_t ret = (thread_t)malloc(sizeof(struct _thread_t));
-	/*printf("NEW THREAD %p\n",ret);*/
-	/*printf("\tPROGRAM %p\n",ret->program);*/
+	/*vm_printf("NEW THREAD %p\n",ret);*/
+	/*vm_printf("\tPROGRAM %p\n",ret->program);*/
 	thread_init(ret,prio,p,ip);
 	/* FIXME : deprecated */
 	return NULL;
@@ -55,7 +55,7 @@ void thread_init(thread_t ret, word_t prio, program_t p, word_t ip) {
 
 
 void thread_deinit(vm_t vm, thread_t t) {
-	/*printf("thread deinit %p\n",t);*/
+	/*vm_printf("thread deinit %p\n",t);*/
 	if(t->state==ThreadZombie) {
 		if(t->sched_data.prev) {
 			t->sched_data.prev->next = t->sched_data.next;
@@ -80,7 +80,7 @@ void thread_deinit(vm_t vm, thread_t t) {
 
 
 void thread_delete(vm_t vm, thread_t t) {
-	/*printf("\tdel thread\n");*/
+	/*vm_printf("\tdel thread\n");*/
 	thread_deinit(vm,t);
 	free(t);
 }
@@ -114,9 +114,9 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 	assert(t->sched_data.value==(word_t)t);
 	/*assert(t->state!=state);*/
 	/*if(t->state==state) {*/
-		/*printf("thread_set_state does nothing ; %s\n",thread_state_to_str(state));*/
+		/*vm_printf("thread_set_state does nothing ; %s\n",thread_state_to_str(state));*/
 	/*}*/
-	/*printf("thread_set_state %p : %s => %s\n",t,thread_state_to_str(t->state),thread_state_to_str(state));*/
+	/*vm_printf("thread_set_state %p : %s => %s\n",t,thread_state_to_str(t->state),thread_state_to_str(state));*/
 	switch(t->state) {
 	case ThreadBlocked:
 		/*dlist_remove_no_free(&vm->yielded_threads,&t->sched_data);*/
@@ -191,17 +191,17 @@ void mutex_deinit(mutex_t m) {
 }
 
 long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
-	/*printf("MUTEX LOCK :: thread %p attempts to lock mutex %p owned by %p\n",t,m,m->owner);*/
+	/*vm_printf("MUTEX LOCK :: thread %p attempts to lock mutex %p owned by %p\n",t,m,m->owner);*/
 	if(m->owner==NULL) {
-		/*printf("mutex is not owned.\n");*/
+		/*vm_printf("mutex is not owned.\n");*/
 		m->owner=t;
 	}
 	if(m->owner==t) {
 		m->count+=1;
-		/*printf("mutex %p locked by thread %p (%li recursive locks)\n",m,t,m->count);*/
+		/*vm_printf("mutex %p locked by thread %p (%li recursive locks)\n",m,t,m->count);*/
 		return 1;
 	} else {
-		/*printf("mutex lock : blocking thread %p\n",t);*/
+		/*vm_printf("mutex lock : blocking thread %p\n",t);*/
 		thread_set_state(vm, t, ThreadBlocked);
 		dlist_insert_sorted(&m->pending,&t->sched_data,comp_prio);
 		return 0;
@@ -209,9 +209,9 @@ long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
 }
 
 long mutex_unlock(vm_t vm, mutex_t m, thread_t t) {
-	/*printf("MUTEX UNLOCK :: thread %p attempts to unlock mutex %p owned by %p\n",t,m,m->owner);*/
+	/*vm_printf("MUTEX UNLOCK :: thread %p attempts to unlock mutex %p owned by %p\n",t,m,m->owner);*/
 	if(m->owner!=t) {
-		fprintf(stderr,"[VM::ERR] : trying to unlock a mutex that is owned by another thread (%p).\n",m->owner);
+		vm_printerrf("[VM::ERR] : trying to unlock a mutex that is owned by another thread (%p).\n",m->owner);
 	} else if(m->count>0) {
 		m->count-=1;
 	}
@@ -227,7 +227,7 @@ long mutex_unlock(vm_t vm, mutex_t m, thread_t t) {
 			} else {
 				m->pending.tail=NULL;
 			}
-			/*printf("mutex unlock : unblocking thread %p\n",t);*/
+			/*vm_printf("mutex unlock : unblocking thread %p\n",t);*/
 			thread_set_state(vm, t, ThreadReady);
 		}
 	}
@@ -243,7 +243,7 @@ vm_blocker_t blocker_new() {
 
 void bf_kt(thread_t*t) {
 	if((*t)->state!=ThreadDying&&(*t)->state!=ThreadZombie) {
-		/*printf("blocker killing thread %p\n",*t);*/
+		/*vm_printf("blocker killing thread %p\n",*t);*/
 		vm_kill_thread(_glob_vm,*t);
 	}
 	vm_obj_deref_ptr(_glob_vm,*t);
@@ -264,7 +264,7 @@ void blocker_resume(vm_t vm,vm_blocker_t b) {
 	thread_t t;
 	while(gstack_size(b)) {
 		t = *(thread_t*)_gpop(b);
-		/*printf("task arrived ! resuming thread %p\n",t);*/
+		/*vm_printf("task arrived ! resuming thread %p\n",t);*/
 		t->IP-=2;
 		vm_obj_deref_ptr(vm,t);
 		thread_set_state(vm,t,ThreadReady);

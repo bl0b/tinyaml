@@ -37,7 +37,7 @@ ast_node_t ast_unserialize(const char*);
 void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
 	word_t test = text_seg_text_to_index(&vm->gram_nodes,sernode);
 	if(!test) {
-		/*printf("ML::appending new grammar rules\n");*/
+		/*vm_printf("ML::appending new grammar rules\n");*/
 		ast_node_t n = ast_unserialize(text_seg_find_by_text(&vm->gram_nodes,sernode));
 		tinyap_append_grammar(vm->parser,n);
 	}
@@ -47,7 +47,7 @@ void _VM_CALL vm_op__langPlug_String(vm_t vm, const char* plugin) {
 	vm_data_t arg = _vm_pop(vm);
 	const char* plug = (const char*) arg->data;
 	assert(arg->type==DataString);
-	/*printf("ML::plugging %s into %s\n",plugin,plug);*/
+	/*vm_printf("ML::plugging %s into %s\n",plugin,plug);*/
 	tinyap_plug(vm->parser,plugin,plug);
 }
 
@@ -63,27 +63,27 @@ void _VM_CALL vm_op_write_data(vm_t vm, word_t x) {
 	switch(d->type) {
 	case DataInt:
 		sprintf(tmp_d,"%li",d->data);
-		opcode_chain_add_data(vm->result, d->type, tmp_d, tmp_r);
+		opcode_chain_add_data(vm->result, d->type, tmp_d, tmp_r, -1, -1);
 		break;
 	case DataFloat:
 		conv.i = d->data;
 		sprintf(tmp_d,"%f",conv.f);
-		opcode_chain_add_data(vm->result, d->type, tmp_d, tmp_r);
+		opcode_chain_add_data(vm->result, d->type, tmp_d, tmp_r, -1, -1);
 		break;
 	case DataString:
-		/*printf("add String data \"%s\"\n",(const char*)d->data);*/
-		opcode_chain_add_data(vm->result, d->type, (const char*)d->data, tmp_r);
+		/*vm_printf("add String data \"%s\"\n",(const char*)d->data);*/
+		opcode_chain_add_data(vm->result, d->type, (const char*)d->data, tmp_r, -1, -1);
 		break;
 	case DataManagedObjectFlag:
-		fprintf(stderr,"[COMPILER:ERR] Inline Objects aren't allowed in the data segment !\n");
+		vm_printerrf("[COMPILER:ERR] Inline Objects aren't allowed in the data segment !\n");
 	default:;
 	}
-	/*printf("vm_op_write_data\n");*/
+	/*vm_printf("vm_op_write_data\n");*/
 }
 
 void _VM_CALL vm_op_write_label_String(vm_t vm, const char* label) {
-	opcode_chain_add_label(vm->result,label);
-	/*printf("vm_op_write_Label_String\n");*/
+	opcode_chain_add_label(vm->result,label, -1, -1);
+	/*vm_printf("vm_op_write_Label_String\n");*/
 }
 
 void _VM_CALL vm_op_write_label(vm_t vm, word_t unused) {
@@ -93,8 +93,8 @@ void _VM_CALL vm_op_write_label(vm_t vm, word_t unused) {
 }
 
 void _VM_CALL vm_op_write_oc_String(vm_t vm, const char* name) {
-	opcode_chain_add_opcode(vm->result, OpcodeNoArg, name, NULL);
-	/*printf("vm_op_write_oc_String %s\n",name);*/
+	opcode_chain_add_opcode(vm->result, OpcodeNoArg, name, NULL, -1, -1);
+	/*vm_printf("vm_op_write_oc_String %s\n",name);*/
 }
 
 void _VM_CALL vm_op_write_oc_String_String(vm_t vm, const char* name) {
@@ -102,8 +102,8 @@ void _VM_CALL vm_op_write_oc_String_String(vm_t vm, const char* name) {
 	const char*argstr;
 	assert(arg->type==DataString||arg->type==DataObjStr);
 	argstr = (const char*) arg->data;
-	/*printf("vm_op_write_oc_String_String %s %s\n",name,argstr);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgString, name, argstr);
+	/*vm_printf("vm_op_write_oc_String_String %s %s\n",name,argstr);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgString, name, argstr, -1, -1);
 }
 
 void _VM_CALL vm_op_write_oc_Int_String(vm_t vm, const char* name) {
@@ -111,23 +111,23 @@ void _VM_CALL vm_op_write_oc_Int_String(vm_t vm, const char* name) {
 	char argstr[512];
 	assert(arg->type==DataInt);
 	sprintf(argstr,"%li",(long int)arg->data);
-	/*printf("vm_op_write_oc_Int_String %s %s\n",name,argstr);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgInt, name, argstr);
+	/*vm_printf("vm_op_write_oc_Int_String %s %s\n",name,argstr);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgInt, name, argstr, -1, -1);
 }
 
 void _VM_CALL vm_op_write_oc_Label_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	assert(arg->type==DataString||arg->type==DataObjStr);
-	/*printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgLabel, name, (const char*)arg->data);
+	/*vm_printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgLabel, name, (const char*)arg->data, -1, -1);
 }
 
 void _VM_CALL vm_op_write_oc_EnvSym_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	char argstr[512];
 	assert(arg->type==DataString||arg->type==DataObjStr);
-	/*printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgEnvSym, name, (char*)arg->data);
+	/*vm_printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgEnvSym, name, (char*)arg->data, -1, -1);
 }
 
 void _VM_CALL vm_op_write_oc_Float_String(vm_t vm, const char* name) {
@@ -137,8 +137,8 @@ void _VM_CALL vm_op_write_oc_Float_String(vm_t vm, const char* name) {
 	assert(arg->type==DataFloat);
 	conv.i=arg->data;
 	sprintf(argstr,"%f",conv.f);
-	/*printf("vm_op_write_oc_Float_String %s %s\n",name,argstr);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgFloat, name, argstr);
+	/*vm_printf("vm_op_write_oc_Float_String %s %s\n",name,argstr);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgFloat, name, argstr, -1, -1);
 }
 
 
@@ -151,17 +151,17 @@ void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, int rel_ofs) {
 	word_t vec_ofs;
 	const char*name;
 	if(local->type!=DataString) {
-		printf("[VM:ERR] willingly obfuscated internal error.\n");
+		vm_printf("[VM:ERR] willingly obfuscated internal error.\n");
 		return;
 	}
 	vec_ofs = (word_t)hash_find(&vm->compile_vectors.by_text,(hash_elem)local->data);
 	if(vec_ofs) {
-		printf("[VM:ERR] vector already exists !\n");
+		vm_printf("[VM:ERR] vector already exists !\n");
 		return;
 	}
 	name = strdup((const char*)local->data);
 	vec_ofs = dynarray_size(&vm->compile_vectors.by_index);
-	/*printf("adding compile method for %s\n",(const char*)local->data);*/
+	/*vm_printf("adding compile method for %s\n",(const char*)local->data);*/
 	hash_addelem(&vm->compile_vectors.by_text, (hash_key) name, (hash_elem) vec_ofs);
 	dynarray_set(&vm->compile_vectors.by_index, vec_ofs, (word_t) t->program);
 	dynarray_set(&vm->compile_vectors.by_index, vec_ofs+1, ofs);
@@ -204,14 +204,14 @@ void _VM_CALL vm_op_astGetCol(vm_t vm, word_t x) {
 
 void vm_dump_data_stack(vm_t vm);
 void _VM_CALL vm_op_astGetChildrenCount(vm_t vm, word_t x) {
-	/*printf("vm_op_astGetChildrenCount => %u\n",wa_opd_count(vm->current_node));*/
+	/*vm_printf("vm_op_astGetChildrenCount => %u\n",wa_opd_count(vm->current_node));*/
 	vm_push_data(vm,DataInt,wa_opd_count(vm->current_node));
 	/*vm_dump_data_stack(vm);*/
 }
 
 void _VM_CALL vm_op_astCompileChild_Int(vm_t vm, word_t x) {
 	assert(x<wa_opd_count(vm->current_node));
-	/*printf("calling sub compiler\n");*/
+	/*vm_printf("calling sub compiler\n");*/
 	/*tinyap_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
 	tinyap_walk(wa_opd(vm->current_node,x), "compiler", vm);
 }
@@ -231,7 +231,7 @@ void _VM_CALL vm_op_doWalk(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_walkChild_Int(vm_t vm, word_t idx) {
 	assert(idx<wa_opd_count(vm->current_node));
-	/*printf("calling sub compiler\n");*/
+	/*vm_printf("calling sub compiler\n");*/
 	/*tinyap_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
 	tinyap_walk(wa_opd(vm->current_node,idx), "virtual", vm);
 }
@@ -254,16 +254,16 @@ void _VM_CALL vm_op_astCompileChild(vm_t vm, word_t unused) {
 
 
 /*void _VM_CALL vm_op__pop_curNode(vm_t vm, word_t x) {*/
-	/*printf("VM pop cur node !\n");*/
+	/*vm_printf("VM pop cur node !\n");*/
 	/*vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);*/
 /*}*/
 
 
 void _VM_CALL vm_op_astGetChildString_Int(vm_t vm, word_t x) {
-	/*printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),vm->current_thread->IP);*/
-	/*printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
+	/*vm_printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),vm->current_thread->IP);*/
+	/*vm_printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
 	vm_push_data(vm,DataString,(word_t)wa_op(wa_opd(vm->current_node,x)));
-	/*printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
+	/*vm_printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
 }
 
 void _VM_CALL vm_op_astGetChildString(vm_t vm, word_t x) {
@@ -290,7 +290,7 @@ void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
 		tinyap_walk(wa, "compiler", vm);
 		wa_del(wa);
 	} else {
-		fprintf(stderr,"parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
 }
 
@@ -320,7 +320,7 @@ void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
 	assert(t->type==DataObjSymTab);
 	assert(k->type==DataString||k->type==DataObjStr);
 	idx=text_seg_text_to_index(ts, (const char*)k->data);
-	/*printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
+	/*vm_printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
 	vm_push_data(vm,DataInt, idx);
 }
 
@@ -331,7 +331,7 @@ void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
 	assert(t->type==DataObjSymTab);
 	assert(k->type==DataString||k->type==DataObjStr);
 	(void)text_seg_find_by_text(ts, (const char*)k->data);
-	/*printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
+	/*vm_printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
 }
 /*@}*/
 

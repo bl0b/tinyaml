@@ -11,6 +11,13 @@
 #include <string.h>
 
 
+void _VM_CALL put_stdout(const char*s) {
+	fputs(s,stdout);
+}
+
+void _VM_CALL put_stderr(const char*s) {
+	fputs(s,stderr);
+}
 
 
 void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* ofs) {
@@ -33,56 +40,56 @@ static void data_stack_renderer(vm_data_t d) {
 	/*const unsigned char*s;*/
 	switch(d->type) {
 	case DataInt:
-		fprintf(stderr,"Int     %li",d->data);
+		vm_printerrf("Int     %li",d->data);
 		break;
 	case DataFloat:
 		conv.i = d->data;
-		fprintf(stderr,"Float   %f",conv.f);
+		vm_printerrf("Float   %f",conv.f);
 		break;
 	case DataString:
-		fprintf(stderr,"String  \"%s\"",(const char*)d->data);
+		vm_printerrf("String  \"%s\"",(const char*)d->data);
 		break;
 	case DataObjStr:
-		fprintf(stderr,"ObjStr  \"%s\"",(const char*)d->data);
+		vm_printerrf("ObjStr  \"%s\"",(const char*)d->data);
 		break;
 	case DataObjSymTab:
-		fprintf(stderr,"SymTab  %p",(void*)d->data);
+		vm_printerrf("SymTab  %p",(void*)d->data);
 		break;
 	case DataObjMutex:
-		fprintf(stderr,"Mutex  %p",(void*)d->data);
+		vm_printerrf("Mutex  %p",(void*)d->data);
 		break;
 	case DataObjThread:
-		fprintf(stderr,"Thread  %p",(void*)d->data);
+		vm_printerrf("Thread  %p",(void*)d->data);
 		break;
 	case DataObjArray:
-		fprintf(stderr,"Array  %p",(void*)d->data);
+		vm_printerrf("Array  %p",(void*)d->data);
 		break;
 	case DataObjEnv:
-		fprintf(stderr,"Map  %p",(void*)d->data);
+		vm_printerrf("Map  %p",(void*)d->data);
 		break;
 	case DataObjStack:
-		fprintf(stderr,"Stack  %p",(void*)d->data);
+		vm_printerrf("Stack  %p",(void*)d->data);
 		break;
 	case DataObjFun:
-		fprintf(stderr,"Function  %p",(void*)d->data);
+		vm_printerrf("Function  %p",(void*)d->data);
 		break;
 	case DataObjVObj:
-		fprintf(stderr,"V-Obj  %p",(void*)d->data);
+		vm_printerrf("V-Obj  %p",(void*)d->data);
 		break;
 	case DataManagedObjectFlag:
-		fprintf(stderr,"Undefined Object ! %p",(void*)d->data);
+		vm_printerrf("Undefined Object ! %p",(void*)d->data);
 		break;
 	default:
-		fprintf(stderr, "Unknown (%u, 0x%lX)",d->type,d->data);
+		vm_printerrf( "Unknown (%u, 0x%lX)",d->type,d->data);
 	};
 }
 
 static void closure_stack_renderer(dynarray_t* da) {
 	vm_data_t tab = (vm_data_t) (*da)->data;
 	word_t i;
-	fprintf(stderr,"[%lu]",(*da)->size);
+	vm_printerrf("[%lu]",(*da)->size);
 	for(i=0;i<(*da)->size;i+=1) {
-		fprintf(stderr,"\n\t\t%li : ",i);
+		vm_printerrf("\n\t\t%li : ",i);
 		data_stack_renderer(&(tab[i]));
 	}
 }
@@ -92,9 +99,9 @@ static void call_stack_renderer(struct _call_stack_entry_t* cse) {
 	const char*label;
 	lookup_label_and_ofs(cse->cs,cse->ip,&label,&ofs);
 	if(label) {
-		fprintf(stderr,"%p:%s+%lu",cse->cs, label, ofs);
+		vm_printerrf("%p:%s+%lu",cse->cs, label, ofs);
 	} else {
-		fprintf(stderr,"%p:%lu",cse->cs,cse->ip);
+		vm_printerrf("%p:%lu",cse->cs,cse->ip);
 	}
 }
 
@@ -103,7 +110,7 @@ static void render_stack(generic_stack_t s, word_t sz, const char*prefix, void(*
 	long counter = 0;
 	long stop = -sz;
 	while(counter>stop) {
-		fprintf(stderr,"%s%li : ",prefix,-counter);
+		vm_printerrf("%s%li : ",prefix,-counter);
 		renderer(_gpeek(s,counter));
 		fputc('\n',stderr);
 		counter-=1;
@@ -115,27 +122,24 @@ static void render_stack(generic_stack_t s, word_t sz, const char*prefix, void(*
 void _VM_CALL thread_failed(vm_t vm, thread_t t) {
 	word_t ofs;
 	const char*label;
+	const char* disasm = program_disassemble(vm,t->program,t->IP);
 	lookup_label_and_ofs(t->program,t->IP,&label,&ofs);
-	fprintf(stderr, "Thread :\t%p\n",t);
+	vm_printerrf( "Thread :\t%p\n",t);
 	if(label) {
-		fprintf(stderr,"CS:IP :\t%p:%lXh (%s+%lXh)", t->program, t->IP, label, ofs);
+		vm_printerrf("CS:IP : \t%p:%lXh (%s+%lXh) # %s\n", t->program, t->IP, label, ofs, disasm);
 	} else {
-		fprintf(stderr,"CS:IP :\t%p:%lXh",t->program,t->IP);
+		vm_printerrf("CS:IP : \t%p:%lXh # %s\n",t->program,t->IP, disasm);
 	}
-	{
-		const char* disasm = program_disassemble(vm,t->program,t->IP);
-		printf("\t# %-40.40s\n",disasm);
-		free((char*)disasm);
-	}
-	fprintf(stderr,"\nCall stack :\t[%lu]\n", gstack_size(&t->call_stack));
+	free((char*)disasm);
+	vm_printerrf("\nCall stack :\t[%lu]\n", gstack_size(&t->call_stack));
 	render_stack(&t->call_stack, gstack_size(&t->call_stack), "\t", (void(*)(void*)) call_stack_renderer);
-	fprintf(stderr,"\nClosures stack :\t[%lu]\n", gstack_size(&t->data_stack));
+	vm_printerrf("\nClosure stack :\t[%lu]\n", gstack_size(&t->data_stack));
 	render_stack(&t->closures_stack, gstack_size(&t->closures_stack), "\t", (void(*)(void*)) closure_stack_renderer);
-	fprintf(stderr,"\nData stack :\t[%lu]\n", gstack_size(&t->data_stack));
+	vm_printerrf("\nData stack :\t[%lu]\n", gstack_size(&t->data_stack));
 	render_stack(&t->data_stack, t->data_sp_backup, "\t", (void(*)(void*)) data_stack_renderer);
-	fprintf(stderr,"\nLocals stack :\t[%lu]\n", gstack_size(&t->locals_stack));
+	vm_printerrf("\nLocals stack :\t[%lu]\n", gstack_size(&t->locals_stack));
 	render_stack(&t->locals_stack, gstack_size(&t->locals_stack), "\t", (void(*)(void*)) data_stack_renderer);
-	fprintf(stderr,"\nCatch stack :\t[%lu]\n", gstack_size(&t->catch_stack));
+	vm_printerrf("\nCatch stack :\t[%lu]\n", gstack_size(&t->catch_stack));
 }
 
 
@@ -168,7 +172,7 @@ void _VM_CALL e_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
 			vm_schedule_cycle(e->vm);
 		}
 		if(e->vm->threads_count) {
-			/*printf("done with sub thread\n");*/
+			/*vm_printf("done with sub thread\n");*/
 			/* restore old state */
 			t->program=program;
 			t->IP=IP;
@@ -224,12 +228,12 @@ void _VM_CALL th_vm_unlock(struct _thread_engine_t* e) {
 }
 
 void* th_th_run(struct _thread_engine_t* e) {
-	/*printf("ENGINE START\n");*/
+	/*vm_printf("ENGINE START\n");*/
 	e->is_running=1;
 	while(e->is_running&&e->_.vm->scheduler!=SchedulerIdle) {
 		vm_schedule_cycle(e->_.vm);
 	}
-	/*printf("ENGINE STOP\n");*/
+	/*vm_printf("ENGINE STOP\n");*/
 	return NULL;
 }
 
@@ -287,9 +291,9 @@ void _VM_CALL th_run_fg(struct _thread_engine_t* e, program_t p, word_t ip, word
 	volatile thread_t t;
 	t = vm_add_thread(e->_.vm,p,ip,prio,1);
 	vm_obj_ref_ptr(e->_.vm,t);
-	/*printf("\n\n### STARTING FG THREAD ###\n\n");*/
+	/*vm_printf("\n\n### STARTING FG THREAD ###\n\n");*/
 	/*while(t->state!=ThreadZombie);*/
-	/*printf("\n\n### FG THREAD ZOMBIFIED ###\n\n");*/
+	/*vm_printf("\n\n### FG THREAD ZOMBIFIED ###\n\n");*/
 	while(pthread_mutex_trylock(&e->fg_mutex)!=EBUSY) {
 		/*fputc('.',stdout); fflush(stdout);*/
 		pthread_mutex_unlock(&e->fg_mutex);
@@ -323,6 +327,8 @@ const vm_engine_t stub_engine = (struct _vm_engine_t[])
 	e_stub,
 	thread_failed,
 	NULL,
+	put_stdout,
+	put_stderr,
 	NULL
 }};
 
@@ -341,6 +347,8 @@ const vm_engine_t thread_engine = (vm_engine_t) (struct _thread_engine_t[])
 	(vm_engine_func_t)th_vm_unlock,
 	thread_failed,
 	NULL,
+	put_stdout,
+	put_stderr,
 	NULL
 },
 	(pthread_t)0,

@@ -36,12 +36,21 @@ p_Opcode =( <Opcode_Float>
 	| <Opcode_NoArg>
 	).
 
-Opcode_NoArg ::= <p_Opcode_NoArg>.
-Opcode_Int ::= <p_Opcode_Int> <OpcodeArg_Int>.
-Opcode_Float ::= <p_Opcode_Float> <OpcodeArg_Float>.
-Opcode_String ::= <p_Opcode_String> <OpcodeArg_String>.
-Opcode_Label ::= <p_Opcode_Label> <OpcodeArg_Label>.
-Opcode_EnvSym ::= <p_Opcode_EnvSym> <OpcodeArg_EnvSym>.
+#Opcode_NoArg ::= <p_Opcode_NoArg>.
+#Opcode_Int ::= <p_Opcode_Int> <OpcodeArg_Int>.
+#Opcode_Float ::= <p_Opcode_Float> <OpcodeArg_Float>.
+#Opcode_String ::= <p_Opcode_String> <OpcodeArg_String>.
+#Opcode_Label ::= <p_Opcode_Label> <OpcodeArg_Label>.
+#Opcode_EnvSym ::= <p_Opcode_EnvSym> <OpcodeArg_EnvSym>.
+
+
+# faster but unsafe version
+Opcode_NoArg ::= <sym>.
+Opcode_Int ::= <sym> <OpcodeArg_Int>.
+Opcode_Float ::= <sym> <OpcodeArg_Float>.
+Opcode_String ::= <sym> <OpcodeArg_String>.
+Opcode_Label ::= <sym> <OpcodeArg_Label>.
+Opcode_EnvSym ::= <sym> <OpcodeArg_EnvSym>.
 
 OpcodeArg_NoArg = epsilon.
 OpcodeArg_Int = <int>.
@@ -75,8 +84,8 @@ DeclLabel ::= <sym> ":".
 ##
 #
 
-AsmBloc ::= "asm" <asm_contents> "end".
-asm_contents = <asm_statement> ( <asm_contents> | epsilon ).
+AsmBloc ::= "asm" <asm_contents>.
+asm_contents = ( "end" | <asm_statement> <asm_contents> ).
 #asm_loop = ( <asm_statement> <asm_loop> | <asm_statement> "end" ).
 
 asm_statement = ( <DeclLabel> <p_Opcode> | <p_Opcode> ).

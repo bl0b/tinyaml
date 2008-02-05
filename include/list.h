@@ -329,7 +329,7 @@ void slist_del(slist_t);
 		}\
 	} while(0)
 
-#define debug(_n) printf("[%p]<- %p -> [%p]\n",(_n)->sched_data.prev,(_n),(_n)->sched_data.next)
+#define debug(_n) vm_printf("[%p]<- %p -> [%p]\n",(_n)->sched_data.prev,(_n),(_n)->sched_data.next)
 #define dlist_insert_sorted(_l,_n,_cmp)	do {\
 		dlist_node_t r=(_l)->head;\
 		if(r==NULL||_cmp(_n,r)<=0) {\
@@ -341,7 +341,7 @@ void slist_del(slist_t);
 				r=r->next;\
 			}\
 			if(!r) {\
-				printf("PROUUUUUUUT\n");\
+				vm_printf("PROUUUUUUUT\n");\
 				dlist_forward(_l,thread_t,debug);\
 			}\
 			(_n)->next=r->next;\

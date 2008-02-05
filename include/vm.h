@@ -28,14 +28,27 @@
 #include "../config.h"
 
 /*! \addtogroup _pad _
- * \brief f***ing bug in doxygen's grouping
+ * F***ing bug in doxygen's grouping... nevermind.
  */
 
-/*! \defgroup abstract_io Tinyaml file and buffer IO */
+/*! \defgroup Tinyaml Tinyaml
+ * @{
+ */
+/*! \defgroup abstract_io Tinyaml file and buffer IO
+ * @{
+ * \brief Define a common interface for file and memory buffer I/O, independantly of non-portable fmemopen.
+ *
+ * Readers and Writers in Tinyaml can handle 32-bit words and character strings. A reader can be configured to swap bytes when reading words, so that it can read words serialized in the other endianness. Endianness recognition is done by the user, NOT by the Reader itself.
+ *
+ * Internals are not discussed here.
+ * @}
+ */
 /*! \defgroup data_struc Data Structures and Representations
  * @{
  * 	\defgroup data_containers Base containers
  * 	@{
+ *	\brief The containers used everywhere in Tinyaml.
+ *
  * 		\defgroup dynarray_t Dynamic Array
  * 		\defgroup gstack_t Generic stack
  * 		\defgroup list_t Chained lists
@@ -43,6 +56,23 @@
  * 		\defgroup symtab_t Text segment / Symbol table
  * 		\defgroup vm_env_t Environment/Map
  * 	\defgroup objects Managed Objects
+ * 	@{
+ * 	\brief Buffers with reference counting and automated cloning and collection.
+ *
+ * 	Managed objects at low-level are \c void* buffers with a prefix. To create a managed buffer,
+ * 	one must provide the buffer size and the following two routines : \c _clone() and \c _deinit().
+ *
+ * 	\c _clone() should duplicate the buffer given as a parameter and \c _deinit() should free the resources associated with the buffer, but not the buffer itself.
+ *
+ * 	Once a buffer is created, the \ref vm manages its reference counter and automatically collects unreferenced buffers.
+ *
+ * 	Buffers are to be \c _clone 'd when enclosing their reference in \ref dyn_func_t.
+ *
+ * 	\section Garbage Collector
+ * 		Currently, the GC collects at most one buffer per instruction cycle and has not been tested under heavy load.
+ *
+ * 		This might change anytime in function of the needs.
+ * 	@}
  * 	@}
  * 	\weakgroup _pad
  * @}
@@ -88,7 +118,14 @@
  * 	\defgroup vcop_arit Arithmetic & bitwise operations
  * 	\weakgroup _pad
  * @}
- *
+ * @}
+ */
+/*! \defgroup tinyaml_dbg Debugger
+ * @{
+ * 	\defgroup dbg_internals Tinyaml renderers
+ * 	\defgroup dbg_ncurses NCurses
+ * 	\defgroup debug_engine Synchronous debug engine
+ * @}
  */
 
 /*! \addtogroup misc
@@ -231,6 +268,10 @@ vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o);
 /*! \internal \brief remove \c o from the VM's collection list */
 vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o);
 
+/*! \brief output formatted data to VM's stdout. */
+int vm_printf(const char* fmt, ...);
+/*! \brief output formatted data to VM's stderr. */
+int vm_printerrf(const char* fmt, ...);
 /*@}*/
 
 #endif

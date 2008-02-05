@@ -108,47 +108,47 @@ void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
 		vm_peek_data(vm,k,&dt,(word_t*)&tmp);
 		switch(dt) {
 		case DataInt:
-			printf("%li", tmp.i);
+			vm_printf("%li", tmp.i);
 			break;
 		case DataFloat:
-			printf("%lf", tmp.f);
+			vm_printf("%lf", tmp.f);
 			break;
 		case DataString:
-			printf("%s", (const char*) tmp.i);
+			vm_printf("%s", (const char*) tmp.i);
 			break;
 		case DataObjStr:
-			printf("[ObjStr  \"%s\"]",(const char*)tmp.i);
+			vm_printf("[ObjStr  \"%s\"]",(const char*)tmp.i);
 			break;
 		case DataObjSymTab:
-			printf("[SymTab  %p]",(void*)tmp.i);
+			vm_printf("[SymTab  %p]",(void*)tmp.i);
 			break;
 		case DataObjMutex:
-			printf("[Mutex  %p]",(void*)tmp.i);
+			vm_printf("[Mutex  %p]",(void*)tmp.i);
 			break;
 		case DataObjThread:
-			printf("[Thread  %p]",(void*)tmp.i);
+			vm_printf("[Thread  %p]",(void*)tmp.i);
 			break;
 		case DataObjArray:
-			printf("[Array  %p]",(void*)tmp.i);
+			vm_printf("[Array  %p]",(void*)tmp.i);
 			break;
 		case DataObjEnv:
-			printf("[Map  %p]",(void*)tmp.i);
+			vm_printf("[Map  %p]",(void*)tmp.i);
 			break;
 		case DataObjStack:
-			printf("[Stack  %p]",(void*)tmp.i);
+			vm_printf("[Stack  %p]",(void*)tmp.i);
 			break;
 		case DataObjFun:
-			printf("[Function  %p]",(void*)tmp.i);
+			vm_printf("[Function  %p]",(void*)tmp.i);
 			break;
 		case DataObjVObj:
-			printf("[V-Obj  %p]",(void*)tmp.i);
+			vm_printf("[V-Obj  %p]",(void*)tmp.i);
 			break;
 		case DataManagedObjectFlag:
-			printf("[Undefined Object ! %p]", (opcode_stub_t*)tmp.i);
+			vm_printf("[Undefined Object ! %p]", (opcode_stub_t*)tmp.i);
 			break;
 		case DataTypeMax:
 		default:;
-			printf("[Erroneous data %X %lX]", dt, tmp.i);
+			vm_printf("[Erroneous data %X %lX]", dt, tmp.i);
 		};
 		k+=1;
 	}
@@ -198,6 +198,12 @@ void _VM_CALL vm_op_jmp_Label(vm_t vm, word_t data) {
 /*! \addtogroup vcop_df
  * @{
  */
+/*! \brief \b call Call a function object.
+ *
+ * - pop a function object F,
+ * - install F.closure if it has one,
+ * - call F.cs:F.ip
+ */
 void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	thread_t t=vm->current_thread;
@@ -206,7 +212,7 @@ void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
 	if(fun->closure) { 
 		vm_push_caller(vm, t->program, t->IP, 1);
 		gpush(&t->closures_stack,&fun->closure);
-		/*printf("pushed closure %p\n",fun->closure);*/
+		/*vm_printf("pushed closure %p\n",fun->closure);*/
 	} else {
 		vm_push_caller(vm, t->program, t->IP, 0);
 	}
@@ -214,6 +220,13 @@ void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
 	t->jmp_ofs=fun->ip;
 }
 
+/*! \brief \b call_vc Call a function object with a virtual closure.
+ *
+ * - pop a function object F,
+ * - pop an array or a VObj O,
+ * - install O as the closure of F,
+ * - call F.cs:F.ip
+ */
 void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused) {
 	vm_data_t d;
 	vm_dyn_func_t fun;
@@ -240,6 +253,10 @@ void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused) {
 /*! \addtogroup vcop_ctrl
  * @{
  */
+/*! \brief \b call \b Label : perform intra-segment call.
+ *
+ * - call (current program):(current IP + relative jump offset)
+ */
 void _VM_CALL vm_op_call_Label(vm_t vm, word_t data) {
 	thread_t t=vm->current_thread;
 	vm_push_caller(vm, t->program, t->IP, 0);
@@ -258,7 +275,13 @@ void _VM_CALL vm_op_call_Label(vm_t vm, word_t data) {
 /*}*/
 
 
-
+/*! \brief \b retval \b Int : clean the data stack and return one value
+ *
+ * - preserve top of data stack,
+ * - pop \c n elements from data stack,
+ * - restore old stack top,
+ * - return
+ */
 void _VM_CALL vm_op_retval_Int(vm_t vm, word_t n) {
 	program_t cs;
 	word_t ip;
@@ -279,7 +302,11 @@ void _VM_CALL vm_op_retval_Int(vm_t vm, word_t n) {
 	}
 }
 
-
+/*! \brief \b ret \b Int : clean the data stack and return
+ *
+ * - pop \c n elements from data stack,
+ * - return
+ */
 void _VM_CALL vm_op_ret_Int(vm_t vm, word_t n) {
 	program_t cs;
 	word_t ip;
@@ -297,19 +324,34 @@ void _VM_CALL vm_op_ret_Int(vm_t vm, word_t n) {
 }
 
 
+/*! \brief \b instCatcher \b Label : install a catch vector
+ *
+ * - install catch vector
+ */
 void _VM_CALL vm_op_instCatcher_Label(vm_t vm, long rel_ofs) {
-	/*printf("install catcher %p:%lu\n",vm->current_thread->program,vm->current_thread->IP+rel_ofs);*/
+	/*vm_printf("install catcher %p:%lu\n",vm->current_thread->program,vm->current_thread->IP+rel_ofs);*/
 	vm_push_catcher(vm,vm->current_thread->program,vm->current_thread->IP+rel_ofs);
 }
 
+/*! \brief \b uninstCatcher \b Label : uninstall a catch vector and jump to offset
+ *
+ * - uninstall top catcher,
+ * - jump at label in parameter
+ */
 void _VM_CALL vm_op_uninstCatcher_Label(vm_t vm, long rel_ofs) {
 	call_stack_entry_t cse = _gpop(&vm->current_thread->catch_stack);
-	/*printf("uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
+	/*vm_printf("uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
 	vm->current_thread->jmp_seg=vm->current_thread->program;
 	vm->current_thread->jmp_ofs=vm->current_thread->IP+rel_ofs;
 	/*vm->current_thread->call_stack.sp = cse->has_closure;*/
 }
 
+/*! \brief \b throw pop a piece of data if it is available and use it as an exception.
+ *
+ * - pop exception data \c e if available OR set \c e to \c "Global failure : throw without data.",
+ * - pop a catch vector if available,
+ * - clean call stack and jump to catch vector OR kill thread
+ */
 void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
 	call_stack_entry_t cse;
 	vm_data_t e;
@@ -324,7 +366,7 @@ void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
 	vm->exception = e;
 	if((long)vm->current_thread->catch_stack.sp>=0) {
 		cse = _gpop(&vm->current_thread->catch_stack);
-		/*printf("throw : uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
+		/*vm_printf("throw : uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
 		vm->current_thread->jmp_seg=cse->cs;
 		vm->current_thread->jmp_ofs=cse->ip;
 		while((long)vm->current_thread->call_stack.sp>(long)cse->has_closure) {
@@ -352,7 +394,7 @@ void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 	word_t ofs = t->IP+rel_ofs;
 	assert(d->type==DataInt);
 	t = vm_add_thread(vm, t->program, ofs, d->data, 0);
-	/*printf("new thread has handle %p\n",t);*/
+	/*vm_printf("new thread has handle %p\n",t);*/
 	vm_push_data(vm,DataObjThread,(word_t)t);
 }
 
@@ -363,7 +405,7 @@ void _VM_CALL vm_op_getPid(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_newMtx(vm_t vm, word_t unused) {
 	word_t handle = (word_t) vm_mutex_new();
-	/*printf("push new mutex %lx\n",handle);*/
+	/*vm_printf("push new mutex %lx\n",handle);*/
 	vm_push_data(vm, DataObjMutex, handle);
 }
 
@@ -440,7 +482,7 @@ void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 		vm_obj_ref_ptr(vm,joinee);
 	} else {
 		joinee = join_lock_to_thread(t,t->pending_lock);
-		/*printf("pending_lock %p => thread should be %p\n",t->pending_lock,joinee);*/
+		/*vm_printf("pending_lock %p => thread should be %p\n",t->pending_lock,joinee);*/
 	}
 	if(mutex_lock(vm,t->pending_lock,t)) {
 		mutex_unlock(vm,t->pending_lock,t);
@@ -467,7 +509,7 @@ void _VM_CALL vm_op_yield(vm_t vm, word_t unused) {
 	/*vm->current_thread->IP+=2;*/
 	/*thread_set_state(vm,vm->current_thread,ThreadReady);*/
 	vm->current_thread->remaining=0;
-	/*printf("YIELD %p\n",vm->current_thread);*/
+	/*vm_printf("YIELD %p\n",vm->current_thread);*/
 }
 /*@}*/
 
@@ -480,7 +522,7 @@ void _VM_CALL vm_op_dynFunNew_Label(vm_t vm, word_t rel_ofs) {
 	vm_dyn_func_t handle = vm_dyn_fun_new();
 	handle->cs = vm->current_thread->program;
 	handle->ip = vm->current_thread->IP+rel_ofs;
-	/*printf("push new mutex %lx\n",handle);*/
+	/*vm_printf("push new mutex %lx\n",handle);*/
 	vm_push_data(vm, DataObjFun, (word_t) handle);
 }
 
@@ -505,7 +547,7 @@ void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
 	index = f->closure->size;
 	dynarray_set(f->closure,f->closure->size,dc->type);
 	dynarray_set(f->closure,f->closure->size,data);
-	/*printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);*/
+	/*vm_printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);*/
 }
 
 /*@}*/
