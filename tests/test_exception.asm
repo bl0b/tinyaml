@@ -9,9 +9,10 @@ _try:
 	push "Après throw\n" print 1
 	uninstCatcher @_end
 _catch:
-	push "Exception #" dup -1 push "\n" print 3
+	push "Exception #" getException push "\n" print 3
 	# propagate to enclosing catch
-	throw
+	
+	getException throw
 _end:
 	push "Fini.\n" print 1
 end

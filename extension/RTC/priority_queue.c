@@ -159,7 +159,7 @@ static inline void rebalanceLL(struct _pq_year* y,struct _pq_bst_node*C) {
 		*BR=B->right,
 		*O=C->parent;
 
-	/*printf(">>>>>>>>>>>>>>> BEFORE\n"); dump_node(C,"");*/
+	/*vm_printf(">>>>>>>>>>>>>>> BEFORE\n"); dump_node(C,"");*/
 	
 	assert_all(B);
 	assert_all(C);
@@ -188,7 +188,7 @@ static inline void rebalanceLL(struct _pq_year* y,struct _pq_bst_node*C) {
 	assert_all(C);
 	assert_all(A);
 
-	/*printf(">>>>>>>>>>>>>>> AFTER\n"); dump_node(B,"");*/
+	/*vm_printf(">>>>>>>>>>>>>>> AFTER\n"); dump_node(B,"");*/
 	if(B->parent) balance_tree(y,B);
 }
 
@@ -202,7 +202,7 @@ static inline void rebalanceLR(struct _pq_year* y,struct _pq_bst_node*C) {
 		*BR=B->right,
 		*O=C->parent;
 
-	/*printf(">>>>>>>>>>>>>>> BEFORE\n"); dump_node(C,"");*/
+	/*vm_printf(">>>>>>>>>>>>>>> BEFORE\n"); dump_node(C,"");*/
 	
 	assert_all(B);
 	assert_all(C);
@@ -235,7 +235,7 @@ static inline void rebalanceLR(struct _pq_year* y,struct _pq_bst_node*C) {
 	assert_all(C);
 	assert_all(A);
 
-	/*printf(">>>>>>>>>>>>>>> AFTER\n"); dump_node(B,"");*/
+	/*vm_printf(">>>>>>>>>>>>>>> AFTER\n"); dump_node(B,"");*/
 	if(B->parent) balance_tree(y,B);
 }
 
@@ -250,7 +250,7 @@ static inline void rebalanceRR(struct _pq_year* y,struct _pq_bst_node*C) {
 		*BR=B->left,
 		*O=C->parent;
 
-	/*printf(">>>>>>>>>>>>>>> BEFORE\n"); dump_node(C,"");*/
+	/*vm_printf(">>>>>>>>>>>>>>> BEFORE\n"); dump_node(C,"");*/
 	
 	assert_all(B);
 	assert_all(C);
@@ -279,7 +279,7 @@ static inline void rebalanceRR(struct _pq_year* y,struct _pq_bst_node*C) {
 	assert_all(C);
 	assert_all(A);
 
-	/*printf(">>>>>>>>>>>>>>> AFTER\n"); dump_node(B,"");*/
+	/*vm_printf(">>>>>>>>>>>>>>> AFTER\n"); dump_node(B,"");*/
 	if(B->parent) balance_tree(y,B);
 }
 
@@ -292,7 +292,7 @@ static inline void rebalanceRL(struct _pq_year* y,struct _pq_bst_node*C) {
 		*BL=B->left,
 		*O=C->parent;
 
-	/*printf(">>>>>>>>>>>>>>> rebalance RL  BEFORE\n"); dump_node(C,"");*/
+	/*vm_printf(">>>>>>>>>>>>>>> rebalance RL  BEFORE\n"); dump_node(C,"");*/
 	
 	assert_all(A);
 	assert_all(B);
@@ -325,7 +325,7 @@ static inline void rebalanceRL(struct _pq_year* y,struct _pq_bst_node*C) {
 	assert_all(C);
 	assert_all(A);
 
-	/*printf(">>>>>>>>>>>>>>> rebalance RL  AFTER\n"); dump_node(B,"");*/
+	/*vm_printf(">>>>>>>>>>>>>>> rebalance RL  AFTER\n"); dump_node(B,"");*/
 	if(B->parent) balance_tree(y,B);
 }
 
@@ -416,7 +416,7 @@ static inline void hash_insert(PQueue q,int d,struct _pq_year*y) {
 static inline void list_insert(PQueue q,struct _pq_year*y) {
 	struct _pq_year*z;
 	if(q->tail&&y->number>q->tail->number) {
-//		printf("new tail year with # %i (previous was %i)\n",y->number,q->tail->number);
+//		vm_printf("new tail year with # %i (previous was %i)\n",y->number,q->tail->number);
 		y->prev=q->tail;
 		y->next=NULL;
 		y->list=q;
@@ -473,7 +473,7 @@ static inline struct _pq_year* new_year(PQueue q,int d) {
 	hash_insert(q,d,y);
 	/* now insert new year in sorted years list... painful :( */
 	list_insert(q,y);
-	/*printf("new year with # %i\n",y->number);*/
+	/*vm_printf("new year with # %i\n",y->number);*/
 	return y;
 }
 
@@ -523,7 +523,7 @@ static inline void free_year(void(*dm)(PQMessage),struct _pq_year*y) {
 void remove_year(PQueue q,struct _pq_year*y) {
 	struct _pq_year*hy,*hq;
 	int d;
-	/*printf("remove_year\n");*/
+	/*vm_printf("remove_year\n");*/
 	/*dump_year(y,"remove_year\t");*/
 	/*fflush(stdout);*/
 	if(q->head==y)
@@ -563,7 +563,7 @@ void remove_year(PQueue q,struct _pq_year*y) {
 
 void remove_bucket(PQueue q,struct _pq_year*y,struct _pq_bucket*b) {
 	struct _pq_bst_node*l,*r,*p,*o;
-	/*printf("remove_bucket next=%p prev=%p node=%p nodeparent=%p\n",b->next,b->prev,b->node,b->node->parent);*/
+	/*vm_printf("remove_bucket next=%p prev=%p node=%p nodeparent=%p\n",b->next,b->prev,b->node,b->node->parent);*/
 	/*dump_bucket(b,"remove_bucket\t");*/
 	if(y->head==b)
 		y->head=b->next;
@@ -582,11 +582,11 @@ void remove_bucket(PQueue q,struct _pq_year*y,struct _pq_bucket*b) {
 	if(p) {
 		o=p->parent;
 		/*dump_year(y,"remove_bucket year_before ");*/
-		/*printf("remove_bucket node has parent\n");*/
+		/*vm_printf("remove_bucket node has parent\n");*/
 		l=p->left;
 		r=p->right;
 		if(l->bucket==b) {
-			/*printf("remove_bucket node is left ; keep right ; right => ( %i %i b=%p l=%p r=%p )\n",*/
+			/*vm_printf("remove_bucket node is left ; keep right ; right => ( %i %i b=%p l=%p r=%p )\n",*/
 					/*r->height,r->balance,*/
 					/*r->bucket,r->left,r->right*/
 				/*);*/
@@ -602,7 +602,7 @@ void remove_bucket(PQueue q,struct _pq_year*y,struct _pq_bucket*b) {
 			}
 			_free(struct _pq_bst_node,l);
 		} else {
-			/*printf("remove_bucket node is right ; keep left ; left => ( %i %i b=%p l=%p r=%p )\n",*/
+			/*vm_printf("remove_bucket node is right ; keep left ; left => ( %i %i b=%p l=%p r=%p )\n",*/
 					/*l->height,l->balance,*/
 					/*l->bucket,l->left,r->right*/
 				/*);*/
@@ -621,13 +621,13 @@ void remove_bucket(PQueue q,struct _pq_year*y,struct _pq_bucket*b) {
 		_free(struct _pq_bst_node,p);
 		y->count--;
 		if(!y->head) {
-			/*printf("remove_bucket => REMOVE YEAR #%i\n",y->number);*/
+			/*vm_printf("remove_bucket => REMOVE YEAR #%i\n",y->number);*/
 			remove_year(q,y);
 		} else {
 			/*dump_year(y,"remove_bucket year_after ");*/
 		}
 	} else {	/* node is root, we are deleting the last bucket in a year */
-		/*printf("remove_bucket REMOVING YEAR %i\n",y->number);*/
+		/*vm_printf("remove_bucket REMOVING YEAR %i\n",y->number);*/
 		remove_year(q,y);
 	}
 	_free(struct _pq_bucket,b);
@@ -651,7 +651,7 @@ void remove_ev(PQueue q,struct _pq_year*y,struct _pq_bucket*b,struct _pq_ev*e) {
 		if(e->prev) e->prev->next=e->next;
 	}
 	q->evCount--;
-	/*printf("after remove_ev, q->head->head->head->head = %p->%p->%p->%p\n",q->head,q->head?q->head->head:0,q->head&&q->head->head?q->head->head->head:0,q->head&&q->head->head&&q->head->head->head?q->head->head->head->head:0);*/
+	/*vm_printf("after remove_ev, q->head->head->head->head = %p->%p->%p->%p\n",q->head,q->head?q->head->head:0,q->head&&q->head->head?q->head->head->head:0,q->head&&q->head->head&&q->head->head->head?q->head->head->head->head:0);*/
 }
 
 
@@ -718,7 +718,7 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 		/*k=(*bucket)->head;*/
 		/*for(n=0;k;k=k->next,n+=1);*/
 		/*if(n!=(*bucket)->count) {*/
-			/*printf("## BUGGY BUCKET ## counted %i, bucket says %i\n",n,(*bucket)->count);*/
+			/*vm_printf("## BUGGY BUCKET ## counted %i, bucket says %i\n",n,(*bucket)->count);*/
 			/*dump_bucket(*bucket,"  BUGGY BUCKET  ");*/
 		/*}*/
 	/*}*/
@@ -727,7 +727,7 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 	for(delta=0;delta<half;delta+=1) {
 		k=k->next;
 	}
-	/*printf("split bucket, n=%i, nl=%i,nr=%i\n",(*bucket)->count,delta,(*bucket)->count-delta);*/
+	/*vm_printf("split bucket, n=%i, nl=%i,nr=%i\n",(*bucket)->count,delta,(*bucket)->count-delta);*/
 	/* point to previous, i.e. last event in 1st bucket */
 	Wl = k->date-n->T;
 	Wr = n->width-Wl;
@@ -744,7 +744,7 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 	/*}*/
 	/*tot *= 1.0f/delta;*/
 	/*Wl = tot-n->T;*/
-//	fprintf(stderr,"bucket before = %p, b2 = %p\n",*bucket,b2);
+//	vm_printerrf"bucket before = %p, b2 = %p\n",*bucket,b2);
 	
 	/*k=(*bucket)->tail;*/
 	/*delta=0;*/
@@ -756,8 +756,8 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 
 
 	if(!(k&&delta)) {
-		printf("delta=%i k=%p : T=%f W=%f : Tl=%f Wl=%f : Tr=%f Wr=%f\n",delta,k,n->T,n->width,Tl,Wl,Tr,Wr);
-		printf("head at %f and tail at %f\n",(*bucket)->head->date,(*bucket)->tail->date);
+		vm_printf("delta=%i k=%p : T=%f W=%f : Tl=%f Wl=%f : Tr=%f Wr=%f\n",delta,k,n->T,n->width,Tl,Wl,Tr,Wr);
+		vm_printf("head at %f and tail at %f\n",(*bucket)->head->date,(*bucket)->tail->date);
 		dump_bucket(*bucket," can't split :: ");
 		/*return 0;*/
 		return n->T+n->width;
@@ -821,8 +821,8 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 
 	*bucket=b1;
 
-	/*fprintf(stderr,"bucket after = %p, b2 = %p\n",*bucket,b2);*/
-	/*fprintf(stderr,"bucket next = %p, prev = %p\n\n",(*bucket)->next,(*bucket)->prev);*/
+	/*vm_printerrf"bucket after = %p, b2 = %p\n",*bucket,b2);*/
+	/*vm_printerrf"bucket next = %p, prev = %p\n\n",(*bucket)->next,(*bucket)->prev);*/
 
 	/* experimental (!?) */
 	b1->head->prev=NULL;
@@ -831,7 +831,7 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 	b2->tail->next=NULL;
 
 
-	/*printf("split bucket => nl=%i nr=%i\n",b1->count,b2->count);*/
+	/*vm_printf("split bucket => nl=%i nr=%i\n",b1->count,b2->count);*/
 	/*dump_bucket(b1,"split bucket   ");*/
 	/*dump_bucket(b2,"split bucket   ");*/
 
@@ -846,7 +846,7 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 	}
 //	if(n->parent) {
 		/*dump_year(year,"##   ");*/
-		/*printf("\n");*/
+		/*vm_printf("\n");*/
 		if(n->parent) balance_tree(year,n);
 //	}
 
@@ -865,7 +865,7 @@ static inline void cache_forward(PQIterator qi) {
 	if(!qi->cacheMsg) {
 		return;
 	}
-//	printf("### advance cache from msg [%i] at date %f\n",q->cacheMsg->data,q->cacheMsg->date);
+//	vm_printf("### advance cache from msg [%i] at date %f\n",q->cacheMsg->data,q->cacheMsg->date);
 	if(qi->cacheMsg->next) {
 		/* trivial case : next message in current event */
 		qi->cacheMsg=qi->cacheMsg->next;
@@ -884,14 +884,14 @@ static inline void cache_forward(PQIterator qi) {
 		/* search next years for an event */
 		assert(!qi->cacheYear->next||qi->cacheYear->next->head);
 		qi->cacheYear=qi->cacheYear->next;
-//		printf("found event in year #%i\n",q->cacheYear->number);
+//		vm_printf("found event in year #%i\n",q->cacheYear->number);
 		assert(qi->cacheYear->head&&qi->cacheYear->head->head);
 		qi->cacheBucket=qi->cacheYear->head;
 		qi->cacheEv=qi->cacheBucket->head;
 		qi->cacheMsg=qi->cacheEv->head;
-//		printf("cacheEv = %p\n",q->cacheEv);
-//		printf("cacheBucket = %p\n",q->cacheBucket);
-//		printf("cacheYear = %p\n",q->cacheYear);
+//		vm_printf("cacheEv = %p\n",q->cacheEv);
+//		vm_printf("cacheBucket = %p\n",q->cacheBucket);
+//		vm_printf("cacheYear = %p\n",q->cacheYear);
 	} else {
 		qi->cacheMsg=NULL;
 	}
@@ -904,7 +904,7 @@ static inline void cache_backward(PQIterator qi) {
 	if(!qi->cacheMsg) {
 		return;
 	}
-//	printf("### advance cache from msg [%i] at date %f\n",q->cacheMsg->data,q->cacheMsg->date);
+//	vm_printf("### advance cache from msg [%i] at date %f\n",q->cacheMsg->data,q->cacheMsg->date);
 	if(qi->cacheMsg->next) {
 		/* trivial case : next message in current event */
 		/* this behaviour is *NOT* different from cache_forward, because of single chaining */
@@ -924,14 +924,14 @@ static inline void cache_backward(PQIterator qi) {
 		/* search next years for an event */
 		assert(!qi->cacheYear->prev||qi->cacheYear->prev->head);
 		qi->cacheYear=qi->cacheYear->prev;
-//		printf("found event in year #%i\n",q->cacheYear->number);
+//		vm_printf("found event in year #%i\n",q->cacheYear->number);
 		assert(qi->cacheYear->head&&qi->cacheYear->head->head);
 		qi->cacheBucket=qi->cacheYear->head;
 		qi->cacheEv=qi->cacheBucket->head;
 		qi->cacheMsg=qi->cacheEv->head;
-//		printf("cacheEv = %p\n",q->cacheEv);
-//		printf("cacheBucket = %p\n",q->cacheBucket);
-//		printf("cacheYear = %p\n",q->cacheYear);
+//		vm_printf("cacheEv = %p\n",q->cacheEv);
+//		vm_printf("cacheBucket = %p\n",q->cacheBucket);
+//		vm_printf("cacheYear = %p\n",q->cacheYear);
 	} else {
 		qi->cacheMsg=NULL;
 	}
@@ -958,7 +958,7 @@ static inline struct _pq_ev* find_k(struct _pq_bucket*bucket,PQTime date) {
 	}
 	/*assert(debug<=bucket->count);*/
 	/*if(debug>max_find_k) {*/
-		/*printf("long search inside bucket : %u of %u events\n",debug,bucket->count);*/
+		/*vm_printf("long search inside bucket : %u of %u events\n",debug,bucket->count);*/
 		/*max_find_k=debug;*/
 	/*}*/
 	return k;
@@ -1044,7 +1044,7 @@ PQueue pqCreate(PQTime yearLength,int bucketmax,int dichotomymax,void(*dm)(PQMes
 	/*for(i=0;i<sizeof(struct _priority_queue_t);i++) {*/
 		/*debug+=((char*)q)[i];*/
 	/*}*/
-	/*printf("PQueue alloc'ed at %p. sum of bytes = %i\n",q,debug);*/
+	/*vm_printf("PQueue alloc'ed at %p. sum of bytes = %i\n",q,debug);*/
 	q->startDate=MAXFLOAT;
 	q->endDate=0;
 	q->D=yearLength;
@@ -1055,7 +1055,7 @@ PQueue pqCreate(PQTime yearLength,int bucketmax,int dichotomymax,void(*dm)(PQMes
 	pthread_mutex_init(&q->mutex,NULL);
 	pthread_mutex_trylock(&q->mutex);
 	pthread_mutex_unlock(&q->mutex);
-	/*printf("PQueue created.\n");*/
+	/*vm_printf("PQueue created.\n");*/
 	return q;
 }
 
@@ -1086,7 +1086,7 @@ void pqEnqueue(PQueue q,PQTime date,PQMessage msg) {
 	PQTime T;
 	
 	pthread_mutex_lock(&q->mutex);
-//	fprintf(stderr,"pqEnqueue(%f) => y=%i\n",date,y);
+//	vm_printerrf"pqEnqueue(%f) => y=%i\n",date,y);
 	/* find year */
 	year=find_year(q,y);
 	if(!year) year=new_year(q,y);
@@ -1105,10 +1105,10 @@ void pqEnqueue(PQueue q,PQTime date,PQMessage msg) {
 	}
 	/* if(bucket.count >= THRESHOLD, split bucket, select new bucket matching date */
 	if(bucket->count>q->bucketMax&&bucket->node->width>q->minWidth) {
-		//fprintf(stderr,"splitting bucket\n");
+		//vm_printerrf"splitting bucket\n");
 		T=split_bucket(year,&bucket);
 		if(T&&date>=T) {		/* select correct sub-bucket */
-//			//fprintf(stderr,"next bucket\n");
+//			//vm_printerrf"next bucket\n");
 			bucket=bucket->next;
 		}
 	}
@@ -1321,7 +1321,7 @@ PQMessage pqiForward(PQIterator qi,PQTime date) {
 	PQMessage ret=NULL;
 
 //	if(!(q->tail&&q->tail->tail->tail)) {	/* empty queue */
-//		printf("No event in PQueue %i %i %i\n",q->tail!=NULL,q->tail->tail!=NULL,q->tail->tail->tail!=NULL);
+//		vm_printf("No event in PQueue %i %i %i\n",q->tail!=NULL,q->tail->tail!=NULL,q->tail->tail->tail!=NULL);
 //		return NULL;
 //	}
 
@@ -1329,14 +1329,14 @@ PQMessage pqiForward(PQIterator qi,PQTime date) {
 
 	if(!qi->cacheMsg) {
 		if(qi->q->endDate==qi->presentDate) {	/* have we already processed the whole queue ? */
-			/*printf("PQueue at end (date=%f)\n",qi->presentDate);*/
+			/*vm_printf("PQueue at end (date=%f)\n",qi->presentDate);*/
 			pthread_mutex_unlock(&qi->q->mutex);
 			return NULL;
 /*		} else {
-			printf("warning ! cacheMsg NULL\n");
-			printf("cacheEv = %p\n",q->cacheEv);
-			printf("cacheBucket = %p\n",q->cacheBucket);
-			printf("cacheYear = %p\n",q->cacheYear);
+			vm_printf("warning ! cacheMsg NULL\n");
+			vm_printf("cacheEv = %p\n",q->cacheEv);
+			vm_printf("cacheBucket = %p\n",q->cacheBucket);
+			vm_printf("cacheYear = %p\n",q->cacheYear);
 			return NULL;*/
 		}
 	} else if(qi->cacheEv->date<=date+FLOAT_IMPREC) {
@@ -1346,10 +1346,10 @@ PQMessage pqiForward(PQIterator qi,PQTime date) {
 		cache_forward(qi);
 	}
 /*	if(!q->cacheMsg) {
-		printf("warning ! cacheMsg NULL\n");
-		printf("cacheEv = %p\n",q->cacheEv);
-		printf("cacheBucket = %p\n",q->cacheBucket);
-		printf("cacheYear = %p\n",q->cacheYear);
+		vm_printf("warning ! cacheMsg NULL\n");
+		vm_printf("cacheEv = %p\n",q->cacheEv);
+		vm_printf("cacheBucket = %p\n",q->cacheBucket);
+		vm_printf("cacheYear = %p\n",q->cacheYear);
 	}*/
 	pthread_mutex_unlock(&qi->q->mutex);
 	return ret;
@@ -1368,7 +1368,7 @@ PQMessage pqiBackward(PQIterator qi,PQTime date) {
 
 	if(!qi->cacheMsg) {
 		if(qi->q->startDate==qi->presentDate) {	/* have we already processed the whole queue ? */
-			/*printf("PQueue at end (date=%f)\n",qi->presentDate);*/
+			/*vm_printf("PQueue at end (date=%f)\n",qi->presentDate);*/
 			pthread_mutex_unlock(&qi->q->mutex);
 			return NULL;
 		}
@@ -1404,7 +1404,7 @@ PQTime pqiNextDate(PQIterator qi) {
 #include <stdarg.h>
 
 
-#define clear() printf("\033[2J")
+#define clear() vm_printf("\033[2J")
 const char *const green = "\033[0;40;32m";
 const char *const yellow = "\033[0;40;33m";
 const char *const red = "\033[0;40;31m";
@@ -1419,7 +1419,7 @@ void myprintf(const char*p,const char*format,...) {
 	va_start(va,format);
 	vsprintf(mpbuf,format,va);
 	va_end(va);
-	printf("%s%s",p,mpbuf);
+	vm_printf("%s%s",p,mpbuf);
 }
 
 #define echo(args...) myprintf(prefix ,##args)
@@ -1429,10 +1429,10 @@ void dump_event(struct _pq_ev*e,const char*prefix) {
 //	PQMessage m=e->head;
 	echo("%s%f%s => %i : %s",green,e->date,normal,e->count,green);
 //	while(m) {
-//		printf("%i, ",(int)m->data);
+//		vm_printf("%i, ",(int)m->data);
 //		m=m->next;
 //	}
-	printf("%s\n",normal);
+	vm_printf("%s\n",normal);
 }
 
 void dump_bucket(struct _pq_bucket*b,const char*prefix) {
@@ -1477,10 +1477,10 @@ void dump_year(struct _pq_year*y,const char*prefix) {
 
 void dump_queue(PQueue q) {
 	struct _pq_year*y;
-	printf("Dumping PQueue [%p], %i msgs in %i events in %i years\n\n",q,q->msgCount,q->evCount,q->count);
+	vm_printf("Dumping PQueue [%p], %i msgs in %i events in %i years\n\n",q,q->msgCount,q->evCount,q->count);
 	y=q->head;
 	while(y) {
-		printf("### Year #%i ###\n",y->number);
+		vm_printf("### Year #%i ###\n",y->number);
 		dump_year(y,"  ");
 		y=y->next;
 	}
@@ -1516,8 +1516,8 @@ int test_queue(PQTime yearSize,int evperbuf,int dichmax,double n_years,double ev
 
 	rnd=malloc(sizeof(int)*(ec+(ec>>2)));
 
-	/*printf("mod = %i coef = %f\n",mod,coef);*/
-	/*printf("Pre-allocating memory... ");*/
+	/*vm_printf("mod = %i coef = %f\n",mod,coef);*/
+	/*vm_printf("Pre-allocating memory... ");*/
 	fflush(stdout);
 	/* ensure we will avoid malloc's */
 	evcount+=(evcount>>2);
@@ -1527,7 +1527,7 @@ int test_queue(PQTime yearSize,int evperbuf,int dichmax,double n_years,double ev
 	
 	for(;evcount>0;evcount--) {
 	//	k=random()%mod;
-	//	printf("got k=%i\n",k);
+	//	vm_printf("got k=%i\n",k);
 		rnd[j]=date=coef*(random()%mod);
 		++j;
 		msg=_alloc(struct _pq_msg);
@@ -1535,20 +1535,20 @@ int test_queue(PQTime yearSize,int evperbuf,int dichmax,double n_years,double ev
 		/*i=(100*(1+l-evcount))/l;*/
 		/*if(i!=k) {*/
 			/*k=i;*/
-			/*printf("%3.3i%%\b\b\b\b",i);*/
+			/*vm_printf("%3.3i%%\b\b\b\b",i);*/
 			/*fflush(stdout);*/
 		/*}*/
 	}
-	/*printf("Renewing queue.."); fflush(stdout);*/
+	/*vm_printf("Renewing queue.."); fflush(stdout);*/
 	pqDestroy(q);
-	/*printf(". "); fflush(stdout);*/
+	/*vm_printf(". "); fflush(stdout);*/
 
 	q=pqCreate(yearSize,evperbuf,dichmax,_dm);
-	/*printf("Done.\n");*/
+	/*vm_printf("Done.\n");*/
 	evcount=ec;
 
 	/* now do measurements */
-	/*printf("Measuring enqueue time... ");*/
+	/*vm_printf("Measuring enqueue time... ");*/
 	fflush(stdout);
 	t1=clock();
 	j=0;
@@ -1562,53 +1562,53 @@ int test_queue(PQTime yearSize,int evperbuf,int dichmax,double n_years,double ev
 
 	*enqPS = ((double)ec)*CLOCKS_PER_SEC/((double)t2);
 
-	/*printf("Done. (%i/%i)\n",q->evCount,q->msgCount);*/
+	/*vm_printf("Done. (%i/%i)\n",q->evCount,q->msgCount);*/
 
 	qi=pqiNew(q);
 	pqiJumpTo(qi,0);
 
 	if(dump) dump_queue(q);
 
-	/*printf("Measuring forward read time... ");*/
+	/*vm_printf("Measuring forward read time... ");*/
 	fflush(stdout);
 	t1=clock();
 	for(;(msg=pqiForward(qi,MAXFLOAT));++evcount) {
-	//	printf("%i, ",msg->data); fflush(stdout);
+	//	vm_printf("%i, ",msg->data); fflush(stdout);
 	}
 	t2=clock()-t1;
 	
 	*fwdPS = ((double)ec)*CLOCKS_PER_SEC/((double)t2);
 
-	/*printf("Done. (%i)\n",evcount);*/
+	/*vm_printf("Done. (%i)\n",evcount);*/
 
-	/*printf("Measuring hold time... ");*/
+	/*vm_printf("Measuring hold time... ");*/
 	fflush(stdout);
 	t1=clock();
 	for(i=0;i<ec;i++) {
 		msg=pqDequeue(q,MAXFLOAT);
 		pqEnqueue(q,msg->date+coef*(random()%mod),msg);
 	}
-	//	printf("%i, ",msg->data); fflush(stdout);
+	//	vm_printf("%i, ",msg->data); fflush(stdout);
 	t2=clock()-t1;
 	
 	*deqPS = ((double)ec)*CLOCKS_PER_SEC/((double)t2);
 
-	/*printf("Done. (%i)\n",evcount);*/
+	/*vm_printf("Done. (%i)\n",evcount);*/
 
 	if(dump) {
-		printf("\n");
+		vm_printf("\n");
 		dump_queue(q);
-		printf("\n");
-		printf("\n");
+		vm_printf("\n");
+		vm_printf("\n");
 	}
 
 	while(pqDequeue(q,MAXFLOAT));	/* flush queue */
 
 	if(dump) {
-		printf("\n");
+		vm_printf("\n");
 		dump_queue(q);
-		printf("\n");
-		printf("\n");
+		vm_printf("\n");
+		vm_printf("\n");
 	}
 	
 	pqDestroy(q);
@@ -1644,7 +1644,7 @@ int main(int argc,char**argv) {
 
 	/*t1=clock();*/
 	/*while((t2=clock())==t1);*/
-	/*printf("clock resolution : %li/%li=%lf\n",t2-t1,CLOCKS_PER_SEC,((double)(t2-t1))/CLOCKS_PER_SEC);*/
+	/*vm_printf("clock resolution : %li/%li=%lf\n",t2-t1,CLOCKS_PER_SEC,((double)(t2-t1))/CLOCKS_PER_SEC);*/
 //	float date;
 	
 //	t3=0;
@@ -1653,7 +1653,7 @@ int main(int argc,char**argv) {
 //	c=0;
 
 	if(argc<7) {
-		printf("Usage : %s [year length] [events per bucket] [max dichotomy level] [number of inserts] [year count] [timestamp res] [dump queue]\n",argv[0]);
+		vm_printf("Usage : %s [year length] [events per bucket] [max dichotomy level] [number of inserts] [year count] [timestamp res] [dump queue]\n",argv[0]);
 		exit(1);
 	}
 	yL=atof(argv[1]);
@@ -1665,7 +1665,7 @@ int main(int argc,char**argv) {
 	dump=atoi(argv[7]);
 
 	if(!test_queue(yL,evperbuck,dichotomax,yc,tr,BIG,&eps,&fps,&dps,dump)) {
-		printf("BUG ! dequeued evcount != enqueued evcount\n");
+		vm_printf("BUG ! dequeued evcount != enqueued evcount\n");
 	}
 	/*printf("%f enqueues per second\n%f forward reads per second\n%f dequeues per second\n%u maximum bucket search length\n",eps,fps,dps,max_find_k);*/
 	printf("%f %f %f\n",eps,fps,dps);

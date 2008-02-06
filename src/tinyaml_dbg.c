@@ -446,7 +446,7 @@ word_t calc_count(int n, word_t sz) {
 	return count;
 }
 
-void repaint(vm_t vm, thread_t t, int do_command) {
+static void repaint(vm_t vm, thread_t t, int do_command) {
 	/*word_t ofs;*/
 	const char*label;
 	const char*disasm;
@@ -568,7 +568,7 @@ void render_code(WINDOW*w, int vofs, vm_t vm, thread_t t) {
 	const char*label;
 	char title[1024];
 
-	if(state==STATE_STEPPING||state==STATE_RUNNING) {
+	if(state!=STATE_IDLE) {
 		windows[CodeWin].vofs=t->IP;
 	}
 

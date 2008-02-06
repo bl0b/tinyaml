@@ -29,6 +29,7 @@
                                                         # of catch bloc
         opcode throw                    # try and pop data and jump to
                                         # top catcher or fail
+        opcode getException             # push current exception
         
       # jumps
         opcode jmp:Label        # relative intra-segment jump

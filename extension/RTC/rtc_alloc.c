@@ -59,7 +59,7 @@ void term_alloc() {
 	if(!alloc_is_init) {
 		return;
 	}
-	/*printf("freeing alloc blocs.\n");*/
+	/*vm_printf("freeing alloc blocs.\n");*/
 	while(qWordBufs.head) {
 		gln=qWordBufs.head->next;
 		free(qWordBufs.head);
@@ -84,7 +84,7 @@ static inline void* __new_buf(size_t size,size_t countPerBuf,GenericList*l,void*
 	char*ptr;
 	void*p;
 	int i;
-//	printf("__new_buf(%i,%i)\n",size,countPerBuf);
+//	vm_printf("__new_buf(%i,%i)\n",size,countPerBuf);
 	listAddTail(*l,(GenericListNode*)*first);
 	ptr=((char*)*first)+sizeof(GenericListNode);
 	*first=(void*)(ptr+size);
@@ -94,36 +94,36 @@ static inline void* __new_buf(size_t size,size_t countPerBuf,GenericList*l,void*
 	p=*first;
 	--countPerBuf;
 	for(i=0;i<countPerBuf;i++) {
-//		printf("%p, ",_offset(p,i+1,size));
+//		vm_printf("%p, ",_offset(p,i+1,size));
 		*(void**)_offset(p,i,size)=_offset(p,i+1,size);
-//		printf("%p, ",*(void**)_offset(p,i,size));
+//		vm_printf("%p, ",*(void**)_offset(p,i,size));
 	}
-//	printf("NULL.\n");
+//	vm_printf("NULL.\n");
 	*(void**)_offset(p,i,size)=NULL;
-//	printf(" [%p]\n",ptr);fflush(stdout);
+//	vm_printf(" [%p]\n",ptr);fflush(stdout);
 	return (void*)ptr;
 }
 
 /*static inline*/ void* __allocate_(pthread_mutex_t*mtx,size_t size,size_t countPerBuf,GenericList*l,void**first,size_t*total,size_t*free__) {
 	char*ptr;
-//	printf("__allocator_(%i)",size);fflush(stdout);
+//	vm_printf("__allocator_(%i)",size);fflush(stdout);
 	pthread_mutex_lock(mtx);
 	if(!*first) {
 		if((*first=malloc(countPerBuf*size+sizeof(GenericListNode)))) {
 			ptr=(char*)__new_buf(size,countPerBuf,l,first,total,free__);
 			pthread_mutex_unlock(mtx);
-//			printf(" [%p->%p]\n",*first,**(void***)first);fflush(stdout);
-//			printf(" [%p]\n",ptr);fflush(stdout);
+//			vm_printf(" [%p->%p]\n",*first,**(void***)first);fflush(stdout);
+//			vm_printf(" [%p]\n",ptr);fflush(stdout);
 			return (void*)ptr;
 		}
 	}
 	ptr=(char*)*first;
 	if(ptr) {
-//		printf(" [%p->%p]\n",*first,**(void***)first);fflush(stdout);
+//		vm_printf(" [%p->%p]\n",*first,**(void***)first);fflush(stdout);
 		*first=**(void***)first;
 		--*free__;
 	}
-//	printf(" [%p]\n",ptr);fflush(stdout);
+//	vm_printf(" [%p]\n",ptr);fflush(stdout);
 	pthread_mutex_unlock(mtx);
 	return (void*)ptr;
 }
@@ -131,11 +131,11 @@ static inline void* __new_buf(size_t size,size_t countPerBuf,GenericList*l,void*
 /*static inline*/
 void __collect_(pthread_mutex_t*mtx,void*ptr,GenericList*l,void**first) {
 	pthread_mutex_lock(mtx);
-//	printf("collect %p (first=%p, next=%p)\n",ptr,*first,*(void**)*first);
+//	vm_printf("collect %p (first=%p, next=%p)\n",ptr,*first,*(void**)*first);
 	if(!ptr) return;
 	*(void**)ptr=*first;
 	*first=ptr;
-//	printf("after collecting %p : first=%p, next=%p\n",ptr,*first,*(void**)*first);
+//	vm_printf("after collecting %p : first=%p, next=%p\n",ptr,*first,*(void**)*first);
 	pthread_mutex_unlock(mtx);
 }
 
@@ -183,7 +183,7 @@ void init_alloc() {
 	if(!paragraphs) {
 		paragraphs=(para_t*)malloc(BLOC_COUNT_16W*sizeof(para_t));
 		ptr=paragraphs;
-		printf("\t(paragraph) (ptr+1)-ptr = %u\n",(char*)(ptr+1)-(char*)ptr);
+		vm_printf("\t(paragraph) (ptr+1)-ptr = %u\n",(char*)(ptr+1)-(char*)ptr);
 		for(i=0;i<BLOC_COUNT_16W-1;++i,++ptr) {
 			(*ptr)[0]=(_para_t*)(ptr+1);
 		}
@@ -196,7 +196,7 @@ void init_alloc() {
 		paragraphs=*(para_t**)ptr;
 		--para_free;
 	}
-	printf("_alloc_16w [%p]\n",ptr);
+	vm_printf("_alloc_16w [%p]\n",ptr);
 	return ptr;*/
 
 
@@ -204,7 +204,7 @@ void init_alloc() {
 
 
 /*	if(!p) return;
-	printf("_free_16w [%p]\n",p);
+	vm_printf("_free_16w [%p]\n",p);
 	*(para_t**)p=paragraphs;
 	paragraphs=p;*/
 
@@ -237,7 +237,7 @@ int main() {
 		testq[i]=(qstruc*)_alloc_4w();
 		testo[i]=(ostruc*)_alloc_8w();
 		testp[i]=(MusicPort*)_alloc_port();
-		printf("\t%p\t%p\n",testq[i],testo[i]);
+		vm_printf("\t%p\t%p\n",testq[i],testo[i]);
 		if(!(i%3)) {
 			_free_4w(testq[i]);
 			_free_8w(testo[i]);
@@ -245,13 +245,13 @@ int main() {
 			testo[i]=NULL;
 		}
 	}
-	printf("%u %u %u\n",qw_free,ow_free,ports_free);
+	vm_printf("%u %u %u\n",qw_free,ow_free,ports_free);
 	for(i=0;i<64;i++) {
 		_free_4w(testq[i]);
 		_free_8w(testo[i]);
 		_free_port(testp[i]);
 	}
-	printf("%u %u %u\n",qw_total,ow_total,ports_total);
+	vm_printf("%u %u %u\n",qw_total,ow_total,ports_total);
 	return 0;
 }
 

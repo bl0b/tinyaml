@@ -331,7 +331,7 @@ void*timer_routine(void*arg) {
 	timer_set_tempo(60);
 	timer_set_resolution(10);
 
-	fflush(stdout);
+	/*fflush(stdout);*/
 	
 	ioctl (rtc_fd, RTC_PIE_ON, 0);
 	ret=read(rtc_fd,&data,sizeof(unsigned long));
@@ -348,7 +348,7 @@ void*timer_routine(void*arg) {
 	pthread_cond_signal(&timer_init_done);
 	mutexUnlock(mtx);
 
-	printf("Timer now runs\n"); fflush(stdout);
+	/*printf("Timer now runs\n"); fflush(stdout);*/
 	while(timer_is_running) {
 		ret=read(rtc_fd,&data,sizeof(unsigned long));
 		mutexLock(mtx);

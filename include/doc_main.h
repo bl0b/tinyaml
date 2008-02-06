@@ -72,12 +72,13 @@
  * \section sec_bi Build and Install
  * <p>First, get the source code.</p>
  * \note You need to build and install <a href="http://code.google.com/p/tinyap/">tinyap</a> beforehand.
+ * \note tinyap 1.2-1 or later is required to build tinyaml 0.3 !
  *
  * <ul>
- * <li><b>tarball</b> : ( version 0.2 is used in commands below, or get latest tarball at http://code.google.com/p/tinyaml/downloads/list ).
+ * <li><b>tarball</b> : ( version 0.3 is used in commands below, or get latest tarball at http://code.google.com/p/tinyaml/downloads/list ).
  * \code
- * $ wget http://tinyaml.googlecode.com/files/tinyaml-0.2.tar.gz
- * $ tar xzf tinyaml-0.2.tar.gz
+ * $ wget http://tinyaml.googlecode.com/files/tinyaml-0.3.tar.gz
+ * $ tar xzf tinyaml-0.3.tar.gz
  * \endcode
  * <li><b>using SVN</b> :
  * \code
@@ -87,7 +88,7 @@
  * <p>Now you have your tinyaml source distribution at hands, build it.</p>
  * \code
  * $ cd tinyaml
- * $ CFLAGS=-O3 ./configure -C --prefix=/my/install/prefix/if/not/slash/usr
+ * $ CFLAGS=-O3 ./configure -C --prefix=/my/install/prefix/if/not/slash/usr/local
  * $ make all
  * $ make install
  * \endcode
@@ -351,13 +352,38 @@ Syntax : @my_label
  *
  * \section sec_ext Bundled extensions
  * 	\subsection ext_rtc Real-Time Clock (GNU/Linux)
- * - Purpose : allow real-time sequencing of tasks and blocking waits.
+ * - Purpose : allow real-time scheduling of tasks and blocking waits in the VM.
  * - Opcodes :
- *   - TODO
+ *   - \c RTC_init : initialize the Real-Time Clock \note used by RTC driver code.
+ *   - \c RTC_term : terminate the RTC \note used by RTC driver code.
+ *   - \c RTC_start : rock around the clock \note used by RTC driver code.
+ *   - \c RTC_stop : stand still
+ *   - \c RTC_sched : pop float (timestamp), pop function object (task), schedule task at timestamp
+ *   - \c RTC_wait : pop float (timestamp), wait for RTC date to reach timestamp
+ *   - \c RTC_getDate : get current date in seconds
+ *   - \c RTC_getBeat : get current date in beats
+ *   - \c RTC_setBeat:Float : set current date (beats) to argument
+ *   - \c RTC_setBeat : pop float, set current date (beats)
+ *   - \c RTC_getTempo : get current tempo
+ *   - \c RTC_setTempo:Float : set current tempo to argument
+ *   - \c RTC_setTempo : pop float, set current tempo
+ *   - \c RTC_getRes : get the actual RTC resolution
+ *   - \c RTC_setRes:Float : try and set the RTC resolution to the argument
+ *   - \c RTC_setRes : pop float, try and set the RTC resolution
+ *   - \c _RTC_nextTask : wait for next task in task queue. \note used by RTC driver code.
+ * - Global symbols addd to Environment :
+ *   - \c rtc_init : initialize and start the RTC subsystem. RTC_sched and RTC_wait can be used directly after calling \c rtc_init.
+ *   - \c rtc_term : terminate the RTC subsystem.
+ *
+ *   \note \c RTC_getRes should be used after \c RTC_setRes to get the actual resolution.
+ *
  * 	\subsection ext_msg Message Queues
- * - Purpose : implement message queues as FIFOs with single writer and many readers, with blocking reads.
+ * - Purpose : implement message queues as FIFOs with single writer and many readers and blocking reads.
  * - Opcodes :
- *   - TODO
+ *   - \c msgQueueNew : create a new managed message queue
+ *   - \c msgQueueWrite : pop data to be written, pop message queue, write data into queue
+ *   - \c msgQueueReaderNew : create a new managed message queue reader
+ *   - \c msgQueueRead : pop msgQueueReader, block until data is available, read and push data.
  *
  *
  */

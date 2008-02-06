@@ -28,7 +28,7 @@ _th:
 	enter 2
 _loop:
 	_RTC_nextTask
-	push "\ntask !\n" print 1
+	#push "\ntask !\n" print 1
 	setmem -1	# function
 	setmem -2	# date
 	push "\nTâche " getmem -1 push "\ à la date " getmem -2 push "\n" print 5
