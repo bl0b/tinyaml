@@ -1,4 +1,4 @@
-        lib
+lib
 
       # stack management
         opcode push:Int
@@ -114,11 +114,17 @@
         opcode write_label:String
         opcode write_label
         opcode write_oc:String
-        opcode write_oc_Int:String
-        opcode write_oc_Float:String
-        opcode write_oc_Label:String
-        opcode write_oc_String:String
-        opcode write_oc_EnvSym:String
+        opcode write_ocInt:String
+        opcode write_ocFloat:String
+        opcode write_ocLabel:String
+        opcode write_ocString:String
+        opcode write_ocEnvSym:String
+        opcode write_oc
+        opcode write_ocInt
+        opcode write_ocFloat
+        opcode write_ocLabel
+        opcode write_ocString
+        opcode write_ocEnvSym
 
         opcode compileStateNext
         opcode compileStateDown

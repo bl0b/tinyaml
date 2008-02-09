@@ -1,5 +1,5 @@
      lib
-        file "rtc"
+        file "RTC"
 
         opcode RTC_init
         opcode RTC_term

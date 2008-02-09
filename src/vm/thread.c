@@ -24,10 +24,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#define DEPRECATED__MUST_NOT_USE 0
+
 thread_t thread_new(word_t prio, program_t p, word_t ip) {
 	thread_t ret = (thread_t)malloc(sizeof(struct _thread_t));
 	/*vm_printf("NEW THREAD %p\n",ret);*/
 	/*vm_printf("\tPROGRAM %p\n",ret->program);*/
+	assert(DEPRECATED__MUST_NOT_USE);
 	thread_init(ret,prio,p,ip);
 	/* FIXME : deprecated */
 	return NULL;
@@ -81,6 +84,7 @@ void thread_deinit(vm_t vm, thread_t t) {
 
 void thread_delete(vm_t vm, thread_t t) {
 	/*vm_printf("\tdel thread\n");*/
+	assert(DEPRECATED__MUST_NOT_USE);
 	thread_deinit(vm,t);
 	free(t);
 }

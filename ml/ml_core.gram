@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # 
-# Grammar for the meta-language, written in tinyaP language.
+# Grammar for the meta-language, written in tinyaP 'short' language.
 
 string = //"(([^"\\]|[\\][\\" trnb])*)"/\1/ .
 
@@ -28,48 +28,48 @@ sym = /\<[_a-zA-Z][_a-zA-Z0-9]*\>/.
 ##
 #
 
-p_Opcode =( <Opcode_Float>
-	| <Opcode_Int>
-	| <Opcode_Label>
-	| <Opcode_String>
-	| <Opcode_EnvSym>
-	| <Opcode_NoArg>
+p_Opcode =( Opcode_Float
+	| Opcode_Int
+	| Opcode_Label
+	| Opcode_String
+	| Opcode_EnvSym
+	| Opcode_NoArg
 	).
 
-#Opcode_NoArg ::= <p_Opcode_NoArg>.
-#Opcode_Int ::= <p_Opcode_Int> <OpcodeArg_Int>.
-#Opcode_Float ::= <p_Opcode_Float> <OpcodeArg_Float>.
-#Opcode_String ::= <p_Opcode_String> <OpcodeArg_String>.
-#Opcode_Label ::= <p_Opcode_Label> <OpcodeArg_Label>.
-#Opcode_EnvSym ::= <p_Opcode_EnvSym> <OpcodeArg_EnvSym>.
+#Opcode_NoArg ::= p_Opcode_NoArg.
+#Opcode_Int ::= p_Opcode_Int OpcodeArg_Int.
+#Opcode_Float ::= p_Opcode_Float OpcodeArg_Float.
+#Opcode_String ::= p_Opcode_String OpcodeArg_String.
+#Opcode_Label ::= p_Opcode_Label OpcodeArg_Label.
+#Opcode_EnvSym ::= p_Opcode_EnvSym OpcodeArg_EnvSym.
 
 
 # faster but unsafe version
-Opcode_NoArg ::= <sym>.
-Opcode_Int ::= <sym> <OpcodeArg_Int>.
-Opcode_Float ::= <sym> <OpcodeArg_Float>.
-Opcode_String ::= <sym> <OpcodeArg_String>.
-Opcode_Label ::= <sym> <OpcodeArg_Label>.
-Opcode_EnvSym ::= <sym> <OpcodeArg_EnvSym>.
+Opcode_NoArg ::= sym.
+Opcode_Int ::= sym OpcodeArg_Int.
+Opcode_Float ::= sym OpcodeArg_Float.
+Opcode_String ::= sym OpcodeArg_String.
+Opcode_Label ::= sym OpcodeArg_Label.
+Opcode_EnvSym ::= sym OpcodeArg_EnvSym.
 
-OpcodeArg_NoArg = epsilon.
-OpcodeArg_Int = <int>.
-OpcodeArg_Float = <float>.
-OpcodeArg_String = <string>.
-OpcodeArg_Label = ( "@" <sym> | /[+-][0-9]+/ ).
-OpcodeArg_EnvSym = "&" <sym>.
+OpcodeArg_NoArg = _epsilon.
+OpcodeArg_Int = int.
+OpcodeArg_Float = float.
+OpcodeArg_String = string.
+OpcodeArg_Label = ( "@" sym | /[+-][0-9]+/ ).
+OpcodeArg_EnvSym = "&" sym.
 
 ##
 ## Extendable mnemonics library
 ##
 #
 
-p_Opcode_NoArg = (/\<nop\>/).
-p_Opcode_Int = (/\<nop\>/).
-p_Opcode_Float = (/\<nop\>/).
-p_Opcode_String = (/\<nop\>/).
-p_Opcode_Label = (/\<nop\>/).
-p_Opcode_EnvSym = (/\<nop\>/).
+#p_Opcode_NoArg = (/\nop\/).
+#p_Opcode_Int = (/\nop\/).
+#p_Opcode_Float = (/\nop\/).
+#p_Opcode_String = (/\nop\/).
+#p_Opcode_Label = (/\nop\/).
+#p_Opcode_EnvSym = (/\nop\/).
 
 
 ##
@@ -77,37 +77,35 @@ p_Opcode_EnvSym = (/\<nop\>/).
 ##
 #
 
-DeclLabel ::= <sym> ":".
+DeclLabel ::= sym ":".
 
 ##
 ## Assembly language (programs)
 ##
 #
 
-AsmBloc ::= "asm" <asm_contents>.
-asm_contents = ( "end" | <asm_statement> <asm_contents> ).
-#asm_loop = ( <asm_statement> <asm_loop> | <asm_statement> "end" ).
+AsmBloc ::= "asm" asm_contents.
+asm_contents = ( "end" | asm_statement asm_contents ).
+#asm_loop = ( asm_statement asm_loop | asm_statement "end" ).
 
-asm_statement = ( <DeclLabel> <p_Opcode> | <p_Opcode> ).
+asm_statement = DeclLabel? p_Opcode.
 
-Program ::= <program_bloc_loop>.
+Program ::= p_ProgramTopLevel+ _EOF.
 
-p_Code = ( <AsmBloc> ).
+p_Code = ( AsmBloc ).
 
-p_ProgramTopLevel = ( <p_Data> | <p_Code> | <LangDef> | <LangPlug> | <LangComp> | <NewWalker> ).
-
-program_bloc_loop = ( <p_ProgramTopLevel> <program_bloc_loop> | <p_ProgramTopLevel> EOF ).
+p_ProgramTopLevel = ( p_Data | p_Code | LangDef | LangPlug | LangComp | NewWalker ).
 
 
-p_Data = ( <DataBloc> ).
 
-DataBloc ::= "data" <data_loop>.
+p_Data = ( DataBloc ).
 
-data = ( <DataInt> | <DataFloat> | <DataString> ).
-DataInt ::= <int> ( "rep" <int> | epsilon ).
-DataFloat ::= <float> ( "rep" <int> | epsilon ).
-DataString ::= <string>.
-data_loop = ( <data> <data_loop> | "end" ).
+DataBloc ::= "data" data+ "end".
+
+data = ( DataInt | DataFloat | DataString ).
+DataInt ::= int ( "rep" int | _epsilon ).
+DataFloat ::= float ( "rep" int | _epsilon ).
+DataString ::= string.
 
 
 
@@ -116,14 +114,14 @@ data_loop = ( <data> <data_loop> | "end" ).
 ##
 #
 
-DeclOpcode = [ "opcode" <sym> ] <declOpcode_opt_arg>.
+DeclOpcode = [ "opcode" sym ] declOpcode_opt_arg.
 
-declOpcode_opt_arg =	( <DeclOpcode_Float>
-			| <DeclOpcode_Int>
-			| <DeclOpcode_String>
-			| <DeclOpcode_Label>
-			| <DeclOpcode_EnvSym>
-			| <DeclOpcode_NoArg>
+declOpcode_opt_arg =	( DeclOpcode_Float
+			| DeclOpcode_Int
+			| DeclOpcode_String
+			| DeclOpcode_Label
+			| DeclOpcode_EnvSym
+			| DeclOpcode_NoArg
 			).
 
 DeclOpcode_Float ::= ":" "Float".
@@ -131,13 +129,12 @@ DeclOpcode_Int ::= ":" "Int".
 DeclOpcode_String ::= ":" "String".
 DeclOpcode_Label ::= ":" "Label".
 DeclOpcode_EnvSym ::= ":" "EnvSym".
-DeclOpcode_NoArg ::= epsilon.
+DeclOpcode_NoArg ::= _epsilon.
 
-Library ::= "lib" <lib_decl_loop>.
-lib_decl_loop = ( <p_libStatement> <lib_decl_loop> | "end" (EOF|<Postponed> EOF) ).
-p_libStatement = ( <DeclOpcode> | <LibFile> ).
+Library ::= "lib" p_libStatement+ "end" (_EOF|Postponed).
+p_libStatement = ( DeclOpcode | LibFile ).
 
-LibFile ::= "file" <string>.
+LibFile ::= "file" string.
 
 
 ##
@@ -145,9 +142,9 @@ LibFile ::= "file" <string>.
 ##
 #
 
-LangDef ::= "language" <Grammar>.
-LangPlug ::= "plug" <sym> "into" <sym>.
-LangComp ::= "compile" <sym> <p_Code>.
+LangDef ::= "language" Grammar.
+LangPlug ::= "plug" sym "into" sym.
+LangComp ::= "compile" sym p_Code.
 
 
 ##
@@ -155,14 +152,13 @@ LangComp ::= "compile" <sym> <p_Code>.
 ##
 #
 
-NewWalker ::= "walker" <sym> <WalkerBodies>.
-WalkerBodies ::= <wabod_loop> "}".
-wabod_loop = ( <wabod_loop> <wb_select> | "{" ).	# tinyap feature : weak handling of left recursive rules.
-wb_select = ( <WalkerDefault> | <WalkerInit> | <WalkerTerminate> | <WalkerBody> ).
-WalkerDefault ::= "default" <p_Code>.
-WalkerInit ::= "init" <p_Code>.
-WalkerTerminate ::= "terminate" <p_Code>.
-WalkerBody ::= "on" <sym> <p_Code>.
+NewWalker ::= "walker" sym WalkerBodies.
+WalkerBodies ::= "{" wb_select+ "}".
+wb_select = ( WalkerDefault | WalkerInit | WalkerTerminate | WalkerBody ).
+WalkerDefault ::= "default" p_Code.
+WalkerInit ::= "init" p_Code.
+WalkerTerminate ::= "terminate" p_Code.
+WalkerBody ::= "on" sym p_Code.
 
 
 
@@ -173,13 +169,14 @@ WalkerBody ::= "on" <sym> <p_Code>.
 #
 
 
-_start = (<Program> | <Library> | <Preproc>).
+_start = (Program | Library | Preproc).
 
-Preproc ::= <req_loop>.
+Preproc ::= rqll+ (_EOF|Postponed).
 
-Require ::= "require" <string>.
-req_loop = <Require> ( <req_loop> | EOF | <Postponed> ).
-Postponed ::= /.*/ EOF.
+Require ::= "require" string.
+LoadLib ::= "loadlib" sym.
+rqll = ( Require | LoadLib ).
+Postponed ::= /.+/ _EOF.
 
 
 
@@ -188,29 +185,35 @@ Postponed ::= /.*/ EOF.
 ##
 ## META-GRAMMAR
 ##
+## adapted from a copypasta of tinyap's `short' dialect.
+##
 #
 
-OperatorRule ::= <elem> "::=" <rule_expr> "."  .
-TransientRule ::= <elem> "=" <rule_expr> "."  .
-alt_expr = ( <rule_elem> "|" <alt_expr>  | <Seq> "|" <alt_expr>  | <Seq> | <rule_elem> ) .
-gram_loop = ( "end" | <rule> <gram_loop>  ) .
-epsilon ::= "epsilon" .
-EOF ::= "EOF" .
-Alt ::= "(" <alt_expr> ")" .
-Prefix ::= "[" <rule_expr> "]" <rule_elem>  .
-Postfix ::= "{" <rule_expr> "}" <rule_elem>  .
+elem = /[_a-zA-Z][0-9a-zA-Z_]*/ .
+T ::= //"(([^"\\]|[\\][" trnb])*)"/\1/ .
+NT ::= elem .
+re_re = /([^\/]|[\][]\/ <>trnb"])*/ .
+RE ::= "/" re_re "/" .
+RPL ::= "//" re_re "/" /([^\r\n\/]+|\\[\/0-9])+/ "/" .
+rule = ( OperatorRule | TransientRule ) .
+OperatorRule ::= elem "::=" rule_expr "." .
+TransientRule ::= elem "=" rule_expr "." .
+rule_expr = ( Alt | Seq | rule_elem ) .
+Prefix ::= "[" rule_expr "]" rule_elem_atom .
+Postfix ::= "{" rule_expr "}" rule_elem_atom .
+Seq ::= rule_elem+.
+Alt ::= "(" alt_expr ")" .
+alt_expr = ( rule_elem "|" alt_expr | Seq "|" alt_expr | Seq | rule_elem ) .
+rule_elem = ( Rep | rule_elem_atom ) .
+rule_elem_atom = ( EOF | epsilon | T | NT | RPL | RE | Alt | Prefix | Postfix ) .
+Grammar ::= rule+ "end".
+EOF ::= "_EOF" .
+epsilon ::= "_epsilon" .
+_whitespace = /([ \r\n\t]|#[^\r\n]*[\r\n]+)+/ .
+Rep1N ::= rule_elem_atom "+" .
+Rep0N ::= rule_elem_atom "*" .
+Rep01 ::= rule_elem_atom "?" .
+Rep = ( Rep1N | Rep0N | Rep01 ) .
 
-elem = <sym> .
 
-#T ::= ( "\"" "\" /["]/ "\""  | "\"" /[^"]+/ "\""  ) .
-T ::= <string>.
-NT ::= "<" <elem> ">"  .
-RE ::= "/" /((\[[^\\]]*(\])?[^\]]*])|[^/])*/ "/" .
-rule = ( <OperatorRule> | <TransientRule> ) .
-rule_expr = ( <Alt> | <Seq> | <rule_elem> ) .
-Seq ::= <rule_elem> <seq_expr>  .
-seq_expr = ( <rule_elem> <seq_expr>  | <rule_elem> ) .
-rule_elem = ( <T> | <NT> | <RE> | <Alt> | <EOF> | <epsilon> | <Prefix> | <Postfix> ) .
-_start = <Grammar> .
-Grammar ::= <gram_loop> .
 

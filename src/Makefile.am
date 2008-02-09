@@ -46,7 +46,7 @@ tinyaml_CFLAGS = -I ../include
 
 ml_core_gram.c: ../ml/ml_core.gram ../ml/ml_core.lib
 	rm -f .$@.tmp
-	tinyap -i $< -p -o .$@.tmp
+	tinyap -g short -i $< -p -o .$@.tmp
 	sed -i -e 's/\\/\\\\/g' -e 's/"/\\"/g' .$@.tmp
 	head -1 .$@.tmp|sed -e 's/^/const char* ml_core_grammar = "/' -e 's/$$/";\r/' > $@
 	echo >> $@

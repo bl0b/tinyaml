@@ -196,6 +196,7 @@ struct _vm_t {
 	struct _slist_t all_handles;
 	/* all programs */
 	struct _slist_t all_programs;
+	struct _hashtab_t loadlibs;
 	/* globals */
 	vm_dyn_env_t env;
 	vm_data_t exception;

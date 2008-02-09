@@ -1,3 +1,7 @@
+#!./tinyascript
+
+loadlib RTC
+
 script
 	global d#,rtc_init,rtc_term
 

@@ -94,53 +94,89 @@ void _VM_CALL vm_op_write_label(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_write_oc_String(vm_t vm, const char* name) {
 	opcode_chain_add_opcode(vm->result, OpcodeNoArg, name, NULL, -1, -1);
-	/*vm_printf("vm_op_write_oc_String %s\n",name);*/
+	/*vm_printf("vm_op_write_ocString %s\n",name);*/
 }
 
-void _VM_CALL vm_op_write_oc_String_String(vm_t vm, const char* name) {
+void _VM_CALL vm_op_write_oc(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	vm_op_write_oc_String(vm,(const char*)d->data);
+}
+
+void _VM_CALL vm_op_write_ocString_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	const char*argstr;
 	assert(arg->type==DataString||arg->type==DataObjStr);
 	argstr = (const char*) arg->data;
-	/*vm_printf("vm_op_write_oc_String_String %s %s\n",name,argstr);*/
+	/*vm_printf("vm_op_write_ocString_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgString, name, argstr, -1, -1);
 }
 
-void _VM_CALL vm_op_write_oc_Int_String(vm_t vm, const char* name) {
+void _VM_CALL vm_op_write_ocString(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	vm_op_write_ocString_String(vm,(const char*)d->data);
+}
+
+void _VM_CALL vm_op_write_ocInt_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	char argstr[512];
 	assert(arg->type==DataInt);
 	sprintf(argstr,"%li",(long int)arg->data);
-	/*vm_printf("vm_op_write_oc_Int_String %s %s\n",name,argstr);*/
+	/*vm_printf("vm_op_write_ocInt_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgInt, name, argstr, -1, -1);
 }
 
-void _VM_CALL vm_op_write_oc_Label_String(vm_t vm, const char* name) {
+void _VM_CALL vm_op_write_ocInt(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	vm_op_write_ocInt_String(vm,(const char*)d->data);
+}
+
+void _VM_CALL vm_op_write_ocLabel_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	assert(arg->type==DataString||arg->type==DataObjStr);
-	/*vm_printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
+	/*vm_printf("vm_op_write_ocLabel_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgLabel, name, (const char*)arg->data, -1, -1);
 }
 
-void _VM_CALL vm_op_write_oc_EnvSym_String(vm_t vm, const char* name) {
+void _VM_CALL vm_op_write_ocLabel(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	vm_op_write_ocLabel_String(vm,(const char*)d->data);
+}
+
+void _VM_CALL vm_op_write_ocEnvSym_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	char argstr[512];
 	assert(arg->type==DataString||arg->type==DataObjStr);
-	/*vm_printf("vm_op_write_oc_Label_String %s %s\n",name,argstr);*/
+	/*vm_printf("vm_op_write_ocLabel_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgEnvSym, name, (char*)arg->data, -1, -1);
 }
 
-void _VM_CALL vm_op_write_oc_Float_String(vm_t vm, const char* name) {
+void _VM_CALL vm_op_write_ocEnvSym(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	vm_op_write_ocEnvSym_String(vm,(const char*)d->data);
+}
+
+void _VM_CALL vm_op_write_ocFloat_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	char argstr[512];
 	_IFC conv;
 	assert(arg->type==DataFloat);
 	conv.i=arg->data;
 	sprintf(argstr,"%f",conv.f);
-	/*vm_printf("vm_op_write_oc_Float_String %s %s\n",name,argstr);*/
+	/*vm_printf("vm_op_write_ocFloat_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgFloat, name, argstr, -1, -1);
 }
 
+
+void _VM_CALL vm_op_write_ocFloat(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	vm_op_write_ocFloat_String(vm,(const char*)d->data);
+}
 
 
 

@@ -66,33 +66,31 @@ _skip_0:
 end
 
 language
-	GlobSymTab ::= "glob" <gs_loop>.
-	gs_loop = ( <GlobSym> <gs_loop> | "end" ).
-	GlobSym ::= <sym> "=" ( <gs_Int> | <gs_Float> | <gs_String> ).
+	GlobSymTab ::= "glob" gs_loop.
+	gs_loop = ( GlobSym gs_loop | "end" ).
+	GlobSym ::= sym "=" ( gs_Int | gs_Float | gs_String ).
 
-	gs_Int ::= <int>.
-	gs_Float ::= <float>.
-	gs_String ::= <string>.
+	gs_Int ::= int.
+	gs_Float ::= float.
+	gs_String ::= string.
 
-	GlobGet ::= "+" "$" <sym>.
-	GlobSet ::= "-" "$" <sym>.
-	GlobIdx ::= "$" <sym>.
+	GlobGet ::= "+" "$" sym.
+	GlobSet ::= "-" "$" sym.
+	GlobIdx ::= "$" sym.
 
-	Struc ::= "struc" <sym> "{" <struc_loop>.
-	StrucNew ::= "strucNew" <sym> "{" <newstruc_loop>.
-	StrucGet ::= "+" "(" <sym> "." <sym> ")".
-	StrucSet ::= "-" "(" <sym> "." <sym> ")".
-	struc_loop = ( <sym> <struc_loop> | "}" ).
-	newstruc_loop = ( <struc_item> <newstruc_loop> | "}" ).
-	struc_item = <sym> ":" ( <AsmBloc> | <p_Opcode> ).
+	Struc ::= "struc" sym "{" sym+ "}".
+	StrucNew ::= "strucNew" sym "{" struc_item+ "}".
+	StrucGet ::= "+" "(" sym "." sym ")".
+	StrucSet ::= "-" "(" sym "." sym ")".
+	struc_item = sym ":" ( AsmBloc | p_Opcode ).
 
-	SubAsmBloc::=epsilon.
-	IfElseNZ ::= "[[" [<sab_co>]<SubAsmBloc> [<sab_cc>]<SubAsmBloc>.
-	IfNZ ::= "[" [<sab_c>]<SubAsmBloc>.
+	SubAsmBloc::=asm_statement+.
+	IfElseNZ ::= "[[" SubAsmBloc "][" SubAsmBloc "]]".
+	IfNZ ::= "[" SubAsmBloc "]".
 
-	sab_c = ( "]" | <asm_statement> <sab_c> ).
-	sab_cc = ( "]]" | <asm_statement> <sab_cc> ).
-	sab_co = ( "][" | <asm_statement> <sab_co> ).
+	sab_c = ( "]" | asm_statement sab_c ).
+	sab_cc = ( "]]" | asm_statement sab_cc ).
+	sab_co = ( "][" | asm_statement sab_co ).
 
 end
 
@@ -131,7 +129,7 @@ compile IfNZ asm
 #
 	write_oc "SNZ"
 	getmem -1
-	write_oc_Label "jmp"
+	write_ocLabel "jmp"
 	astCompileChild 0
 	getmem -1
 	write_label
@@ -152,10 +150,10 @@ compile IfElseNZ asm
 #
 	write_oc "SNZ"
 	getmem -1
-	write_oc_Label "jmp"
+	write_ocLabel "jmp"
 	astCompileChild 0
 	getmem -2
-	write_oc_Label "jmp"
+	write_ocLabel "jmp"
 	getmem -1
 	write_label
 	astCompileChild 1
@@ -274,7 +272,7 @@ compile StrucNew asm
 		#print 3
 
 			astGetChildrenCount dec shr 1
-		write_oc_Int "arrayResv"
+		write_ocInt "arrayResv"
 
 			push 1
 		setmem -1
@@ -295,7 +293,7 @@ _fill_newstruc_loop:
 				getmem -1
 			astGetChildString
 		getSym dec
-		write_oc_Int "arraySet"
+		write_ocInt "arraySet"
 
 		getmem -1 add 2 setmem -1
 		jmp @_fill_newstruc_loop
@@ -312,7 +310,7 @@ compile StrucGet asm
 		arrayGet
 		astGetChildString 1
 	getSym dec
-	write_oc_Int "arrayGet"
+	write_ocInt "arrayGet"
 	compileStateNext
 end
 
@@ -324,7 +322,7 @@ compile StrucSet asm
 		arrayGet
 		astGetChildString 1
 	getSym dec
-	write_oc_Int "arraySet"
+	write_ocInt "arraySet"
 	compileStateNext
 end
 
@@ -333,7 +331,7 @@ end
 compile GlobGet asm
 			astGetChildString 0
 		call @getGlobSym
-	write_oc_Int "getmem"
+	write_ocInt "getmem"
 	compileStateNext
 end
 
@@ -341,14 +339,14 @@ end
 compile GlobSet asm
 			astGetChildString 0
 		call @getGlobSym
-	write_oc_Int "setmem"
+	write_ocInt "setmem"
 	compileStateNext
 end
 
 compile GlobIdx asm
 			astGetChildString 0
 		call @getGlobSym
-	write_oc_Int "push"
+	write_ocInt "push"
 	compileStateNext
 end
 

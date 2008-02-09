@@ -18,6 +18,7 @@
 
 #include <tinyape.h>
 
+#include <limits.h>	/* for PATH_MAX */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -250,7 +251,7 @@ void plug_opcode(tinyap_t parser, const char* arg_type, const char* opcode) {
 WalkDirection ape_compiler_DeclOpcode_Float(wast_t node, vm_t vm) {
 	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
-	plug_opcode(vm->parser, "Float", name);
+	/*plug_opcode(vm->parser, "Float", name);*/
 	os = opcode_stub_resolve(OpcodeArgFloat,name,vm->dl_handle);
 	if(!os) {
 		vm_printerrf("warning : loading NULL opcode : %s:Float\n",name);
@@ -262,7 +263,7 @@ WalkDirection ape_compiler_DeclOpcode_Float(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_DeclOpcode_Int(wast_t node, vm_t vm) {
 	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
-	plug_opcode(vm->parser, "Int", name);
+	/*plug_opcode(vm->parser, "Int", name);*/
 	os = opcode_stub_resolve(OpcodeArgInt,name,vm->dl_handle);
 	if(!os) {
 		vm_printerrf("warning : loading NULL opcode : %s:Int\n",name);
@@ -274,7 +275,7 @@ WalkDirection ape_compiler_DeclOpcode_Int(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_DeclOpcode_Label(wast_t node, vm_t vm) {
 	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
-	plug_opcode(vm->parser, "Label", name);
+	/*plug_opcode(vm->parser, "Label", name);*/
 	os = opcode_stub_resolve(OpcodeArgLabel,name,vm->dl_handle);
 	if(!os) {
 		vm_printerrf("warning : loading NULL opcode : %s:Label\n",name);
@@ -286,7 +287,7 @@ WalkDirection ape_compiler_DeclOpcode_Label(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_DeclOpcode_EnvSym(wast_t node, vm_t vm) {
 	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
-	plug_opcode(vm->parser, "EnvSym", name);
+	/*plug_opcode(vm->parser, "EnvSym", name);*/
 	os = opcode_stub_resolve(OpcodeArgEnvSym,name,vm->dl_handle);
 	if(!os) {
 		vm_printerrf("warning : loading NULL opcode : %s:EnvSym\n",name);
@@ -298,7 +299,7 @@ WalkDirection ape_compiler_DeclOpcode_EnvSym(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_DeclOpcode_String(wast_t node, vm_t vm) {
 	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
-	plug_opcode(vm->parser, "String", name);
+	/*plug_opcode(vm->parser, "String", name);*/
 	os = opcode_stub_resolve(OpcodeArgString,name,vm->dl_handle);
 	if(!os) {
 		vm_printerrf("warning : loading NULL opcode : %s:String\n",name);
@@ -310,7 +311,7 @@ WalkDirection ape_compiler_DeclOpcode_String(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_DeclOpcode_NoArg(wast_t node, vm_t vm) {
 	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
-	plug_opcode(vm->parser, "NoArg", name);
+	/*plug_opcode(vm->parser, "NoArg", name);*/
 	os = opcode_stub_resolve(OpcodeNoArg,name,vm->dl_handle);
 	if(!os) {
 		vm_printerrf("warning : loading NULL opcode : %s:NoArg\n",name);
@@ -467,6 +468,32 @@ WalkDirection ape_compiler_Require(wast_t node, vm_t vm) {
 		return Error;
 	}
 	return Next;
+}
+
+
+WalkDirection ape_compiler_LoadLib(wast_t node, vm_t vm) {
+	static char libpath[PATH_MAX];
+	program_t p;
+	const char* libname = wa_op(wa_opd(node,0));
+	snprintf(libpath,PATH_MAX,TINYAML_EXT_DIR "/%s.tinyalib",libname);
+	p = (program_t) hash_find(&vm->loadlibs,libpath);
+	if(!p) {
+		opcode_chain_delete(vm->result);	/* discard result, anyway it is empty at this point */
+		vm->result=NULL;
+		p = vm_compile_file(vm,libpath);
+		vm->result = opcode_chain_new();
+		hash_addelem(&vm->loadlibs,strdup(libpath),p);
+		if(p) {
+			vm_run_program_fg(vm,p,0,50);
+			/*vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);*/
+			return Next;
+		} else {
+			vm_printerrf("ERROR : couldn't load library %s\n",libname);
+			return Error;
+		}
+	} else {
+		/*vm_printerrf("[VM:INFO] Library %s already loaded.\n",libname);*/
+	}
 }
 
 

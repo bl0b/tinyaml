@@ -437,7 +437,7 @@ asm
 		astGetChildString 0
 		getSym
 		sub
-		write_oc_Int "getmem"
+		write_ocInt "getmem"
 	][ getmem -1 $symIsParam eq [[
 		push 0
 		+$call_local_ofs
@@ -449,12 +449,12 @@ asm
 		astGetChildString 0
 		getSym
 		sub
-		write_oc_Int "getmem"
+		write_ocInt "getmem"
 	][ getmem -1 $symIsGlobal eq [[
 			+$glob_dic
 			astGetChildString 0
 		getSym
-		write_oc_Int "getmem"
+		write_ocInt "getmem"
 	][ getmem -1 $symIsClosure eq [[
 		push "Error : closures not yet implemented (can't handle symbol '"
 		getmem -1
@@ -501,7 +501,7 @@ fill_print:
 	# } while(counter!=size)
 	getmem -2 getmem -1 sub SZ jmp @fill_print
 done_print:
-	astGetChildrenCount write_oc_Int "print"
+	astGetChildrenCount write_ocInt "print"
 	leave 2
 	compileStateNext
 end
@@ -514,7 +514,7 @@ asm
 	# process righthand side
 	astCompileChild 1
 	# fetch memory location
-	getmem -1 write_oc_Int "setmem"
+	getmem -1 write_ocInt "setmem"
 	leave 1
 	compileStateNext
 end
@@ -525,7 +525,7 @@ asm
 	pp_curNode
 	# process righthand side
 	astCompileChild 0
-	push 0 write_oc_Int "ret"
+	push 0 write_ocInt "ret"
 	compileStateNext
 end
 
@@ -533,7 +533,7 @@ end
 compile script_string
 asm
 	astGetChildString 0
-	write_oc_String "push"
+	write_ocString "push"
 	compileStateNext
 end
 
@@ -559,7 +559,7 @@ asm
 	+$cur_fname
 	call @funcDeclEnter
 
-	getmem -3 write_oc_Label "jmp"
+	getmem -3 write_ocLabel "jmp"
 	getmem -2 write_label
 
 	+$cur_fname call @funcDeclGet getmem -2 -(FuncDecl.label)
@@ -572,7 +572,7 @@ asm
 	symTabSz dec setmem -1
 	getmem -1 [
 		getmem -1
-		write_oc_Int "enter"
+		write_ocInt "enter"
 	]
 
 	# skip parameters list, directly compile body
@@ -580,10 +580,10 @@ asm
 
 	getmem -1 [
 		getmem -1
-		write_oc_Int "leave"
+		write_ocInt "leave"
 	]
 
-	push 0 write_oc_Int "ret"
+	push 0 write_ocInt "ret"
 	getmem -3 write_label
 	call @funcDeclLeave
 	leave 3
@@ -604,18 +604,18 @@ asm
 	getmem -1
 	+(FuncDecl.parameters)
 	symTabSz dec setmem -3
-	getmem -3 write_oc_Int "enter"
+	getmem -3 write_ocInt "enter"
 	getmem -3 +$call_local_ofs add -$call_local_ofs
 _call_param_loop:
 	getmem -2 astGetChildrenCount inf [
 		getmem -2 astCompileChild
-		push 0 getmem -2 sub write_oc_Int "setmem"
+		push 0 getmem -2 sub write_ocInt "setmem"
 		getmem -2 inc setmem -2 jmp @_call_param_loop
 	]
-	getmem -1 +(FuncDecl.label) write_oc_Label "call"
+	getmem -1 +(FuncDecl.label) write_ocLabel "call"
 	getmem -1
 	getmem -3
-	write_oc_Int "leave"
+	write_ocInt "leave"
 	+$call_local_ofs getmem -3 sub -$call_local_ofs
 	leave 3
 	compileStateNext
@@ -636,7 +636,7 @@ end
 compile script_int
 asm
 	astGetChildString 0 toI
-	write_oc_Int "push"
+	write_ocInt "push"
 	compileStateNext
 end
 
@@ -644,7 +644,7 @@ end
 compile script_float
 asm
 	astGetChildString 0 toF
-	write_oc_Float "push"
+	write_ocFloat "push"
 	compileStateNext
 end
 
@@ -667,7 +667,7 @@ end
 
 compile m_minus
 asm
-	push 0 write_oc_Int "push"
+	push 0 write_ocInt "push"
 	astCompileChild 0
 	write_oc "sub"
 	compileStateNext
@@ -796,13 +796,13 @@ asm
 
 		write_oc "SNZ"
 		getmem -3
-		write_oc_Label "jmp"
+		write_ocLabel "jmp"
 
 		getmem -2 write_label
 
 		astCompileChild 1
 
-		getmem -4 write_oc_Label "jmp"
+		getmem -4 write_ocLabel "jmp"
 		getmem -3 write_label
 
 		astCompileChild 2
@@ -822,7 +822,7 @@ asm
 
 		write_oc "SNZ"
 		getmem -3
-		write_oc_Label "jmp"
+		write_ocLabel "jmp"
 
 		getmem -2 write_label
 
@@ -849,11 +849,11 @@ asm
 
 	write_oc "SNZ"
 	getmem -2
-	write_oc_Label "jmp"
+	write_ocLabel "jmp"
 
 	astCompileChild 1
 
-	getmem -1 write_oc_Label "jmp"
+	getmem -1 write_ocLabel "jmp"
 
 	getmem -2 write_label
 

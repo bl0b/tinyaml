@@ -195,12 +195,15 @@ walker analyzeFuncDecl {
 }
 
 asm
+	jmp @_skip_0
+
+reset_tables:
 	newSymTab -$glob_dic
 	newSymTab -$func_dic
 	arrayNew  -$func_tab
 	+$func_tab push 0 push 0 arraySet
 	stackNew -$local_dic_stack
-	jmp @_skip_0
+	ret 0
 
 # string:something -> string:label
 gen_label:
@@ -453,93 +456,90 @@ end
 
 language
 
- Script ::= "script" <script_loop>.
- script_loop = ( <script_statement> <script_loop> | "end" ).
- script_statement = ( <script_glob> | <script_glob_fun> | <script_instruction> ).
+ Script ::= "script" script_glob script_statement+ "end".
+ script_statement = ( script_glob_fun | script_instruction ).
 
- script_glob ::= "global" <script_sym_loop>.
- script_loc ::= "local" <script_sym_loop>.
- script_sym_loop = ( <sym> "," <script_sym_loop> | <sym> ).
- script_id ::= <sym>.
- script_string ::= <string>.
+ script_glob ::= ("global" sym ("," sym)*|_epsilon).
+ script_loc ::= "local"  sym ("," sym)*.
+ script_id ::= sym.
+ script_string ::= string.
 
- script_glob_fun ::= "function" <sym> <script_fun_decl>.
- script_anon_fun ::= "function" <script_fun_decl>.
- script_fun_decl ::= <script_param_list> <script_fun_body>.
- script_param_list ::= "(" ( <script_sym_loop> ")" | ")" ).
- script_fun_body ::= ( <script_local> <sfb_loop> | <sfb_loop> ).
- sfb_loop = ( <script_instruction> <sfb_loop> | "end" ).
- script_local ::= "local" <script_sym_loop>.
+ script_glob_fun ::= "function" sym script_fun_decl.
+ script_anon_fun ::= "function" script_fun_decl.
+ script_fun_decl ::= script_param_list script_fun_body.
+ script_param_list ::= "(" ( sym ("," sym)* ")" | ")" ).
+ script_fun_body ::= script_local? script_instruction+ "end".
+ script_local ::= "local" sym ("," sym)*.
 
- script_instruction = ( <script_if> | <script_while> | <AsmBloc> | <script_print> | <script_return> | <script_throw> | <script_try> | <script_assign> | <script_call> ).
- instruction_seq = ( <script_instruction> <instruction_seq> | <script_instruction> ).
- instruction_bloc ::= <instruction_seq>.
+ script_instruction = ( script_if | script_while | AsmBloc | script_print | script_return | script_throw | script_try | script_assign | script_call ).
+ instruction_seq = script_instruction+.
+ instruction_bloc ::= instruction_seq.
 
- script_try ::= "try" <instruction_bloc> "catch" <catch_bloc>.
- catch_bloc ::= <catch_bloc_loop>.
- catch_bloc_loop = ( <catch_statement> <catch_bloc_loop> | "end" ).
- catch_statement ::= <sym> ":" <instruction_bloc>.
- script_throw ::= "throw" <sym>.
+ script_try ::= "try" instruction_bloc "catch" catch_bloc.
+ catch_bloc ::= catch_bloc_loop.
+ catch_bloc_loop = ( catch_statement catch_bloc_loop | "end" ).
+ catch_statement ::= sym ":" instruction_bloc.
+ script_throw ::= "throw" sym.
 
- script_while ::= "while" <b_expr> "do" <sb_end>.
- script_if ::= "if" <b_expr> "then" ( <sb_else> <sb_end> | <sb_end> ).
+ script_while ::= "while" b_expr "do" sb_end.
+ script_if ::= "if" b_expr "then" ( sb_else sb_end | sb_end ).
 
- sb_end ::= <sbloop_end>.
- sb_else ::= <sbloop_else>.
- sbloop_end = ( <script_instruction> <sbloop_end> | "end" ).
- sbloop_else = ( <script_instruction> <sbloop_else> | "else" ).
+ sb_end ::= sbloop_end.
+ sb_else ::= sbloop_else.
+ sbloop_end = ( script_instruction sbloop_end | "end" ).
+ sbloop_else = ( script_instruction sbloop_else | "else" ).
 
- script_call ::= <script_var> "(" ( ")" | <script_expr_loop> ).
- script_expr_loop = <script_expr> ( "," <script_expr_loop> | ")" ).
+ script_call ::= script_var "(" ( ")" | script_expr_loop ).
+ script_expr_loop = script_expr ( "," script_expr_loop | ")" ).
  
 
- script_print ::= "print" <script_print_loop>.
- script_print_loop = ( <script_expr> "," <script_print_loop> | <script_expr> ).
- script_expr = ( <script_string> | <script_anon_fun> | <b_expr> | <m_expr> ).
+ script_print ::= "print" script_print_loop.
+ script_print_loop = ( script_expr "," script_print_loop | script_expr ).
+ script_expr = ( script_string | script_anon_fun | b_expr | m_expr ).
 
- script_return ::= "return" <script_expr>.
+ script_return ::= "return" script_expr.
 
- script_assign ::= <script_var> "=" ( <script_expr> ).
+ script_assign ::= script_var "=" ( script_expr ).
 
- script_int ::= <int>.
- script_float ::= <float>.
- number = ( <script_float> | <script_int> | <script_call> | <script_var> | "(" <m_expr> ")" ).
+ script_int ::= int.
+ script_float ::= float.
+ number = ( script_float | script_int | script_call | script_var | "(" m_expr ")" ).
 
- script_var ::= ( <script_var> (<script_array_access>|<script_struc_access>) | ( <script_env> |<script_id> )).
+ script_var ::= ( script_var (script_array_access|script_struc_access) | ( script_env |script_id )).
 
- script_env ::= "&" <sym>.
+ script_env ::= "&" sym.
 
- script_array_access ::= "[" <m_expr> "]".
- script_struc_access ::= "." <sym>.
+ script_array_access ::= "[" m_expr "]".
+ script_struc_access ::= "." sym.
 
- m_expr = <expr4>.
- b_expr = <bexpr4>.
+ m_expr = expr4.
+ b_expr = bexpr4.
 
-atom = ( <script_float> | <script_int> | <script_call> | <script_var> | "(" <script_expr> ")" ).
+atom = ( script_float | script_int | script_call | script_var | "(" script_expr ")" ).
 
-m_minus ::= "-" <number>.
-m_div ::= ( <m_div> "/" <expr0> | <expr0> "/" <expr0> ).
-m_mul ::= ( <m_mul> "*" <expr1> | <expr1> "*" <expr1> ).
-m_sub ::= ( <m_sub> "-" <expr2> | <expr2> "-" <expr2> ).
-m_add ::= ( <m_add> "+" <expr3> | <expr3> "+" <expr3> ).
+m_minus ::= "-" number.
+m_div ::= ( m_div "/" expr0 | expr0 "/" expr0 ).
+m_mul ::= ( m_mul "*" expr1 | expr1 "*" expr1 ).
+m_sub ::= ( m_sub "-" expr2 | expr2 "-" expr2 ).
+m_add ::= ( m_add "+" expr3 | expr3 "+" expr3 ).
 
-b_not ::= "not" <m_expr>.
-b_and ::= ( <b_and> "and" <bexpr1> | <bexpr1> "and" <bexpr1> ).
-b_or ::= ( <b_or> "or" <bexpr2> | <bexpr2> "or" <bexpr2> ).
+b_not ::= "not" m_expr.
+b_and ::= ( b_and "and" bexpr1 | bexpr1 "and" bexpr1 ).
+b_or ::= ( b_or "or" bexpr2 | bexpr2 "or" bexpr2 ).
 
-comp ::= <bexpr2> /(<|>|=|!=|>=|<=)/ <bexpr2>.
+comp ::= bexpr2 /(<|>|=|!=|>=|<=)/ bexpr2.
 
-expr0 = ( <m_minus> | <number> ).
-expr1 = ( <m_div> | <expr0> ).
-expr2 = ( <m_mul> | <expr1> ).
-expr3 = ( <m_sub> | <expr2> ).
-expr4 = ( <m_add> | <expr3> ).
+expr0 = ( m_minus | number ).
+expr1 = ( m_div | expr0 ).
+expr2 = ( m_mul | expr1 ).
+expr3 = ( m_sub | expr2 ).
+expr4 = ( m_add | expr3 ).
 
-bexpr1 = ( <b_not> | <m_expr> ).
-bexpr2 = ( <b_and> | <bexpr1> ).
-bexpr3 = ( <b_or> | <bexpr2> ).
+bexpr1 = ( b_not | m_expr ).
+bexpr2 = ( b_and | bexpr1 ).
+bexpr3 = ( b_or | bexpr2 ).
 
-bexpr4 = ( <comp> | <bexpr2> ).
+bexpr4 = ( comp | bexpr2 ).
 
 end
 
@@ -558,7 +558,7 @@ compile instruction_bloc asm compileStateDown end
 
 compile script_throw asm
 	astGetChildString 0
-	write_oc_String "push"
+	write_ocString "push"
 	write_oc "throw"
 	compileStateNext
 end
@@ -571,11 +571,11 @@ compile script_try asm
 
 	# try: instCatcher @catch
 	getmem -1 write_label
-	getmem -2 write_oc_Label "instCatcher"
+	getmem -2 write_ocLabel "instCatcher"
 	# ...
 	astCompileChild 0
 	# jmp @end_trycatch catch:
-	getmem -3 write_oc_Label "uninstCatcher"
+	getmem -3 write_ocLabel "uninstCatcher"
 	getmem -2 write_label
 	# ...
 	getmem -3 -$current_end_tc
@@ -592,14 +592,14 @@ compile catch_statement asm
 	push "endcatch_" astGetChildString 0 strcat call @gen_label setmem -1
 
 	write_oc "getException"
-	astGetChildString 0 write_oc_String "strcmp"
+	astGetChildString 0 write_ocString "strcmp"
 	write_oc "SZ"
-	getmem -1 write_oc_Label "jmp"
+	getmem -1 write_ocLabel "jmp"
 
 	astCompileChild 1
 
 	write_oc "pop"
-	+$current_end_tc write_oc_Label "jmp"
+	+$current_end_tc write_ocLabel "jmp"
 	getmem -1 write_label
 	leave 2
 	compileStateNext
@@ -625,6 +625,7 @@ end
 
 compile script_glob
 asm
+	call @reset_tables
 	#pp_curNode
 	# size,counter
 	enter 2
@@ -677,7 +678,7 @@ asm
 #	push "Symbol '" +$cur_fname push "' has index " getmem -1 push "\\n" print 5
 
 	getmem -1
-	write_oc_Int "setmem"
+	write_ocInt "setmem"
 
 	push "" -$cur_fname
 	leave 1
@@ -686,9 +687,14 @@ end
 
 compile script_anon_fun
 asm
+	enter 1
+	+$call_local_ofs setmem -1
+	push 0 -$call_local_ofs
 	push "anon" call @gen_label -$cur_fname
 	astCompileChild 0
 	push "" -$cur_fname
+	getmem -1 -$call_local_ofs
+	leave 1
 	compileStateNext
 end
 
@@ -710,7 +716,7 @@ asm
 	+$cur_fname
 	call @funcDeclEnter
 
-	getmem -3 write_oc_Label "jmp"
+	getmem -3 write_ocLabel "jmp"
 	getmem -2 write_label
 
 	+$cur_fname call @funcDeclGet getmem -2 -(FuncDecl.label)
@@ -727,7 +733,7 @@ asm
 	symTabSz dec setmem -1
 	getmem -1 [
 		getmem -1
-		write_oc_Int "enter"
+		write_ocInt "enter"
 	]
 
 	# skip parameters list, directly compile body
@@ -737,20 +743,20 @@ asm
 
 	getmem -1 [
 		getmem -1
-		write_oc_Int "leave"
+		write_ocInt "leave"
 	]
 
-	push 0 write_oc_Int "ret"
+	push 0 write_ocInt "ret"
 	getmem -3 write_label
 	call @funcDeclLeave
-	getmem -2 write_oc_Label "dynFunNew"
+	getmem -2 write_ocLabel "dynFunNew"
 
 	push 0 setmem -1
 #	push "\   @@@   NOW $cur_fname = " +$cur_fname push "   @@@\\n" print 3
 	+$cur_fname call @funcDeclGet +(FuncDecl.closure_ofs) setmem -2
 _addcls_loop:
 	getmem -2 arraySize getmem -1 sup [
-		getmem -2 getmem -1 arrayGet write_oc_Int "getmem"
+		getmem -2 getmem -1 arrayGet write_ocInt "getmem"
 		write_oc "dynFunAddClosure"
 		getmem -1 inc setmem -1
 		jmp @_addcls_loop
@@ -776,18 +782,18 @@ asm
 	#+(FuncDecl.parameters)
 	#symTabSz dec setmem -3
 	astGetChildrenCount dec setmem -3
-	getmem -3 [ getmem -3 write_oc_Int "enter" ]
+	getmem -3 [ getmem -3 write_ocInt "enter" ]
 	getmem -3 +$call_local_ofs add -$call_local_ofs
 _call_param_loop:
 	getmem -2 astGetChildrenCount inf [
 		getmem -2 astCompileChild
-		push 0 getmem -2 sub write_oc_Int "setmem"
+		push 0 getmem -2 sub write_ocInt "setmem"
 		getmem -2 inc setmem -2 jmp @_call_param_loop
 	]
-	#getmem -1 +(FuncDecl.label) write_oc_Label "call"
+	#getmem -1 +(FuncDecl.label) write_ocLabel "call"
 	write_oc "call"
 	getmem -1
-	getmem -3 [ getmem -3 write_oc_Int "leave" ]
+	getmem -3 [ getmem -3 write_ocInt "leave" ]
 	+$call_local_ofs getmem -3 sub -$call_local_ofs
 	leave 3
 	compileStateNext
@@ -811,11 +817,11 @@ asm
 	or [[
 		+$is_lvalue [[
 			+$_sym_ofs
-			write_oc_Int "setmem"
+			write_ocInt "setmem"
 			push 0 -$is_lvalue
 		][
 			+$_sym_ofs
-			write_oc_Int "getmem"
+			write_ocInt "getmem"
 		]]
 		leave 1
 		compileStateNext
@@ -823,11 +829,11 @@ asm
 		getmem -1 $symIsClosure eq [[
 			+$is_lvalue [[
 				+$_sym_ofs
-				write_oc_Int "setClosure"
+				write_ocInt "setClosure"
 				push 0 -$is_lvalue
 			][
 				+$_sym_ofs
-				write_oc_Int "getClosure"
+				write_ocInt "getClosure"
 			]]
 			leave 1
 			compileStateNext
@@ -862,7 +868,7 @@ fill_print:
 	# } while(counter!=size)
 	getmem -2 getmem -1 sub SZ jmp @fill_print
 done_print:
-	astGetChildrenCount write_oc_Int "print"
+	astGetChildrenCount write_ocInt "print"
 	leave 2
 	compileStateNext
 end
@@ -876,7 +882,7 @@ asm
 	# process righthand side
 	astCompileChild 1
 	# fetch memory location
-	#getmem -1 write_oc_Int "setmem"
+	#getmem -1 write_ocInt "setmem"
 	push 1 -$is_lvalue
 	astCompileChild 0
 	leave 1
@@ -889,7 +895,7 @@ asm
 	#pp_curNode
 	# process righthand side
 	astCompileChild 0
-	push 0 write_oc_Int "ret"
+	push 0 write_ocInt "ret"
 	compileStateNext
 end
 
@@ -897,7 +903,7 @@ end
 compile script_string
 asm
 	astGetChildString 0
-	write_oc_String "push"
+	write_ocString "push"
 	compileStateNext
 end
 
@@ -916,7 +922,7 @@ end
 compile script_int
 asm
 	astGetChildString 0 toI
-	write_oc_Int "push"
+	write_ocInt "push"
 	compileStateNext
 end
 
@@ -924,7 +930,7 @@ end
 compile script_float
 asm
 	astGetChildString 0 toF
-	write_oc_Float "push"
+	write_ocFloat "push"
 	compileStateNext
 end
 
@@ -947,7 +953,7 @@ end
 
 compile m_minus
 asm
-	push 0 write_oc_Int "push"
+	push 0 write_ocInt "push"
 	astCompileChild 0
 	write_oc "sub"
 	compileStateNext
@@ -1076,13 +1082,13 @@ asm
 
 		write_oc "SNZ"
 		getmem -3
-		write_oc_Label "jmp"
+		write_ocLabel "jmp"
 
 		getmem -2 write_label
 
 		astCompileChild 1
 
-		getmem -4 write_oc_Label "jmp"
+		getmem -4 write_ocLabel "jmp"
 		getmem -3 write_label
 
 		astCompileChild 2
@@ -1102,7 +1108,7 @@ asm
 
 		write_oc "SNZ"
 		getmem -3
-		write_oc_Label "jmp"
+		write_ocLabel "jmp"
 
 		getmem -2 write_label
 
@@ -1129,11 +1135,11 @@ asm
 
 	write_oc "SNZ"
 	getmem -2
-	write_oc_Label "jmp"
+	write_ocLabel "jmp"
 
 	astCompileChild 1
 
-	getmem -1 write_oc_Label "jmp"
+	getmem -1 write_ocLabel "jmp"
 
 	getmem -2 write_label
 
@@ -1162,11 +1168,11 @@ end
 compile script_env asm
 	+$is_lvalue [[
 		astGetChildString 0
-		write_oc_EnvSym "envSet"
+		write_ocEnvSym "envSet"
 		push 0 -$is_lvalue
 	][
 		astGetChildString 0
-		write_oc_EnvSym "envGet"
+		write_ocEnvSym "envGet"
 	]]
 	compileStateNext
 end
@@ -1174,12 +1180,12 @@ end
 
 compile script_array_access asm
 	+$is_lvalue [[
-		push -1 write_oc_Int "dup"
+		push 0 -$is_lvalue
+		push -1 write_ocInt "dup"
 		astCompileChild 0
 		write_oc "arraySet"
 		push 2
-		write_oc_Int "pop"
-		push 0 -$is_lvalue
+		write_ocInt "pop"
 	][
 		astCompileChild 0
 		write_oc "arrayGet"
@@ -1190,10 +1196,10 @@ end
 compile script_struc_access asm
 	astGetChildString 0
 	+$is_lvalue [[
-		write_oc_String "mapSet"
+		write_ocString "mapSet"
 		push 0 -$is_lvalue
 	][
-		write_oc_String "mapGet"
+		write_ocString "mapGet"
 	]]
 	compileStateNext
 end
