@@ -88,7 +88,7 @@ AsmBloc ::= "asm" asm_contents.
 asm_contents = ( "end" | asm_statement asm_contents ).
 #asm_loop = ( asm_statement asm_loop | asm_statement "end" ).
 
-asm_statement = DeclLabel? p_Opcode.
+asm_statement = (DeclLabel|p_Opcode).
 
 Program ::= p_ProgramTopLevel+ _EOF.
 

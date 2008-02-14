@@ -1,6 +1,5 @@
-require "struc.melang"
+require "symasm.melang" glob
 
-glob
 	glob_dic = 0
 	func_dic = 0
 	func_tab = 0
@@ -34,6 +33,7 @@ struc FuncDecl {
 	closure		# symtab : enclosed variables
 	closure_ofs	# array : offsets of variables to clone in closure
 	label		# string : start label
+	has_vararg	# int : 0 if function doesn't use a variable argument
 }
 
 
@@ -48,7 +48,7 @@ walker analyzeFuncDecl {
 	end
 
 	default asm
-#		push "analyzeFuncDecl default on " astGetOp push "\\n" print 3
+		push "analyzeFuncDecl default on " astGetOp push "\\n" print 3
 		compileStateNext
 	end
 
@@ -73,125 +73,98 @@ walker analyzeFuncDecl {
 	on script_var asm compileStateDown end
 	on script_array_access asm compileStateDown end
 	on script_struc_access asm compileStateNext end
+	on script_throw asm compileStateNext end
+	on script_try asm compileStateNext end
 
 
 	on script_param_list asm
-		enter 1				# counter
-		push 0 setmem -1
-#		pp_curNode
-	_spl_loop:
-		getmem -1 astGetChildrenCount nEq [
-			+$cur_fname
-			getmem -1
-			astGetChildString
-			call @funcDeclAddParam
-			getmem -1 inc setmem -1
-			jmp @_spl_loop
-		]
-		leave 1
+		local counter {				# counter
+			push 0 -$counter
+#			pp_curNode
+		_spl_loop:
+			+$counter astGetChildrenCount nEq [
+				#+$cur_fname
+				#+$counter
+				#astGetChildString
+				#call @funcDeclAddParam
+				+$counter walkChild
+				+$counter inc -$counter
+				jmp @_spl_loop
+			]
+		}
 		compileStateDone
 	end
 
+	on script_param asm +$cur_fname astGetChildString 0 call @funcDeclAddParam compileStateNext end
+	on script_vararg asm +$cur_fname astGetChildString 0 call @funcDeclAddVararg compileStateNext end
+
 
 	on script_local asm
-		enter 1				# counter
-		push 0 setmem -1
-	_sl_loop:
-		getmem -1 astGetChildrenCount nEq [
-			+$cur_fname
-			getmem -1
-			astGetChildString
-			call @funcDeclAddLocal
-			getmem -1 inc setmem -1
-			jmp @_sl_loop
-		]
-		leave 1
+		local counter {				# counter
+			push 0 -$counter
+		_sl_loop:
+			+$counter astGetChildrenCount nEq [
+				+$counter walkChild
+				+$cur_fname
+				astGetChildString
+				call @funcDeclAddLocal
+				+$counter inc -$counter
+				jmp @_sl_loop
+			]
+		}
 		compileStateNext
 	end
+	
 
 	on script_id asm
-		enter 1
-		+$cur_fname
-		astGetChildString 0
-		call @getSymContext 
-		setmem -1
-		getmem -1 $symIsLocal eq [
-			nop
-		]
-		getmem -1 $symIsParam eq [
-			nop
-		]
-		getmem -1 $symIsGlobal eq [
-			nop
-		]
-		getmem -1 $symIsClosure eq [
-			nop
-		]
-		getmem -1 $symMustEnclose eq [
-			nop
-#			push "symbol must be enclosed\\n" print 1
-		]
-		getmem -1 $symUnknown eq [
-			nop
-#			push "symbol is unknown\\n" print 1
-		]
-		leave 1
+		local sc {
+			+$cur_fname
+			astGetChildString 0
+			call @getSymContext 
+			-$sc
+			+$sc $symIsLocal eq [
+				nop
+			]
+			+$sc $symIsParam eq [
+				nop
+			]
+			+$sc $symIsGlobal eq [
+				nop
+			]
+			+$sc $symIsClosure eq [
+				nop
+			]
+			+$sc $symMustEnclose eq [
+				nop
+	#			push "symbol must be enclosed\\n" print 1
+			]
+			+$sc $symUnknown eq [
+				nop
+	#			push "symbol is unknown\\n" print 1
+			]
+		}
 		compileStateNext
 	end
 
 
-	on script_assign asm
-		compileStateDown
-		ret 0
-
-#		enter 1
-#		+$cur_fname
-#		astGetChildString 0
-#		call @getSymContext 
-#		setmem -1
-#		getmem -1 $symIsLocal eq [
-#			nop
-#		]
-#		getmem -1 $symIsParam eq [
-#			nop
-#		]
-#		getmem -1 $symIsGlobal eq [
-#			nop
-#		]
-#		getmem -1 $symIsClosure eq [
-#			nop
-#		]
-#		getmem -1 $symMustEnclose eq [
-#			push "symbol must be enclosed\\n" print 1
-#		]
-#		getmem -1 $symUnknown eq [
-#			push "symbol is unknown\\n" print 1
-#		]
-#		walkChild 1
-#		leave 1
-#		compileStateNext
-	end
-
-
-	on script_fun_body asm compileStateDown end
-
-	on script_print asm compileStateDown end
-	on instruction_seq asm compileStateDown end
-
-	on m_expr asm compileStateDown end
-	on b_expr asm compileStateDown end
-	on comp asm compileStateDown end
-	on m_add asm compileStateDown end
-	on m_sub asm compileStateDown end
-	on m_mul asm compileStateDown end
-	on m_div asm compileStateDown end
-	on b_not asm compileStateDown end
-	on b_and asm compileStateDown end
-	on b_or asm compileStateDown end
-	on script_call asm compileStateDown end
-	on script_if asm compileStateDown end
-	on sb_end asm compileStateDown end
-	on sb_else asm compileStateDown end
+	on script_assign	asm compileStateDown end
+	on script_fun_body	asm compileStateDown end
+	on script_print		asm compileStateDown end
+	on instruction_seq	asm compileStateDown end
+	on m_expr		asm compileStateDown end
+	on b_expr		asm compileStateDown end
+	on comp			asm compileStateDown end
+	on m_add		asm compileStateDown end
+	on m_sub		asm compileStateDown end
+	on m_mul		asm compileStateDown end
+	on m_div		asm compileStateDown end
+	on b_not		asm compileStateDown end
+	on b_and		asm compileStateDown end
+	on b_or			asm compileStateDown end
+	on script_call		asm compileStateDown end
+	on script_if		asm compileStateDown end
+	on sb_end		asm compileStateDown end
+	on sb_else		asm compileStateDown end
 }
 
 asm
@@ -212,70 +185,78 @@ gen_label:
 	ret 0
 
 newFuncDecl:
-	enter 1
-	# backup func name
-	setmem -1
-	# insert symbol into tab
-	+$func_dic
-	getmem -1
-	addSym
-	# add new func decl entry into tab
-	+$func_tab
-	# create structure
-	strucNew FuncDecl {
-		returns : push 0
-		parameters : newSymTab
-		locals : newSymTab
-		closure : newSymTab
-		closure_ofs : arrayNew
-		label : push ""
+	local fname {
+		# backup func name
+		-$fname
+		# insert symbol into tab
+		+$func_dic
+		+$fname
+		addSym
+		# add new func decl entry into tab
+		+$func_tab
+		# create structure
+		strucNew FuncDecl {
+			returns : push 0
+			parameters : newSymTab
+			locals : newSymTab
+			closure : newSymTab
+			closure_ofs : arrayNew
+			label : push ""
+			has_vararg : push 0
+		}
+		# fetch index of sym
+		+$func_dic +$fname getSym
+		arraySet
+		pop
 	}
-	# fetch index of sym
-	+$func_dic getmem -1 getSym
-	arraySet
-	pop
-	leave 1
 	ret 0
 
 funcDeclGet:
-	enter 1 setmem -1
-	+$func_tab
-	+$func_dic getmem -1 getSym
-	arrayGet
-	leave 1
+	local fname { -$fname
+		+$func_tab
+		+$func_dic +$fname getSym
+		arrayGet
+	}
 	ret 0
 
 # string:func_name X string:param_name -> nil
 funcDeclAddParam:
-	enter 1
-	# pop param name
-	setmem -1
-	call @funcDeclGet +(FuncDecl.parameters)
-	getmem -1
-	addSym
-	leave 1
+	local pname { -$pname	# pop param name
+		call @funcDeclGet +(FuncDecl.parameters)
+		+$pname
+		addSym
+	}
+	ret 0
+
+# string:func_name X string:param_name -> nil
+funcDeclAddVararg:
+	local fname {
+		dup -1 -$fname
+		call @funcDeclAddParam
+		+$fname call @funcDeclGet push 1 -(FuncDecl.has_vararg)
+	}
 	ret 0
 
 # string:func_name X string:param_name -> nil
 funcDeclAddLocal:
-	enter 1
-	# pop param name
-	setmem -1
-	call @funcDeclGet +(FuncDecl.locals)
-	getmem -1
-	addSym
-	leave 1
+	local pname {
+		# pop param name
+		-$pname
+		call @funcDeclGet +(FuncDecl.locals)
+		+$pname
+		addSym
+	}
 	ret 0
 
 # string:func_name X string:param_name -> nil
 funcDeclAddClosure:
-	enter 1
-	# pop param name
-	setmem -1
-	call @funcDeclGet +(FuncDecl.closure)
-	getmem -1
-	addSym
-	leave 1
+	local pname {
+		# pop param name
+		-$pname
+		call @funcDeclGet +(FuncDecl.closure)
+		+$pname
+		addSym
+	}
 	ret 0
 
 # string:func_name -> nil
@@ -285,10 +266,10 @@ funcDeclAddReturn:
 
 # string:func_name -> nil
 funcDeclEnter:
-	enter 1
-	call @funcDeclGet setmem -1
-	+$local_dic_stack getmem -1 stackPush
-	leave 1
+	local fdecl {
+		call @funcDeclGet -$fdecl
+		+$local_dic_stack +$fdecl stackPush
+	}
 	ret 0
 
 funcDeclLeave:
@@ -297,8 +278,8 @@ funcDeclLeave:
 
 # string:symbol -> int:context (cf. symIs...)
 getSymContext:
-	enter 5
-	setmem -1
+	local symbol, locdic, symofs, counter, backup {
+	-$symbol
 
 	push 0 -$_sym_ofs
 
@@ -308,150 +289,104 @@ getSymContext:
 
 ###		push "entering local context...\\n" print 1
 
-		+$local_dic_stack stackPeek 0 setmem -2
-		getmem -2 setmem -5
+		+$local_dic_stack stackPeek 0 -$locdic
+		+$locdic -$backup
 
-		getmem -2 +(FuncDecl.locals) getmem -1 getSym setmem -3
-		getmem -3 [
-			push 0 getmem -3 sub +$call_local_ofs sub -$_sym_ofs
-###			push "Symbol '" getmem -1 push "' is local at ofs " +$_sym_ofs push "\\n" print 5
-			$symIsLocal leave 5 ret 0 ]
+		+$locdic +(FuncDecl.locals) +$symbol getSym -$symofs
+		+$symofs [
+			push 0 +$symofs sub +$call_local_ofs sub -$_sym_ofs
+###			push "Symbol '" +$symbol push "' is local at ofs " +$_sym_ofs push "\\n" print 5
+			$symIsLocal jmp @_sc_ret ]
 
-		getmem -2 +(FuncDecl.parameters) getmem -1 getSym setmem -3
-		getmem -3 [
-			push 0 getmem -2 +(FuncDecl.locals) symTabSz dec sub getmem -3 sub +$call_local_ofs sub -$_sym_ofs
-###			push "Symbol '" getmem -1 push "' is a parameter at ofs " +$_sym_ofs push "\\n" print 5
-			$symIsParam leave 5 ret 0 ]
+		+$locdic +(FuncDecl.parameters) +$symbol getSym -$symofs
+		+$symofs [
+			push 0 +$locdic +(FuncDecl.locals) symTabSz dec sub +$symofs sub +$call_local_ofs sub -$_sym_ofs
+###			push "Symbol '" +$symbol push "' is a parameter at ofs " +$_sym_ofs push "\\n" print 5
+			$symIsParam jmp @_sc_ret ]
 
-		getmem -2 +(FuncDecl.closure) getmem -1 getSym setmem -3
-		getmem -3 [
-			getmem -3 dec -$_sym_ofs
-###			push "Symbol '" getmem -1 push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
-			$symIsClosure leave 5 ret 0 ]
+		+$locdic +(FuncDecl.closure) +$symbol getSym -$symofs
+		+$symofs [
+			+$symofs dec -$_sym_ofs
+###			push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
+			$symIsClosure jmp @_sc_ret ]
 
-		push 0 setmem -4
+		push 0 -$counter
 
 		push 0 +$call_local_ofs sub
-#		getmem -2 +(FuncDecl.locals) symTabSz dec
-#		getmem -2 +(FuncDecl.parameters) symTabSz dec
+#		+$locdic +(FuncDecl.locals) symTabSz dec
+#		+$locdic +(FuncDecl.parameters) symTabSz dec
 #		add sub
 		-$_sym_ofs
 
-		getmem -4 inc setmem -4
+		+$counter inc -$counter
 
 	_context_loop:
-		+$local_dic_stack stackSize getmem -4 sup [
+		+$local_dic_stack stackSize +$counter sup [
 
-###			push "entering local sub-context #" getmem -4 push "...\\n" print 3
+###			push "entering local sub-context #" +$counter push "...\\n" print 3
 ###			push "base _sym_ofs is " +$_sym_ofs push "\\n" print 3
 
-			+$local_dic_stack getmem -4 stackPeek setmem -2
+			+$local_dic_stack +$counter stackPeek -$locdic
 
-			getmem -2 +(FuncDecl.locals) getmem -1 getSym setmem -3
-			getmem -3 [
-				getmem -5 +(FuncDecl.closure) getmem -1 addSym
-				getmem -5 +(FuncDecl.closure_ofs)
+			+$locdic +(FuncDecl.locals) +$symbol getSym -$symofs
+			+$symofs [
+				+$backup +(FuncDecl.closure) +$symbol addSym
+				+$backup +(FuncDecl.closure_ofs)
 					+$_sym_ofs
-					getmem -3
+					+$symofs
 					sub -$_sym_ofs
 					+$_sym_ofs
-					getmem -5 +(FuncDecl.closure_ofs) arraySize
+					+$backup +(FuncDecl.closure_ofs) arraySize
 				arraySet
-#				push "Symbol local '" getmem -1 push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
-				getmem -5 +(FuncDecl.closure) getmem -1 getSym dec -$_sym_ofs
-#				push "Symbol '" getmem -1 push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
-				$symIsClosure leave 5 ret 0 ]
+#				push "Symbol local '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
+				+$backup +(FuncDecl.closure) +$symbol getSym dec -$_sym_ofs
+#				push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
+				$symIsClosure jmp @_sc_ret ]
 	
-			getmem -2 +(FuncDecl.parameters) getmem -1 getSym setmem -3
-			getmem -3 [
-				getmem -5 +(FuncDecl.closure) getmem -1 addSym
-				getmem -5 +(FuncDecl.closure_ofs)
+			+$locdic +(FuncDecl.parameters) +$symbol getSym -$symofs
+			+$symofs [
+				+$backup +(FuncDecl.closure) +$symbol addSym
+				+$backup +(FuncDecl.closure_ofs)
 					+$_sym_ofs
-					getmem -2 +(FuncDecl.locals) symTabSz dec
+					+$locdic +(FuncDecl.locals) symTabSz dec
 					sub
-					getmem -3 dec
+					+$symofs dec
 					sub -$_sym_ofs
 					+$_sym_ofs
-					getmem -5 +(FuncDecl.closure_ofs) arraySize
+					+$backup +(FuncDecl.closure_ofs) arraySize
 				arraySet
-#				push "Symbol param '" getmem -1 push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
-				getmem -5 +(FuncDecl.closure) getmem -1 getSym dec -$_sym_ofs
-#				push "Symbol '" getmem -1 push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
-				$symIsClosure leave 5 ret 0 ]
+#				push "Symbol param '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
+				+$backup +(FuncDecl.closure) +$symbol getSym dec -$_sym_ofs
+#				push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\\n" print 5
+				$symIsClosure jmp @_sc_ret ]
 	
-			getmem -2 +(FuncDecl.closure) getmem -1 getSym dec setmem -3
-			getmem -3 push -1 sup [
-				push "Error : enclosed closure for '" getmem -1 push "', offset " getmem -3 push ". can't handle that yet.\n" print 5
-				$symMustEnclose leave 5 ret 0 ]
+			+$locdic +(FuncDecl.closure) +$symbol getSym dec -$symofs
+			+$symofs push -1 sup [
+				push "Error : enclosed closure for '" +$symbol push "', offset " +$symofs push ". can't handle that yet.\n" print 5
+				$symMustEnclose jmp @_sc_ret ]
 
 			+$_sym_ofs
-			getmem -2 +(FuncDecl.locals) symTabSz dec
-			getmem -2 +(FuncDecl.parameters) symTabSz dec
+			+$locdic +(FuncDecl.locals) symTabSz dec
+			+$locdic +(FuncDecl.parameters) symTabSz dec
 			add sub
 			-$_sym_ofs
 
-			getmem -4 inc setmem -4
+			+$counter inc -$counter
 			jmp @_context_loop
 		]
 	]
 
-	+$glob_dic getmem -1 getSym setmem -3
-	getmem -3 [
-		getmem -3 -$_sym_ofs
-###		push "Symbol '" getmem -1 push "' is global at ofs " +$_sym_ofs push "\\n" print 5
-		$symIsGlobal leave 5 ret 0 ]
+	+$glob_dic +$symbol getSym -$symofs
+	+$symofs [
+		+$symofs -$_sym_ofs
+###		push "Symbol '" +$symbol push "' is global at ofs " +$_sym_ofs push "\\n" print 5
+		$symIsGlobal jmp @_sc_ret ]
 
 	$symUnknown
-	leave 5
+_sc_ret:}
 	ret 0
 
-getSymOffset:
-	enter 1
-	call @getSymContext 
-	setmem -1
-	getmem -1 $symIsLocal eq [[
-		push 0
-		+$call_local_ofs
-		sub
-		+$cur_fname call @funcDeclGet +(FuncDecl.locals)
-		astGetChildString 0
-		getSym
-		sub
-	][ getmem -1 $symIsParam eq [[
-		push 0
-		+$call_local_ofs
-		sub
-		+$cur_fname call @funcDeclGet +(FuncDecl.locals)
-		symTabSz dec
-		sub
-		+$cur_fname call @funcDeclGet +(FuncDecl.parameters)
-		astGetChildString 0
-		getSym
-		sub
-	][ getmem -1 $symIsGlobal eq [[
-			+$glob_dic
-			astGetChildString 0
-		getSym
-	][ getmem -1 $symIsClosure eq [[
-		push "Error : closures not yet implemented (can't handle symbol '"
-		getmem -1
-		push "')\n"
-		print 3
-	][ getmem -1 $symMushEnclose eq [[
-		push "Error : closures not yet implemented (can't handle symbol '"
-		getmem -1
-		push "')\n"
-		print 3
-	][ getmem -1 $symUnknown eq [
-		push "Error : symbol is unknown (can't handle symbol '"
-		getmem -1
-		push "')\n"
-		print 3
-	] ]] ]] ]] ]] ]]
-	leave 1
-	ret 0
-
-_skip_0:nop
+_skip_0:
 end
 
 language
@@ -467,7 +402,9 @@ language
  script_glob_fun ::= "function" sym script_fun_decl.
  script_anon_fun ::= "function" script_fun_decl.
  script_fun_decl ::= script_param_list script_fun_body.
- script_param_list ::= "(" ( sym ("," sym)* ")" | ")" ).
+ script_param_list ::= "(" ( ")" | (script_param ",")* ( script_vararg | script_param ) ")" ).
+ script_param ::= sym.
+ script_vararg ::= sym "...".
  script_fun_body ::= script_local? script_instruction+ "end".
  script_local ::= "local" sym ("," sym)*.
 
@@ -557,68 +494,56 @@ compile instruction_bloc asm compileStateDown end
 
 
 compile script_throw asm
-	astGetChildString 0
-	write_ocString "push"
-	write_oc "throw"
+	<< push s(astGetChildString 0) throw >>
 	compileStateNext
 end
 
-compile script_try asm
-	enter 3
-	push "try" call @gen_label setmem -1
-	push "catch" call @gen_label setmem -2
-	push "end_trycatch" call @gen_label setmem -3
 
-	# try: instCatcher @catch
-	getmem -1 write_label
-	getmem -2 write_ocLabel "instCatcher"
-	# ...
-	astCompileChild 0
-	# jmp @end_trycatch catch:
-	getmem -3 write_ocLabel "uninstCatcher"
-	getmem -2 write_label
-	# ...
-	getmem -3 -$current_end_tc
-	astCompileChild 1
-	# end_trycatch:
-	getmem -3 write_label
-	leave 3
+compile script_try asm
+	local try_lbl, catch_lbl, end_lbl {
+		push "try" call @gen_label -$try_lbl
+		push "catch" call @gen_label -$catch_lbl
+		push "end_trycatch" call @gen_label -$end_lbl
+
+		# try: instCatcher @catch
+		<< (+$try_lbl): instCatcher l(+$catch_lbl) >>
+		# ...
+		astCompileChild 0
+		# jmp @end_trycatch catch:
+		<< uninstCatcher l(+$end_lbl) (+$catch_lbl): >>
+		# ...
+		+$end_lbl -$current_end_tc
+		astCompileChild 1
+		# end_trycatch:
+		<< (+$end_lbl): >>
+	}
 	compileStateNext
 end
 
 
 compile catch_statement asm
-	enter 2
-	push "endcatch_" astGetChildString 0 strcat call @gen_label setmem -1
-
-	write_oc "getException"
-	astGetChildString 0 write_ocString "strcmp"
-	write_oc "SZ"
-	getmem -1 write_ocLabel "jmp"
-
-	astCompileChild 1
-
-	write_oc "pop"
-	+$current_end_tc write_ocLabel "jmp"
-	getmem -1 write_label
-	leave 2
+	local end_lbl {
+		push "endcatch_" astGetChildString 0 strcat call @gen_label -$end_lbl
+		<< getException strcmp s(astGetChildString 0) SZ jmp l(+$end_lbl) >>
+		astCompileChild 1
+		<< jmp l(+$current_end_tc) (+$end_lbl): >>
+	}
 	compileStateNext
 end
 
 compile catch_bloc asm
-	enter 1
-	push 0 setmem -1
-catch_bloc_loop:
-	getmem -1 astGetChildrenCount inf [
-		getmem -1 astCompileChild
-		getmem -1 inc setmem -1
-		jmp @catch_bloc_loop
-	]
+	local counter {
+		push 0 -$counter
+	catch_bloc_loop:
+		+$counter astGetChildrenCount inf [
+			+$counter astCompileChild
+			+$counter inc -$counter
+			jmp @catch_bloc_loop
+		]
 
-	# default: propagate exception
-	write_oc "getException"
-	write_oc "throw"
-	leave 1
+		# default: propagate exception
+		<< getException throw >>
+	}
 	compileStateNext
 end
 
@@ -628,73 +553,71 @@ asm
 	call @reset_tables
 	#pp_curNode
 	# size,counter
-	enter 2
-	# if(!node_opd_count) return
-	astGetChildrenCount
-	SNZ jmp @done_glob
-	# size = node_opd_count
-	astGetChildrenCount setmem -1
-	# write("data 0 rep $size end")
-	getmem -1 push 0 write_data
-	# counter=0
-	push 0 setmem -2
-	# do {
-fill_glob_dict:
-	# addsym(node_childString(counter,dic)
-	+$glob_dic getmem -2 astGetChildString addSym
-	# counter += 1
-	getmem -2 inc setmem -2
-	# } while(counter!=size)
-	getmem -2 getmem -1 sub SZ jmp @fill_glob_dict
-done_glob:
-	leave 2
+	local size, counter {
+		# if(!node_opd_count) return
+		astGetChildrenCount
+		SNZ jmp @done_glob
+		# size = node_opd_count
+		astGetChildrenCount -$size
+		# write("data 0 rep $size end")
+		+$size push 0 write_data
+		# counter=0
+		push 0 -$counter
+		# do {
+	fill_glob_dict:
+		# addsym(node_childString(counter,dic)
+		push "fill glob #" +$counter push "\\n" print 3
+		+$glob_dic +$counter astGetChildString addSym
+		# counter += 1
+		+$counter inc -$counter
+		# } while(counter<size)
+		+$counter +$size inf SZ jmp @fill_glob_dict
+	done_glob:
+	}
 	compileStateNext
 end
 
 
 compile script_glob_fun
 asm
-	enter 1
-	#pp_curNode
-	+$glob_dic astGetChildString 0 getSym [
-		push "Symbol " astGetChildString 0 push "\ already defined !\n" print 3
-		compileStateError
-		ret 0
-	]
+	local sz {
+		#pp_curNode
+		+$glob_dic astGetChildString 0 getSym [
+			push "Symbol " astGetChildString 0 push "\ already defined !\n" print 3
+			compileStateError
+			ret 0
+		]
 
-	astGetChildString 0 -$cur_fname
+		astGetChildString 0 -$cur_fname
 
-	push 1 push 0 write_data
-	#+$glob_dic symTabSz setmem -1
-	+$glob_dic
-	#getmem -1
-	+$cur_fname
-	addSym
-	+$glob_dic +$cur_fname getSym setmem -1
+		push 1 push 0 write_data
+		#+$glob_dic symTabSz -$sz
+		+$glob_dic
+		#+$sz
+		+$cur_fname
+		addSym
+		+$glob_dic +$cur_fname getSym -$sz
 
-	# do "cur_fname = ...fun..."
-	astCompileChild 1
+		# do "cur_fname = ...fun..."
+		astCompileChild 1
 
-#	push "Symbol '" +$cur_fname push "' has index " getmem -1 push "\\n" print 5
+	#	push "Symbol '" +$cur_fname push "' has index " +$sz push "\\n" print 5
 
-	getmem -1
-	write_ocInt "setmem"
+		<< setmem i(+$sz) >>
 
-	push "" -$cur_fname
-	leave 1
+		push "" -$cur_fname
+	}
 	compileStateNext
 end
 
 compile script_anon_fun
 asm
-	enter 1
-	+$call_local_ofs setmem -1
-	push 0 -$call_local_ofs
-	push "anon" call @gen_label -$cur_fname
-	astCompileChild 0
-	push "" -$cur_fname
-	getmem -1 -$call_local_ofs
-	leave 1
+	+$call_local_ofs
+		push 0 -$call_local_ofs
+		push "anon" call @gen_label -$cur_fname
+		astCompileChild 0
+		push "" -$cur_fname
+	-$call_local_ofs
 	compileStateNext
 end
 
@@ -703,66 +626,132 @@ compile script_fun_decl
 asm
 	#pp_curNode
 #	push "@@@   at start, $cur_fname = " +$cur_fname push "   @@@\\n" print 3
-	enter 4
-	+$cur_fname call @gen_label setmem -2
-	push "endfun" call @gen_label setmem -3
+	local locsz, fun_lbl, endfun_lbl, fname_backup, supargc, argc {
+		+$cur_fname call @gen_label -$fun_lbl
+		push "endfun" call @gen_label -$endfun_lbl
 
-	#push "start label \\\"" getmem -2 push "\\\"\\n" print 3
-	#push "end label \\\"" getmem -3 push "\\\"\\n" print 3
+		#push "start label \\\"" +$fun_lbl push "\\\"\\n" print 3
+		#push "end label \\\"" -$enfdun_lbl push "\\\"\\n" print 3
 
-	+$cur_fname
-	call @newFuncDecl
+		+$cur_fname
+		call @newFuncDecl
 
-	+$cur_fname
-	call @funcDeclEnter
+		+$cur_fname
+		call @funcDeclEnter
 
-	getmem -3 write_ocLabel "jmp"
-	getmem -2 write_label
+		<< jmp l(+$endfun_lbl) (+$fun_lbl): >>
 
-	+$cur_fname call @funcDeclGet getmem -2 -(FuncDecl.label)
+		+$cur_fname call @funcDeclGet +$fun_lbl -(FuncDecl.label)
 
-	+$cur_fname setmem -4
+		+$cur_fname -$fname_backup
 
-	doWalk "analyzeFuncDecl"
+		doWalk "analyzeFuncDecl"
 
-	getmem -4 -$cur_fname
+		+$fname_backup -$cur_fname
 
-	+$cur_fname
-	call @funcDeclGet
-	+(FuncDecl.locals)
-	symTabSz dec setmem -1
-	getmem -1 [
-		getmem -1
-		write_ocInt "enter"
-	]
+		# insert function header
+		#	- if no vararg : check against dynamic argc, throw badarg if nEq
+		#	- if vararg : compute supplementary argc, copy sup' args into an array, install the array as last arg
+		# first, code to fetch dynamic argc
+		+$cur_fname call @funcDeclGet +(FuncDecl.has_vararg) [[
+			nop
+	#		-$argc
+	#		+$argc
+	#		# compute supargc
+	#		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) sub 2 -$supargc
+	#		# check that supargc>=0
+	#		+$supargc write_ocInt "supEq"
+	#
+	#		# prepare array counter max
+	#		+$argc
+	#		+$supargc
+	#		sub
+	#
+	#		# throw if failed
+	#		push "check_argc_pass" call @gen_label -$supargc
+	#		write_oc "SZ"
+	#		+$supargc write_ocLabel "jmp"
+	#		push "WrongParameterCount" write_oc "throw"
+	#		+$supargc write_label
+	#
+	#	+$cur_fname push "_vastart_loop" strcat -$endfun_lbl
+	#	# start count
+	#<<
+	#	enter 2
+	#	arrayNew
+	#	arrayResv (+$argc)
+	#	-$fun_lbl
+	#	push 0 -$locsz
+	#	# get -1-count -th arg
+	#(:	+$fun_lbl 
+	#	push -1 +$locsz sub getmem
+	#	+$locsz
+	#	arraySet
+	#	+$locsz inc -$locsz
+	#	+$locsz inf (+$argc) SZ jmp @_loop
+	#>>	
+	#
+	#
+	#
+	#		# store array counter max
+	#		-$supargc
+	#		# now copy
+	#		push 1 write_ocInt "enter"
+	#		push 0 write_ocInt "push"
+	#		push -1 write_
+	#		push 1 write_ocInt "leave"
+			
 
-	# skip parameters list, directly compile body
-	astCompileChild 1
+		][
+			push "check_argc_pass" call @gen_label -$supargc
+			# throw if failed
+			<< push i( +$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec)
+			   eq
+			   SZ
+			   jmp l(+$supargc)
+			   push "WrongParameterCount"
+			   throw
+			   (+$supargc):
+			>>
+		]]
 
-	getmem -4 -$cur_fname
 
-	getmem -1 [
-		getmem -1
-		write_ocInt "leave"
-	]
+		+$cur_fname
+		call @funcDeclGet
+		+(FuncDecl.locals)
+		symTabSz dec -$locsz
+		+$locsz [
+			+$locsz
+			write_ocInt "enter"
+		]
 
-	push 0 write_ocInt "ret"
-	getmem -3 write_label
-	call @funcDeclLeave
-	getmem -2 write_ocLabel "dynFunNew"
+		# skip parameters list, directly compile body
+		astCompileChild 1
 
-	push 0 setmem -1
-#	push "\   @@@   NOW $cur_fname = " +$cur_fname push "   @@@\\n" print 3
-	+$cur_fname call @funcDeclGet +(FuncDecl.closure_ofs) setmem -2
-_addcls_loop:
-	getmem -2 arraySize getmem -1 sup [
-		getmem -2 getmem -1 arrayGet write_ocInt "getmem"
-		write_oc "dynFunAddClosure"
-		getmem -1 inc setmem -1
-		jmp @_addcls_loop
-	]
+		+$fname_backup -$cur_fname
 
-	leave 4
+		+$locsz [
+			+$locsz
+			write_ocInt "leave"
+		]
+
+		push 0 write_ocInt "ret"
+		+$endfun_lbl write_label
+		call @funcDeclLeave
+		+$fun_lbl write_ocLabel "dynFunNew"
+
+		push 0 -$locsz
+	#	push "\   @@@   NOW $cur_fname = " +$cur_fname push "   @@@\\n" print 3
+		+$cur_fname call @funcDeclGet +(FuncDecl.closure_ofs) -$fun_lbl
+	_addcls_loop:
+		+$fun_lbl arraySize +$locsz sup [
+			+$fun_lbl +$locsz arrayGet write_ocInt "getmem"
+			write_oc "dynFunAddClosure"
+			+$locsz inc -$locsz
+			jmp @_addcls_loop
+		]
+
+	}
 	compileStateNext
 end
 
@@ -771,31 +760,28 @@ compile script_local asm compileStateNext end
 
 compile script_call
 asm
-	enter 3
-	#astGetChildString 0
-	astCompileChild 0
-	#call @funcDeclGet
-	#setmem -1
-	push 1
-	setmem -2
-	#getmem -1
-	#+(FuncDecl.parameters)
-	#symTabSz dec setmem -3
-	astGetChildrenCount dec setmem -3
-	getmem -3 [ getmem -3 write_ocInt "enter" ]
-	getmem -3 +$call_local_ofs add -$call_local_ofs
-_call_param_loop:
-	getmem -2 astGetChildrenCount inf [
-		getmem -2 astCompileChild
-		push 0 getmem -2 sub write_ocInt "setmem"
-		getmem -2 inc setmem -2 jmp @_call_param_loop
-	]
-	#getmem -1 +(FuncDecl.label) write_ocLabel "call"
-	write_oc "call"
-	getmem -1
-	getmem -3 [ getmem -3 write_ocInt "leave" ]
-	+$call_local_ofs getmem -3 sub -$call_local_ofs
-	leave 3
+	local counter, max {
+
+		# push argc for use in function header
+		astGetChildrenCount dec write_ocInt "push"
+
+		astCompileChild 0
+		push 1
+		-$counter
+		astGetChildrenCount dec -$max
+		+$max [ +$max write_ocInt "enter" ]
+		+$max +$call_local_ofs add -$call_local_ofs
+	_call_param_loop:
+		+$counter astGetChildrenCount inf [
+			+$counter astCompileChild
+			push 0 +$counter sub write_ocInt "setmem"
+			+$counter inc -$counter jmp @_call_param_loop
+		]
+
+		write_oc "call"
+		+$max [ +$max write_ocInt "leave" ]
+		+$call_local_ofs +$max sub -$call_local_ofs
+	}
 	compileStateNext
 end
 
@@ -806,70 +792,68 @@ compile script_loc asm compileStateNext end
 
 compile script_id
 asm
-	enter 1
-#	+$cur_fname
-	astGetChildString 0
-	call @getSymContext setmem -1
-			getmem -1 $symIsLocal eq
-			getmem -1 $symIsGlobal eq
-		or
-		getmem -1 $symIsParam eq
-	or [[
-		+$is_lvalue [[
-			+$_sym_ofs
-			write_ocInt "setmem"
-			push 0 -$is_lvalue
-		][
-			+$_sym_ofs
-			write_ocInt "getmem"
-		]]
-		leave 1
-		compileStateNext
-	][
-		getmem -1 $symIsClosure eq [[
+	local symctxt {
+	#	+$cur_fname
+		astGetChildString 0
+		call @getSymContext -$symctxt
+				+$symctxt $symIsLocal eq
+				+$symctxt $symIsGlobal eq
+			or
+			+$symctxt $symIsParam eq
+		or [[
 			+$is_lvalue [[
 				+$_sym_ofs
-				write_ocInt "setClosure"
+				write_ocInt "setmem"
 				push 0 -$is_lvalue
 			][
 				+$_sym_ofs
-				write_ocInt "getClosure"
+				write_ocInt "getmem"
 			]]
-			leave 1
 			compileStateNext
 		][
-			push "At " astGetRow push ":" astGetCol push "\\t: " print 5
-			push "Error with symbol context for sym '" astGetChildString 0 push "' : " print 3
-			getmem -1 $symMustEnclose eq [ push "can't handle recursive closures yet\n" print 1]
-			getmem -1 $symUnknown eq [ push "symbol is unknown.\n" print 1]
-			leave 1
-			compileStateError
+			+$symctxt $symIsClosure eq [[
+				+$is_lvalue [[
+					+$_sym_ofs
+					write_ocInt "setClosure"
+					push 0 -$is_lvalue
+				][
+					+$_sym_ofs
+					write_ocInt "getClosure"
+				]]
+				compileStateNext
+			][
+				push "At " astGetRow push ":" astGetCol push "\\t: " print 5
+				push "Error with symbol context for sym '" astGetChildString 0 push "' : " print 3
+				+$symctxt $symMustEnclose eq [ push "can't handle recursive closures yet\n" print 1]
+				+$symctxt $symUnknown eq [ push "symbol is unknown.\n" print 1]
+				compileStateError
+			]]
 		]]
-	]]
+	}
 end
 
 
 compile script_print
 asm
 	# size,counter
-	enter 2
-	# if(!node_opd_count) return
-	astGetChildrenCount
-	SNZ jmp @done_print
-	# size = node_opd_count
-	astGetChildrenCount setmem -1
-	# counter=0
-	push 0 setmem -2
-	# do {
-fill_print:
-	getmem -2 astCompileChild
-	# counter += 1
-	getmem -2 inc setmem -2
-	# } while(counter!=size)
-	getmem -2 getmem -1 sub SZ jmp @fill_print
-done_print:
-	astGetChildrenCount write_ocInt "print"
-	leave 2
+	local size, counter {
+		# if(!node_opd_count) return
+		astGetChildrenCount
+		SNZ jmp @done_print
+		# size = node_opd_count
+		astGetChildrenCount -$size
+		# counter=0
+		push 0 -$counter
+		# do {
+	fill_print:
+		+$counter astCompileChild
+		# counter += 1
+		+$counter inc -$counter
+		# } while(counter!=size)
+		+$counter +$size inf SZ jmp @fill_print
+	done_print:
+		astGetChildrenCount write_ocInt "print"
+	}
 	compileStateNext
 end
 
@@ -877,15 +861,14 @@ end
 compile script_assign
 asm
 	#pp_curNode
-	enter 1
-	#getmem 1 astGetChildString 0 getSym setmem -1
-	# process righthand side
-	astCompileChild 1
-	# fetch memory location
-	#getmem -1 write_ocInt "setmem"
-	push 1 -$is_lvalue
-	astCompileChild 0
-	leave 1
+	local sym {
+		#getmem 1 astGetChildString 0 getSym -$sym
+		# process righthand side
+		astCompileChild 1
+		# process lefthand side
+		push 1 -$is_lvalue
+		astCompileChild 0
+	}
 	compileStateNext
 end
 
@@ -1071,52 +1054,33 @@ compile script_if
 asm
 	astGetChildrenCount push 3 eq [[
 		# if then else
-		enter 4
-		+$cur_fname strcat "_if" call @gen_label setmem -1
-		+$cur_fname strcat "_then" call @gen_label setmem -2
-		+$cur_fname strcat "_else" call @gen_label setmem -3
-		+$cur_fname strcat "_endif" call @gen_label setmem -4
+		local if_lbl, then_lbl, else_lbl, endif_lbl {
+			+$cur_fname strcat "_if" call @gen_label -$if_lbl
+			+$cur_fname strcat "_then" call @gen_label -$then_lbl
+			+$cur_fname strcat "_else" call @gen_label -$else_lbl
+			+$cur_fname strcat "_endif" call @gen_label -$endif_lbl
 
-		getmem -1 write_label
-		astCompileChild 0
-
-		write_oc "SNZ"
-		getmem -3
-		write_ocLabel "jmp"
-
-		getmem -2 write_label
-
-		astCompileChild 1
-
-		getmem -4 write_ocLabel "jmp"
-		getmem -3 write_label
-
-		astCompileChild 2
-
-		getmem -4 write_label
-
-		leave 4
+			<< (+$if_lbl): >>
+			astCompileChild 0
+			<< SNZ jmp l(+$else_lbl) (+$then_lbl): >>
+			astCompileChild 1
+			<< jmp l(+$endif_lbl) (+$else_lbl): >>
+			astCompileChild 2
+			<< (+$endif_lbl): >>
+		}
 	][
 		# if then
-		enter 3
-		+$cur_fname strcat "_if" call @gen_label setmem -1
-		+$cur_fname strcat "_then" call @gen_label setmem -2
-		+$cur_fname strcat "_endif" call @gen_label setmem -3
+		local if_lbl, then_lbl, endif_lbl {
+			+$cur_fname strcat "_if" call @gen_label -$if_lbl
+			+$cur_fname strcat "_then" call @gen_label -$then_lbl
+			+$cur_fname strcat "_endif" call @gen_label -$endif_lbl
 
-		getmem -1 write_label
-		astCompileChild 0
-
-		write_oc "SNZ"
-		getmem -3
-		write_ocLabel "jmp"
-
-		getmem -2 write_label
-
-		astCompileChild 1
-
-		getmem -3 write_label
-
-		leave 3
+			<< (+$if_lbl): >>
+			astCompileChild 0
+			<< SNZ jmp l(+$endif_lbl) (+$then_lbl): >>
+			astCompileChild 1
+			<< (+$endif_lbl): >>
+		}
 	]]
 	compileStateNext
 end
@@ -1125,25 +1089,16 @@ end
 compile script_while
 asm
 
-	# if then
-	enter 2
-	+$cur_fname strcat "_while" call @gen_label setmem -1
-	+$cur_fname strcat "_endwhile" call @gen_label setmem -2
+	local while_lbl, endwhile_lbl {
+		+$cur_fname strcat "_while" call @gen_label -$while_lbl
+		+$cur_fname strcat "_endwhile" call @gen_label -$endwhile_lbl
 
-	getmem -1 write_label
-	astCompileChild 0
-
-	write_oc "SNZ"
-	getmem -2
-	write_ocLabel "jmp"
-
-	astCompileChild 1
-
-	getmem -1 write_ocLabel "jmp"
-
-	getmem -2 write_label
-
-	leave 2
+		<< (+$while_lbl): >>
+		astCompileChild 0
+		<< SNZ jmp l(+$endwhile_lbl) >>
+		astCompileChild 1
+		<< jmp l(+$while_lbl) (+$endwhile_lbl): >>
+	}
 	compileStateNext
 end
 
