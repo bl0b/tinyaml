@@ -55,5 +55,8 @@ ml_core_gram.c: ../ml/ml_core.gram ../ml/ml_core.lib
 	echo ";" >> $@
 	rm -f .$@.tmp
 
+# The following is for profiling purpose only
 
+tinyaml_static:
+	gcc -ldl -lm -pthread -DTINYAML_EXT_DIR="\"/usr/local/lib/tinyaml/\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c ./*/*.c ml_core_gram.c /usr/local/lib/libtinyap.a -o tinyaml_static
 

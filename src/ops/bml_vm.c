@@ -185,9 +185,18 @@ void _VM_CALL vm_op_SZ(vm_t vm, int data) {
  * Jumps
  */
 
+/*! \brief Jumps by a fixed relative offset or to a label. */
 void _VM_CALL vm_op_jmp_Label(vm_t vm, word_t data) {
 	thread_t t=vm->current_thread;
 	t->jmp_ofs=t->IP+data;
+}
+
+/*! \brief Pops a relative offset from stack then jumps (aka computed jump). */
+void _VM_CALL vm_op_jmp(vm_t vm, word_t unused) {
+	thread_t t=vm->current_thread;
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	t->jmp_ofs=t->IP+d->data;
 }
 /*@}*/
 
@@ -339,7 +348,7 @@ void _VM_CALL vm_op_instCatcher_Label(vm_t vm, long rel_ofs) {
  * - jump at label in parameter
  */
 void _VM_CALL vm_op_uninstCatcher_Label(vm_t vm, long rel_ofs) {
-	call_stack_entry_t cse = _gpop(&vm->current_thread->catch_stack);
+	(void)_gpop(&vm->current_thread->catch_stack);
 	/*vm_printf("uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
 	vm->current_thread->jmp_seg=vm->current_thread->program;
 	vm->current_thread->jmp_ofs=vm->current_thread->IP+rel_ofs;
@@ -356,17 +365,18 @@ void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
 	call_stack_entry_t cse;
 	if((long)vm->current_thread->data_stack.sp>=0) {
 		vm_data_t d = _vm_pop(vm);
-		vm->exception = (struct _data_stack_entry_t[]) {{ DataInt, 0 }};	/* fast non-reentrant alloc */
 		if(d->type&DataManagedObjectFlag) {
 			vm_obj_ref_ptr(vm,(void*)d->data);
 		}
-		vm->exception->data = d->data;
-		vm->exception->type= d->type;
+		vm->exception.data = d->data;
+		vm->exception.type= d->type;
 	} else {
-		vm->exception = (struct _data_stack_entry_t[]){{ DataString, (word_t)"Global failure : throw without data."}};
+		vm->exception.type=DataString;
+		vm->exception.data=(word_t)"Global failure : throw without data.";
 	}
-	/*if(e->type&DataManagedObjectFlag) {*/
-		/*vm_obj_ref_ptr(vm,(void*)e->data);*/
+	/*vm_printf("VM exception state @%p %i:%8.8lX\n",vm->exception,vm->exception.type,vm->exception.data);*/
+	/*if(vm->exception->type&DataManagedObjectFlag) {*/
+		/*vm_obj_ref_ptr(vm,(void*)vm->exception->data);*/
 	/*}*/
 	if((long)vm->current_thread->catch_stack.sp>=0) {
 		cse = _gpop(&vm->current_thread->catch_stack);
@@ -383,7 +393,9 @@ void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
 }
 
 void _VM_CALL vm_op_getException(vm_t vm, word_t unused) {
-	vm_push_data(vm,vm->exception->type,vm->exception->data);
+	/*vm_printf("Get VM exception state @%p %i:%8.8lX\n",vm->exception,vm->exception.type,vm->exception.data);*/
+	vm_push_data(vm,vm->exception.type,vm->exception.data);
+	/*vm_printf("                       @%p %i:%8.8lX\n",vm->exception,vm->exception.type,vm->exception.data);*/
 }
 
 /*@}*/

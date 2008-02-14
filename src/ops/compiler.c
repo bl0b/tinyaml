@@ -148,7 +148,7 @@ void _VM_CALL vm_op_write_ocLabel(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_write_ocEnvSym_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	char argstr[512];
+	/*char argstr[512];*/
 	assert(arg->type==DataString||arg->type==DataObjStr);
 	/*vm_printf("vm_op_write_ocLabel_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgEnvSym, name, (char*)arg->data, -1, -1);
@@ -342,8 +342,13 @@ void _VM_CALL vm_op_newSymTab(vm_t vm, int rel_ofs) {
 
 void _VM_CALL vm_op_symTabSz(vm_t vm, word_t x) {
 	vm_data_t t = _vm_pop(vm);
-	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObjSymTab);
+	text_seg_t ts;
+	if(t->type==DataObjEnv) {
+		ts = & ((vm_dyn_env_t)t->data)->symbols;
+	} else {
+		assert(t->type==DataObjSymTab);
+		ts = (text_seg_t) t->data;
+	}
 	vm_push_data(vm,DataInt,ts->by_index.size);
 }
 
@@ -352,8 +357,13 @@ void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
 	vm_data_t k = _vm_pop(vm);
 	vm_data_t t = _vm_pop(vm);
 	word_t idx;
-	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObjSymTab);
+	text_seg_t ts;
+	if(t->type==DataObjEnv) {
+		ts = & ((vm_dyn_env_t)t->data)->symbols;
+	} else {
+		assert(t->type==DataObjSymTab);
+		ts = (text_seg_t) t->data;
+	}
 	assert(k->type==DataString||k->type==DataObjStr);
 	idx=text_seg_text_to_index(ts, (const char*)k->data);
 	/*vm_printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/

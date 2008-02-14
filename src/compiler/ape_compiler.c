@@ -70,27 +70,37 @@ void dump_ocn(opcode_chain_node_t ocn) {
 	};
 }
 
-program_t compile_wast(wast_t node, vm_t vm) {
+program_t compile_append_wast(wast_t node, vm_t vm, word_t* start_IP) {
 	/*vm_printf("compile_wast\n");*/
 	gpush(&vm->cn_stack,&vm->current_node);
 	vm->current_node = node;
 	tinyap_walk(node, "compiler", vm);
 	vm_set_lib_file(vm,NULL);
 	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
-	program_t ret = program_new();
-	ret->env = vm->env;
+	*start_IP = vm->current_edit_prg->code.size>>1;
+	/*ret->env = vm->env;*/
 	/*vm_printf("now %p\n",vm->result);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0", -1, -1);
 	docn_dat=docn_cod=0;
 	if(vm->result) {
 		if(vm->result->head) {
 			/*opcode_chain_apply(vm->result,dump_ocn);*/
-			opcode_chain_serialize(vm->result, vm_get_dict(vm), ret, vm->dl_handle);
+			opcode_chain_serialize(vm->result, vm_get_dict(vm), vm->current_edit_prg, vm->dl_handle);
 		}
 		opcode_chain_delete(vm->result);
 		vm->result=NULL;
 	}
 	/*vm_printf("\n-- New program compiled.\n-- Data size : %lu\n-- Code size : %lu\n\n",ret->data.size,ret->code.size);*/
+	return vm->current_edit_prg;
+}
+
+
+program_t compile_wast(wast_t node, vm_t vm) {
+	word_t zero;
+	program_t backup = vm->current_edit_prg,ret;
+	vm->current_edit_prg = program_new();
+	ret = compile_append_wast(node, vm, &zero);
+	vm->current_edit_prg = backup;
 	return ret;
 }
 
@@ -493,6 +503,7 @@ WalkDirection ape_compiler_LoadLib(wast_t node, vm_t vm) {
 		}
 	} else {
 		/*vm_printerrf("[VM:INFO] Library %s already loaded.\n",libname);*/
+		return Error;
 	}
 }
 

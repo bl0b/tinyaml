@@ -74,15 +74,21 @@ void _VM_CALL vm_op_arrayResv(vm_t vm, word_t unused) {
  */
 void _VM_CALL vm_op_arrayGet_Int(vm_t vm, word_t index) {
 	vm_data_t d = _vm_pop(vm);
-	dynarray_t da = (dynarray_t) d->data;
 	word_t ofs = index<<1;
 	word_t* data;
-	assert(d->type==DataObjArray);
+	dynarray_t da;
+	if(d->type==DataObjEnv) {
+		da = &((vm_dyn_env_t)d->data)->data;
+	} else {
+		da = (dynarray_t) d->data;
+		assert(d->type==DataObjArray);
+	}
 	data = da->data+ofs;
 	if(da->size>ofs+1) {
 		vm_push_data(vm,*data,*(data+1));
 		/*vm_printf("get %lu:%8.8lx from array %p\n",*data,*(data+1),da);*/
 	} else {
+		assert(da->size>ofs+1);
 		dynarray_reserve(da,ofs+2);
 		/* FIXME ? */
 		vm_printf("[ARRAY:WRN] index is out of bounds (%lu >= %lu\n",index,da->size);
@@ -109,10 +115,16 @@ void _VM_CALL vm_op_arrayGet(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_arraySet_Int(vm_t vm, word_t index) {
 	vm_data_t data = _vm_pop(vm);
 	vm_data_t d = _vm_peek(vm);
-	dynarray_t da = (dynarray_t) d->data;
 	word_t ofs = index<<1;
-	vm_data_t da_data = (vm_data_t)(da->data+ofs);
-	assert(d->type==DataObjArray);
+	vm_data_t da_data;
+	dynarray_t da;
+	if(d->type==DataObjEnv) {
+		da = &((vm_dyn_env_t)d->data)->data;
+	} else {
+		assert(d->type==DataObjArray);
+		da = (dynarray_t) d->data;
+	}
+	da_data = (vm_data_t)(da->data+ofs);
 	if(da->size>ofs+1) {
 		if(da_data->type&DataManagedObjectFlag) { vm_obj_deref_ptr(vm,(void*)da_data->data); }
 	} else {
@@ -144,8 +156,13 @@ void _VM_CALL vm_op_arraySet(vm_t vm, word_t unused) {
  */
 void _VM_CALL vm_op_arraySize(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
-	dynarray_t da = (dynarray_t) d->data;
-	assert(_is_a_ptr(da,DataObjArray));
+	dynarray_t da;
+	if(d->type==DataObjEnv) {
+		da = &((vm_dyn_env_t)d->data)->data;
+	} else {
+		assert(d->type==DataObjArray);
+		da = (dynarray_t) d->data;
+	}
 	vm_push_data(vm,DataInt,dynarray_size(da)>>1);
 }
 /*@}*/
@@ -248,7 +265,7 @@ void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index) {
 
 void _VM_CALL vm_op_envGet(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
-	const char*key = d->data;
+	const char*key = (const char*) d->data;
 	long index;
 	assert(d->type==DataString);
 	index = text_seg_text_to_index(&vm->env->symbols,key);

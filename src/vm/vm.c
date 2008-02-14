@@ -64,7 +64,9 @@ vm_t vm_new() {
 	ret->engine=stub_engine;
 	ret->engine->vm=ret;
 	ret->result=NULL;
-	ret->exception=NULL;
+	ret->current_edit_prg=NULL;
+	ret->exception.type=DataInt;
+	ret->exception.data=0;
 	ret->parser = tinyap_new();
 	tinyap_set_grammar_ast(ret->parser,ast_unserialize(ml_core_grammar));
 	opcode_dict_init(&ret->opcodes);
@@ -817,10 +819,11 @@ void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, 
 		vm_printerrf( "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
 	}
 	if(_glob_vm&&_glob_vm->current_thread) {
-		vm_printerrf("[VM:NOTICE] Killing current thread %p\n", _glob_vm->current_thread);
-		_glob_vm->engine->_thread_failed(_glob_vm,_glob_vm->current_thread);
-		vm_kill_thread(_glob_vm,_glob_vm->current_thread);
+		thread_t t = _glob_vm->current_thread;
 		_glob_vm->current_thread = NULL;
+		vm_printerrf("[VM:NOTICE] Killing current thread %p\n", t);
+		_glob_vm->engine->_thread_failed(_glob_vm,t);
+		vm_kill_thread(_glob_vm,t);
 		longjmp(_glob_vm_jmpbuf,1);
 	} else {
 		abort();

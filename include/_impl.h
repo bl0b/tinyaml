@@ -180,6 +180,7 @@ struct _vm_t {
 	tinyap_t parser;
 	/* meta-compiler */
 	struct _text_seg_t compile_vectors;
+	program_t current_edit_prg;
 	opcode_chain_t result;
 	WalkDirection compile_state;
 	wast_t current_node;
@@ -199,7 +200,7 @@ struct _vm_t {
 	struct _hashtab_t loadlibs;
 	/* globals */
 	vm_dyn_env_t env;
-	vm_data_t exception;
+	struct _data_stack_entry_t exception;
 	/* threads */
 	scheduler_algorithm_t scheduler;
 	word_t threads_count;
