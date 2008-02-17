@@ -8,9 +8,9 @@
 #################################################################################
 
 script
-	function export(sym,val) asm getmem -2 getmem -1 envAdd end end
-	function addTo(name,field,value) asm getmem -3 getmem -1 envGet getmem -2 mapSet end end
-	function exportGroup(name) asm mapNew getmem -1 envAdd end end
+	function export(sym,val) print "exporting '",sym,"'\n" asm getmem -2 getmem -1 envAdd end end
+	function addTo(name,field,value) print "adding '",field,"' to group '",name,"'\n" asm getmem -3 getmem -1 envGet getmem -2 mapSet end end
+	function exportGroup(name)  print "exporting Group '",name,"\n" asm mapNew getmem -1 envAdd end end
 	function strcmp(a,b) asm getmem -1 getmem -2 strcmp end end
 
 	export("export",export)

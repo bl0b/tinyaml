@@ -230,7 +230,9 @@ enum {
 	StdOutWin,
 	StdErrWin,
 
-	N_WINDOWS
+	N_WINDOWS,
+
+	Popup
 };
 
 struct _window_t windows[N_WINDOWS];
@@ -337,6 +339,9 @@ void do_quit() {
 }
 
 void do_help();
+void do_go();
+void do_breakpoints();
+
 
 typedef struct _command_t {
 	int ch;
@@ -358,6 +363,8 @@ command_t commands[N_WINDOWS][32] = {
 /* code window */ {
 	{ 's', "execute next opcode", do_step },
 	{ 'r', "run this thread", do_run },
+	{ 'g', "go to offset in code", do_go },
+	{ 'b', "breakpoints", do_breakpoints },
 { 0, NULL, NULL}}, /* data_seg */ {
 { 0, NULL, NULL}}, /* call_stack */ {
 { 0, NULL, NULL}}, /* data_stack */ {
@@ -372,6 +379,52 @@ command_t commands[N_WINDOWS][32] = {
 
 void read_command(vm_t vm, thread_t t);
 
+WINDOW* open_popup(int h, int w) {
+	return subwin(stdscr, h, w, (getmaxy(stdscr)-h)>>1, (getmaxx(stdscr)-w)>>1);
+}
+
+
+/* FIXME : unchecked dangerous input. */
+void input_value(const char* prompt, int len, const char* fmt, void* dest) {
+	int h=3, w=5+strlen(prompt)+len;
+	WINDOW* popup = open_popup(h, w);
+	mvwprintw(popup,1,1,"%s : ",prompt);
+	box(popup,0,0);
+	touchwin(stdscr);
+	wrefresh(popup);
+	refresh();
+	echo();
+	/*noraw();*/
+	/*timeout(-1);*/
+	nodelay(stdscr,0);
+	curs_set(1);
+	/*scanw(fmt,dest);*/
+	/*mvwscanw(stdscr, (getmaxy(stdscr)-h)>>1, ((getmaxx(stdscr)-w)>>1)+4+strlen(prompt),fmt,dest);*/
+	mvwscanw(popup, 1, 4+strlen(prompt),fmt,dest);
+	curs_set(0);
+	nodelay(stdscr,1);
+	/*timeout(0);*/
+	noecho();
+	delwin(popup);
+}
+
+void do_go() {
+	word_t ip;
+	input_value("Go to offset",6,"%X",&ip);
+	windows[CodeWin].vofs = ip&(~1);
+}
+
+void do_breakpoints() {
+	WINDOW* popup = open_popup(3, 21);
+	wprintw(popup,"\n  Not implemented ! ");
+	box(popup,0,0);
+	touchwin(stdscr);
+	wrefresh(popup);
+	refresh();
+	/*wrefresh(popup);*/
+	getch();
+	delwin(popup);
+}
 
 void do_help() {
 	int sz=0,tmp=0;
@@ -379,7 +432,7 @@ void do_help() {
 	while(commands_all[tmp].ch) { tmp+=1; }
 	while(commands[cur_win][sz].ch) { sz+=1; }
 	sz+=tmp+1+(commands[cur_win][0].ch!=0);
-	popup = subwin(stdscr, sz+2, 52, (getmaxy(stdscr)-sz-2)>>1, (getmaxx(stdscr)-52)>>1);
+	popup = open_popup(sz+2,52);
 	wprintw(popup,"\n");
 	if(commands[cur_win][0].ch) {
 		wprintw(popup,"\n");

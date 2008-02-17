@@ -104,9 +104,9 @@ walker analyzeFuncDecl {
 			push 0 -$counter
 		_sl_loop:
 			+$counter astGetChildrenCount nEq [
-				+$counter walkChild
+				#+$counter walkChild
 				+$cur_fname
-				astGetChildString
+				+$counter astGetChildString
 				call @funcDeclAddLocal
 				+$counter inc -$counter
 				jmp @_sl_loop
@@ -612,12 +612,14 @@ end
 
 compile script_anon_fun
 asm
-	+$call_local_ofs
+	local clo_backup {
+		+$call_local_ofs -$clo_backup
 		push 0 -$call_local_ofs
 		push "anon" call @gen_label -$cur_fname
 		astCompileChild 0
 		push "" -$cur_fname
-	-$call_local_ofs
+		+$clo_backup -$call_local_ofs
+	}
 	compileStateNext
 end
 
@@ -660,7 +662,7 @@ asm
 	#		# compute supargc
 	#		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) sub 2 -$supargc
 	#		# check that supargc>=0
-	#		+$supargc write_ocInt "supEq"
+	#		<<supEq i(+$supargc) >>
 	#
 	#		# prepare array counter max
 	#		+$argc
@@ -669,9 +671,9 @@ asm
 	#
 	#		# throw if failed
 	#		push "check_argc_pass" call @gen_label -$supargc
-	#		write_oc "SZ"
+	#		<< SZ >>
 	#		+$supargc write_ocLabel "jmp"
-	#		push "WrongParameterCount" write_oc "throw"
+	#		push "WrongParameterCount" << throw >>
 	#		+$supargc write_label
 	#
 	#	+$cur_fname push "_vastart_loop" strcat -$endfun_lbl
@@ -720,33 +722,24 @@ asm
 		call @funcDeclGet
 		+(FuncDecl.locals)
 		symTabSz dec -$locsz
-		+$locsz [
-			+$locsz
-			write_ocInt "enter"
-		]
+		+$locsz [ << enter i(+$locsz) >> ]
 
 		# skip parameters list, directly compile body
 		astCompileChild 1
 
 		+$fname_backup -$cur_fname
 
-		+$locsz [
-			+$locsz
-			write_ocInt "leave"
-		]
+		+$locsz [ << leave i(+$locsz) >> ]
 
-		push 0 write_ocInt "ret"
-		+$endfun_lbl write_label
+		<< ret 0 (+$endfun_lbl): dynFunNew l(+$fun_lbl) >>
 		call @funcDeclLeave
-		+$fun_lbl write_ocLabel "dynFunNew"
 
 		push 0 -$locsz
 	#	push "\   @@@   NOW $cur_fname = " +$cur_fname push "   @@@\\n" print 3
 		+$cur_fname call @funcDeclGet +(FuncDecl.closure_ofs) -$fun_lbl
 	_addcls_loop:
 		+$fun_lbl arraySize +$locsz sup [
-			+$fun_lbl +$locsz arrayGet write_ocInt "getmem"
-			write_oc "dynFunAddClosure"
+			<< getmem i(+$fun_lbl +$locsz arrayGet) dynFunAddClosure >>
 			+$locsz inc -$locsz
 			jmp @_addcls_loop
 		]
@@ -760,27 +753,32 @@ compile script_local asm compileStateNext end
 
 compile script_call
 asm
-	local counter, max {
+	local counter, max, clo_backup {
 
 		# push argc for use in function header
-		astGetChildrenCount dec write_ocInt "push"
+		<< push i(astGetChildrenCount dec) >>
 
 		astCompileChild 0
 		push 1
 		-$counter
 		astGetChildrenCount dec -$max
-		+$max [ +$max write_ocInt "enter" ]
+		+$max [ << enter i(+$max) >> ]
+		+$call_local_ofs -$clo_backup	# push for later
 		+$max +$call_local_ofs add -$call_local_ofs
+		push "before loop : max = " +$max push "\\n" print 3
+		push "before loop : call_local_ofs = " +$call_local_ofs push "\\n" print 3
 	_call_param_loop:
 		+$counter astGetChildrenCount inf [
 			+$counter astCompileChild
-			push 0 +$counter sub write_ocInt "setmem"
+			<< setmem i(push 0 +$counter sub) >>
 			+$counter inc -$counter jmp @_call_param_loop
 		]
-
-		write_oc "call"
-		+$max [ +$max write_ocInt "leave" ]
-		+$call_local_ofs +$max sub -$call_local_ofs
+		<< call >>
+		push "after loop : max = " +$max push "\\n" print 3
+		push "after loop : call_local_ofs = " +$call_local_ofs push "\\n" print 3
+		+$max [ << leave i(+$max) >> ]
+		#+$call_local_ofs +$max sub -$call_local_ofs
+		+$clo_backup -$call_local_ofs	# pop backup'd offset
 	}
 	compileStateNext
 end
@@ -802,23 +800,19 @@ asm
 			+$symctxt $symIsParam eq
 		or [[
 			+$is_lvalue [[
-				+$_sym_ofs
-				write_ocInt "setmem"
+				<< setmem i(+$_sym_ofs) >>
 				push 0 -$is_lvalue
 			][
-				+$_sym_ofs
-				write_ocInt "getmem"
+				<< getmem i(+$_sym_ofs) >>
 			]]
 			compileStateNext
 		][
 			+$symctxt $symIsClosure eq [[
 				+$is_lvalue [[
-					+$_sym_ofs
-					write_ocInt "setClosure"
+					<< setClosure i(+$_sym_ofs) >>
 					push 0 -$is_lvalue
 				][
-					+$_sym_ofs
-					write_ocInt "getClosure"
+					<< getClosure i(+$_sym_ofs) >>
 				]]
 				compileStateNext
 			][
@@ -852,7 +846,7 @@ asm
 		# } while(counter!=size)
 		+$counter +$size inf SZ jmp @fill_print
 	done_print:
-		astGetChildrenCount write_ocInt "print"
+		<< print i(astGetChildrenCount) >>
 	}
 	compileStateNext
 end
@@ -878,15 +872,14 @@ asm
 	#pp_curNode
 	# process righthand side
 	astCompileChild 0
-	push 0 write_ocInt "ret"
+	<< ret 0 >>
 	compileStateNext
 end
 
 
 compile script_string
 asm
-	astGetChildString 0
-	write_ocString "push"
+	<< push s(astGetChildString 0) >>
 	compileStateNext
 end
 
@@ -904,16 +897,14 @@ end
 
 compile script_int
 asm
-	astGetChildString 0 toI
-	write_ocInt "push"
+	<< push i(astGetChildString 0 toI) >>
 	compileStateNext
 end
 
 
 compile script_float
 asm
-	astGetChildString 0 toF
-	write_ocFloat "push"
+	<< push f(astGetChildString 0 toF) >>
 	compileStateNext
 end
 
@@ -936,9 +927,9 @@ end
 
 compile m_minus
 asm
-	push 0 write_ocInt "push"
+	<< push 0 >>
 	astCompileChild 0
-	write_oc "sub"
+	<< sub >>
 	compileStateNext
 end
 
@@ -947,7 +938,7 @@ compile m_add
 asm
 	astCompileChild 0
 	astCompileChild 1
-	write_oc "add"
+	<< add >>
 	compileStateNext
 end
 
@@ -956,7 +947,7 @@ compile m_sub
 asm
 	astCompileChild 0
 	astCompileChild 1
-	write_oc "sub"
+	<< sub >>
 	compileStateNext
 end
 
@@ -967,7 +958,7 @@ asm
 	astCompileChild 0
 	#pp_curNode
 	astCompileChild 1
-	write_oc "mul"
+	<< mul >>
 	compileStateNext
 end
 
@@ -976,7 +967,7 @@ compile m_div
 asm
 	astCompileChild 0
 	astCompileChild 1
-	write_oc "div"
+	<< div >>
 	compileStateNext
 end
 
@@ -988,7 +979,7 @@ compile b_and
 asm
 	astCompileChild 0
 	astCompileChild 1
-	write_oc "and"
+	<< and >>
 	compileStateNext
 end
 
@@ -997,7 +988,7 @@ compile b_or
 asm
 	astCompileChild 0
 	astCompileChild 1
-	write_oc "or"
+	<< or >>
 	compileStateNext
 end
 
@@ -1005,7 +996,7 @@ end
 compile b_not
 asm
 	astCompileChild 0
-	write_oc "not"
+	<< not >>
 	compileStateNext
 end
 
@@ -1027,22 +1018,22 @@ asm
 		push "' !\n"
 		print 3
 	][
-		write_oc "nEq"
+		<< nEq >>
 	]]
 	][
-		write_oc "eq"
+		<< eq >>
 	]]
 	][
-		write_oc "infEq"
+		<< infEq >>
 	]]
 	][
-		write_oc "supEq"
+		<< supEq >>
 	]]
 	][
-		write_oc "inf"
+		<< inf >>
 	]]
 	][
-		write_oc "sup"
+		<< sup >>
 	]]
 	pop
 	compileStateNext
@@ -1122,12 +1113,10 @@ end
 
 compile script_env asm
 	+$is_lvalue [[
-		astGetChildString 0
-		write_ocEnvSym "envSet"
+		<< envSet e(astGetChildString 0) >>
 		push 0 -$is_lvalue
 	][
-		astGetChildString 0
-		write_ocEnvSym "envGet"
+		<< envGet e(astGetChildString 0) >>
 	]]
 	compileStateNext
 end
@@ -1136,25 +1125,24 @@ end
 compile script_array_access asm
 	+$is_lvalue [[
 		push 0 -$is_lvalue
-		push -1 write_ocInt "dup"
+		<< dup -1 >>
 		astCompileChild 0
-		write_oc "arraySet"
+		<< arraySet >>
 		push 2
-		write_ocInt "pop"
+		<< pop >>
 	][
 		astCompileChild 0
-		write_oc "arrayGet"
+		<< arrayGet >>
 	]]
 	compileStateNext
 end
 
 compile script_struc_access asm
-	astGetChildString 0
 	+$is_lvalue [[
-		write_ocString "mapSet"
+		<< mapSet s(astGetChildString 0) >>
 		push 0 -$is_lvalue
 	][
-		write_ocString "mapGet"
+		<< mapGet s(astGetChildString 0) >>
 	]]
 	compileStateNext
 end

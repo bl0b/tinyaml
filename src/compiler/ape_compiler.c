@@ -85,6 +85,9 @@ program_t compile_append_wast(wast_t node, vm_t vm, word_t* start_IP) {
 	if(vm->result) {
 		if(vm->result->head) {
 			/*opcode_chain_apply(vm->result,dump_ocn);*/
+			if(!vm->current_edit_prg->env) {
+				vm->current_edit_prg->env = vm->env;
+			}
 			opcode_chain_serialize(vm->result, vm_get_dict(vm), vm->current_edit_prg, vm->dl_handle);
 		}
 		opcode_chain_delete(vm->result);
