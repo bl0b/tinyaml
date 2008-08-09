@@ -190,8 +190,9 @@ typedef struct _opcode_dict_t* opcode_dict_t;
  * @{
  */
 typedef enum {
-	DataInt=0,			/*!< 32-bit integer */
-	DataFloat=1,			/*!< 32-bit floating point */
+	DataNone=0,
+	DataInt=1,			/*!< 32-bit integer */
+	DataFloat=2,			/*!< 32-bit floating point */
 	DataString=OpcodeArgString,	/*!< static string */
 
 	DataManagedObjectFlag=0x100,	/*!< Managed object types have this bit set */

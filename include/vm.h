@@ -19,13 +19,13 @@
 #ifndef _BML_VM_H_
 #define _BML_VM_H_
 
+#include "config.h"
+
 #include "vm_types.h"
 #include "containers.h"
 #include "abstract_io.h"
 #include "code.h"
 #include "thread.h"
-
-#include "../config.h"
 
 /*! \addtogroup _pad _
  * F***ing bug in doxygen's grouping... nevermind.

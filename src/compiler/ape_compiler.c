@@ -70,7 +70,7 @@ void dump_ocn(opcode_chain_node_t ocn) {
 	};
 }
 
-program_t compile_append_wast(wast_t node, vm_t vm, word_t* start_IP) {
+program_t compile_append_wast(wast_t node, vm_t vm, word_t* start_IP, int last) {
 	/*vm_printf("compile_wast\n");*/
 	gpush(&vm->cn_stack,&vm->current_node);
 	vm->current_node = node;
@@ -80,7 +80,9 @@ program_t compile_append_wast(wast_t node, vm_t vm, word_t* start_IP) {
 	*start_IP = vm->current_edit_prg->code.size>>1;
 	/*ret->env = vm->env;*/
 	/*vm_printf("now %p\n",vm->result);*/
-	opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0", -1, -1);
+	if(last) {
+		opcode_chain_add_opcode(vm->result, OpcodeArgInt, "ret", "0", -1, -1);
+	}
 	docn_dat=docn_cod=0;
 	if(vm->result) {
 		if(vm->result->head) {
@@ -102,7 +104,7 @@ program_t compile_wast(wast_t node, vm_t vm) {
 	word_t zero;
 	program_t backup = vm->current_edit_prg,ret;
 	vm->current_edit_prg = program_new();
-	ret = compile_append_wast(node, vm, &zero);
+	ret = compile_append_wast(node, vm, &zero, 1);
 	vm->current_edit_prg = backup;
 	return ret;
 }
@@ -445,6 +447,25 @@ WalkDirection ape_compiler_LangComp(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_Preproc(wast_t node, vm_t vm) {
 	return Down;
 }
+
+WalkDirection ape_compiler_Include(wast_t node, vm_t vm) {
+	/* compile and fg-execute the mentioned program */
+	const char* fname = wa_op(wa_opd(node,0));
+	tinyap_set_source_file(vm->parser,fname);
+	tinyap_parse(vm->parser);
+
+	if(tinyap_get_output(vm->parser)) {
+		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
+		tinyap_walk(wa, "compiler", vm);
+		wa_del(wa);
+	} else {
+		vm_printf("Including %s :\nparser output : %p\n", fname, tinyap_get_output(vm->parser));
+		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+	}
+	return Next;
+}
+
+
 
 WalkDirection ape_compiler_Require(wast_t node, vm_t vm) {
 	/* compile and fg-execute the mentioned program */

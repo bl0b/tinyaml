@@ -192,7 +192,7 @@ void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, int rel_ofs) {
 	}
 	vec_ofs = (word_t)hash_find(&vm->compile_vectors.by_text,(hash_elem)local->data);
 	if(vec_ofs) {
-		vm_printf("[VM:ERR] vector already exists !\n");
+		vm_printf("[VM:ERR] vector %s already exists !\n", (const char*)local->data);
 		return;
 	}
 	name = strdup((const char*)local->data);

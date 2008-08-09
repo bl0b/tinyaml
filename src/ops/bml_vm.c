@@ -55,6 +55,12 @@ void _VM_CALL vm_op_pop(vm_t vm, word_t unused) {
 	vm_pop_data(vm,1);
 }
 
+void _VM_CALL vm_op_popN(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	vm_pop_data(vm,d->data);
+}
+
 void _VM_CALL vm_op_pop_Int(vm_t vm, word_t data) {
 	vm_pop_data(vm,data);
 }

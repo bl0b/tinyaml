@@ -44,15 +44,15 @@ static inline float i2f(long int i) {
 /*! @{ \brief Ease writing of arithmetic opcodes. */
 #define fast_apply_bin_int_func(_ta,_a,_tb,_b,_op,_ret)	do {\
 		_IFC _R;\
-		switch((((word_t)_ta)<<1)|((word_t)_tb)) {\
+		switch(((((word_t)_ta)-1)<<1)|(((word_t)_tb)-1)) {\
 		case 0:\
-			_R.i = _op((_a), (_b));\
+			_R.i = _op(*(long*)(&_a), *(long*)(&_b));\
 			break;\
 		case 1:\
-			_R.i = _op((_a), f2i(_b));\
+			_R.i = _op(*(long*)(&_a), f2i(_b));\
 			break;\
 		case 2:\
-			_R.i = _op(f2i(_a), (_b));\
+			_R.i = _op(f2i(_a), *(long*)(&_b));\
 			break;\
 		case 3:\
 			_R.i = _op(f2i(_a), f2i(_b));\
@@ -63,19 +63,23 @@ static inline float i2f(long int i) {
 
 #define fast_apply_bin_func(_ta,_a,_tb,_b,_opi,_opf,_ret,_ret_typ)	do {\
 		_IFC _R,_X,_Y;\
-		switch((((word_t)_ta)<<1)|((word_t)_tb)) {\
+		switch(((((word_t)_ta)-1)<<1)|(((word_t)_tb)-1)) {\
 		case 0:\
-			_R.i = _opi((_a), (_b));\
+			printf("int int\n");\
+			_R.i = _opi(*(long*)(&_a), *(long*)(&_b));\
 			break;\
 		case 1:\
+			printf("float int\n");\
 			_X.i = (_b);\
-			_R.f = _opf(i2f(_a), _X.f);\
+			_R.f = _opf(i2f(*(long*)(&_a)), _X.f);\
 			break;\
 		case 2:\
+			printf("int float\n");\
 			_X.i = (_a);\
-			_R.f = _opf(_X.f, i2f(_b));\
+			_R.f = _opf(_X.f, i2f(*(long*)(&_b)));\
 			break;\
 		case 3:\
+			printf("float float\n");\
 			_X.i = (_a);\
 			_Y.i = (_b);\
 			_R.f = _opf(_X.f, _Y.f);\

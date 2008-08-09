@@ -6,6 +6,7 @@ lib
         opcode push:String
        #opcode push:Opcode
         opcode pop
+        opcode popN
         opcode pop:Int          # pop n values
         opcode dup:Int          # duplicate n-th value on top of stack
 

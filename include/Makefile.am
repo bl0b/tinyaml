@@ -1,4 +1,5 @@
-include_HEADERS = \
+pkginclude_HEADERS = \
+		config.h \
                 abstract_io.h \
                 bml_ops.h \
                 code.h \

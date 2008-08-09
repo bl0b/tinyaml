@@ -1,3 +1,5 @@
+loadlib RTC
+
 data
 	0
 	0
@@ -28,10 +30,9 @@ _th:
 	enter 2
 _loop:
 	_RTC_nextTask
-	#push "\ntask !\n" print 1
 	setmem -1	# function
 	setmem -2	# date
-	push "\nTâche " getmem -1 push "\ à la date " getmem -2 push "\n" print 5
+	push "\nTâche " getmem -1 push " à la date " getmem -2 push "\n" print 5
 
 	getmem -2 getmem -1 call
 
@@ -48,17 +49,17 @@ _stop:
 	ret 0
 
 _main:
-	push "\                         on attend 5 secondes (10 battements)\r"
+	push "                         on attend 2.5 secondes (5 battements)\r"
 	print 1
-	push 10.0
+	push 5.0
 	RTC_wait
 	push "\nterminé.\n"
 	dynFunNew @_stop
-	RTC_getBeat add 6.0
+	RTC_getBeat add 3.0
 	RTC_sched
-	push "\n                         on attend encore 5 secondes (10 battements)\r"
+	push "\n                         on attend encore 2.5 secondes (5 battements)\r"
 	print 1
-	push 20.0
+	push 10.0
 	RTC_wait
 	
 	push "\n"

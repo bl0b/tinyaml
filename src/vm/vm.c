@@ -70,7 +70,7 @@ vm_t vm_new() {
 	ret->parser = tinyap_new();
 	tinyap_set_grammar_ast(ret->parser,ast_unserialize(ml_core_grammar));
 	opcode_dict_init(&ret->opcodes);
-	init_hashtab(&ret->loadlibs,hash_str,strcmp);
+	init_hashtab(&ret->loadlibs, (hash_func) hash_str, (compare_func) strcmp);
 	ret->current_node=NULL;
 	gstack_init(&ret->cn_stack,sizeof(wast_t));
 	ret->threads_count=0;

@@ -11,6 +11,8 @@
 
 #include <pthread.h>
 
+/* small include hack : use output redictection by VM instead of plain printf */
+int vm_printf(const char* fmt, ...);
 
 #define FLOAT_IMPREC .000001f /* to prevent floating-point roundoff errors */
 
