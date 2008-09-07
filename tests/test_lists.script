@@ -1,0 +1,17 @@
+script
+	global a,b,c
+
+	function foo()
+		return "bar"
+	end
+
+	a,b,c = 1,2,3
+	print(a," ",b," ",c,"\n")
+	a,b,c = foo(),foo(),foo()
+	print(a," ",b," ",c,"\n")
+	a,b,c = 1,foo(),2
+	print(a," ",b," ",c,"\n")
+	a,b,c = foo()
+	print(a," ",b," ",c,"\n")
+
+end

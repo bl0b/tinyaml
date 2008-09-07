@@ -5,8 +5,8 @@ script
 
 	function test()
 		try toto() catch
-			hop: print "haha.\n"
-			pouet: print "\"\\o/\"\n"
+			hop: print("haha.\n")
+			pouet: print("'\\o/'\n")
 		end
 	end
 
@@ -23,7 +23,7 @@ script
 		notest()
 		test()
 	catch
-		pouet: print "hop.\n"
+		pouet: print("hop.\n")
 	end
 
 #	notest()

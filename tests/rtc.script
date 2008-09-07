@@ -5,7 +5,7 @@ loadlib RTC
 script
 	global d#,rtc_init,rtc_term
 
-	function getEnv(sym) asm getmem -1 envGet end end
+	function getEnv(sym) asm getmem -1 envGet push 1 ret 0 end end
 
 #	rtc_init=getEnv("rtc_init")
 #	rtc_term=getEnv("rtc_term")
@@ -32,12 +32,12 @@ script
 	function genDisp(disp)
 		return function()
 			local date asm setmem -1 end # get date from stack
-			print "Display : ",disp,"\ at ",date,"\n"
+			print("Display : ",disp,"\ at ",date,"\n")
 		end
 	end
 
 	function disp(str)
-		print "Display : ",str," at ",rtcDate(),"\n"
+		print("Display : ",str," at ",rtcDate(),"\n")
 	end
 
 
