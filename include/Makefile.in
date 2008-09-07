@@ -107,6 +107,7 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -162,6 +163,8 @@ sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+tinyap_CFLAGS = @tinyap_CFLAGS@
+tinyap_LIBS = @tinyap_LIBS@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pkginclude_HEADERS = \
@@ -186,7 +189,8 @@ pkginclude_HEADERS = \
                 vm_assert.h \
                 vm_engine.h \
                 vm.h \
-                vm_types.h
+                vm_types.h \
+                tinyaml.h
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am

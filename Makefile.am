@@ -6,5 +6,5 @@ thread_states.png: thread_states.dot
 tinyaml.pc: tinyaml.pc.in
 	./gen_pc.pl tinyaml.pc.in "$(prefix)" "$(VERSION)"
 
-install: tinyaml.pc
+install: tinyaml.pc install-recursive
 

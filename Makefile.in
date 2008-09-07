@@ -121,6 +121,7 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -176,6 +177,8 @@ sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+tinyap_CFLAGS = @tinyap_CFLAGS@
+tinyap_LIBS = @tinyap_LIBS@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = src include extension ml tests
@@ -615,7 +618,7 @@ thread_states.png: thread_states.dot
 tinyaml.pc: tinyaml.pc.in
 	./gen_pc.pl tinyaml.pc.in "$(prefix)" "$(VERSION)"
 
-install: tinyaml.pc
+install: tinyaml.pc install-recursive
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

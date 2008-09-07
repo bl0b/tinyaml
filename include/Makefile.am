@@ -20,5 +20,6 @@ pkginclude_HEADERS = \
                 vm_assert.h \
                 vm_engine.h \
                 vm.h \
-                vm_types.h
+                vm_types.h \
+                tinyaml.h
 

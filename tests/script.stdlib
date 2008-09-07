@@ -14,13 +14,13 @@ script
 	end
 	function addTo(name,field,value)
 		#print "adding '",field,"' to group '",name,"'\\n"
-		asm getmem -3 getmem -1 envGet getmem -2 mapSet end
+		asm getmem -3 getmem -1 envGet getmem -2 mapSet push 0 end
 	end
 	function exportGroup(name)
 #		print "exporting Group '",name,"\\n"
 		asm mapNew getmem -1 envAdd end
 	end
-	function strcmp(a,b) asm getmem -1 getmem -2 strcmp end end
+	function strcmp(a,b) asm getmem -1 getmem -2 strcmp push 1 ret 0 end end
 
 	export("export",export)
 
@@ -28,9 +28,9 @@ script
 
 	addTo("String","compare",strcmp)
 	addTo("String","append",
-		function(a,b) asm getmem -1 getmem -2 strcat end end)
+		function(a,b) asm getmem -1 getmem -2 strcat push 1 ret 0 end end)
 	addTo("String","charAt",
-		function(str,i) asm getmem -1 getmem -2 charAt end end)
+		function(str,i) asm getmem -1 getmem -2 charAt push 1 ret 0 end end)
 	addTo("String","setCharAt",
 		function(str,i,c) asm getmem -1 getmem -3 getmem -2 setCharAt end end)
 
@@ -49,7 +49,7 @@ script
 			end
 		end)
 	addTo("Compiler","toto",
-		function(x) print "Toto ",x,"\n" end)
+		function(x) print("Toto ",x,"\n") end)
 	addTo("Compiler","opcodeNoArg",
 		function(oc) asm getmem -1 write_oc end end)
 	addTo("Compiler","opcodeInt",
@@ -69,9 +69,9 @@ script
 	addTo("Compiler","printNode",
 		function() asm pp_curNode end end)
 	addTo("Compiler","getChildString",
-		function(i) asm getmem -1 astGetChildString end end)
+		function(i) asm getmem -1 astGetChildString push 1 ret 0 end end)
 	addTo("Compiler","getChildrenCount",
-		function() asm astGetChildrenCount end end)
+		function() asm astGetChildrenCount push 1 ret 0 end end)
 	addTo("Compiler","compileChild",
 		function(i) asm getmem -1 astCompileChild end end)
 	addTo("Compiler","walk",
@@ -79,9 +79,9 @@ script
 
 	exportGroup("Array")
 	addTo("Array","new",
-		function() asm arrayNew end end)
+		function() asm arrayNew push 1 ret 0 end end)
 	addTo("Array","size",
-		function(a) asm getmem -1 arraySize end end)
+		function(a) asm getmem -1 arraySize push 1 ret 0 end end)
 	addTo("Array","apply",
 		function(a,f)
 			local i,j
@@ -105,9 +105,9 @@ script
 
 	exportGroup("SymTab")
 	addTo("SymTab","new",
-		function() asm newSymTab end end)
+		function() asm newSymTab push 1 ret 0 end end)
 	addTo("SymTab","size",
-		function(st) asm getmem -1 symTabSz end end)
+		function(st) asm getmem -1 symTabSz push 1 ret 0 end end)
 
 end
 

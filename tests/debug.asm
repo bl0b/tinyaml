@@ -3,6 +3,7 @@
 require "struc.routines"
 
 #data 0 0 "\\t" "\\n" end
+
 glob
 	wibble = 0
 	wobble = 0
@@ -32,14 +33,14 @@ _start:
 #	print 2
     nop
         strucNew foobar {
-                foo:  asm dynFunNew @_dump_struc_cls $wibble dynFunAddClosure end
-                bar:  asm dynFunNew @_dump_struc_cls $wobble dynFunAddClosure end
-                baz:push 3.3
+                foo:	asm dynFunNew @_dump_struc_cls $wibble dynFunAddClosure end
+                bar:	asm dynFunNew @_dump_struc_cls $wobble dynFunAddClosure end
+                baz:	push 3.3
         } -$wibble
         strucNew foobar {
-                foo:  push 7
-                bar:  push "\tbla\t"
-                baz:push 3.3
+                foo:	push 7
+                bar:	push "\tbla\t"
+                baz:	push 3.3
         } -$wobble
 
     enter 1

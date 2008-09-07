@@ -99,6 +99,11 @@ lib
         opcode sub:Float
         opcode mul:Float
         opcode div:Float
+
+        opcode sin
+        opcode cos
+        opcode tan
+
       # AST manipulation
         opcode astGetOp
         opcode astGetRow
@@ -223,6 +228,7 @@ lib
 
       # FIXME: output and debug mechanisms
         opcode print:Int
+        opcode print                    # pop n
 
 
 

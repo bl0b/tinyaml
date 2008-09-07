@@ -43,19 +43,19 @@ getLocSym:
 		dup -1
 	getSym
 	setmem -1
-	push "getLocSym " getmem -1 push "\\n" print 3
+	#push "getLocSym " getmem -1 push "\\n" print 3
 	push 0
 	getmem -1
 	sub
 	leave 1
-	push "getLocSym " dup -1 push "\\n" print 3
+	#push "getLocSym " dup -1 push "\\n" print 3
 	#retval 1
 	ret 0
 
 addLocSym:
 	enter 1
 		setmem -1
-		push "addLocSym " getmem -1 push "\\n" print 3
+		#push "addLocSym " getmem -1 push "\\n" print 3
 		getmem 4
 		getmem -1
 	addSym
@@ -77,13 +77,13 @@ getGlobSym:
 		getmem 2
 		dup -1
 	getSym
-	push "getGlobSym " dup -1 push "\\n" print 3
+	#push "getGlobSym " dup -1 push "\\n" print 3
 	retval 1
 
 addGlobSym:
 	enter 1
 		setmem -1
-		push "addGlobSym " getmem -1 push "\\n" print 3
+		#push "addGlobSym " getmem -1 push "\\n" print 3
 		getmem 2
 		getmem -1
 	addSym

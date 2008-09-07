@@ -161,6 +161,15 @@ void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
 	fflush(stdout);
 	vm_pop_data(vm,n);
 }
+
+
+void _VM_CALL vm_op_print(vm_t vm, int n) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	/*printf("[[[print %i]]]\n", d->data);*/
+	vm_op_print_Int(vm, d->data);
+}
+
 /*@}*/
 
 
@@ -571,8 +580,8 @@ void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
 		vm_obj_ref_ptr(vm,f->closure);
 	}
 	index = f->closure->size;
-	dynarray_set(f->closure,f->closure->size,dc->type);
-	dynarray_set(f->closure,f->closure->size,data);
+	dynarray_set(f->closure,index+1,data);
+	dynarray_set(f->closure,index,dc->type);
 	/*vm_printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);*/
 }
 

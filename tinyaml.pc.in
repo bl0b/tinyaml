@@ -1,8 +1,10 @@
 prefix = #PREFIX#
 
-includedir=${prefix}/include/tinyaml
+includedir=${prefix}/include
 libdir=${prefix}/lib
 extlibdir=${libdir}/tinyaml
+extlibcflags=-I${includedir}
+extliblibs=-L${libdir} -ltinyaml -pthread -Wl,-shared
 
 Name: Tinyaml (This is not yet another meta-language)
 Description: A meta-language, its compiler and compiler-compiler, and a light and easily extendable virtual machine to support it all.

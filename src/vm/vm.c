@@ -194,7 +194,7 @@ vm_t vm_set_lib_file(vm_t vm, const char*fname) {
 	snprintf(buffer,1024,"%s/libtinyaml_%s.so",TINYAML_EXT_DIR,fname);
 	vm->dl_handle = dlopen(buffer, RTLD_LAZY);
 	if(!vm->dl_handle) {
-		vm_printerrf("[VM:WARN] Couldn't open library \"%s\"\n",buffer);
+		vm_printerrf("[VM:WARN] Couldn't open library \"%s\"\n: %s\n",buffer, dlerror());
 	}
 	return vm;
 }
@@ -817,6 +817,12 @@ void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, 
 		vm_printerrf( "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
 	} else {
 		vm_printerrf( "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
+		if(!strcmp(function+6, "throw") &&
+				(_glob_vm->exception.type==DataString ||
+					_glob_vm->exception.type==DataObjStr)) {
+			vm_printerrf("Exception String : %s\n", (char*) _glob_vm->exception.data);
+			
+		}
 	}
 	if(_glob_vm&&_glob_vm->current_thread) {
 		thread_t t = _glob_vm->current_thread;

@@ -1,0 +1,40 @@
+#!./tinyaml_script_interpreter.sh
+script
+
+global bla,pouet
+
+#function newArray() asm arrayNew end end
+#function newMap() asm mapNew end end
+
+asm _line_9: end
+
+function fibo(n)
+asm _line_12: nop end
+	if n<=2 then return 1 end
+asm _line_14: nop end
+	return fibo(n-1)+fibo(n-2)
+asm _line_16: nop end
+end
+
+
+#bla = newArray()
+
+#bla[2]=17
+#bla[1]=3
+
+asm _line_25: nop end
+pouet = 1
+asm _line_27: nop end
+while pouet <= 27 do
+asm _line_29: nop end
+	bla = fibo(pouet)
+asm _line_31: nop end
+	print ( "Fibo(",pouet,") = ",bla,"\n" )
+asm _line_33: nop end
+	pouet = pouet+1
+asm _line_35: nop end
+end
+asm _line_37: end
+
+end
+

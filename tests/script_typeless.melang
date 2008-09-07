@@ -59,6 +59,8 @@ require "symasm.melang" glob
 	symMustEnclose = 105		#
 	symUnknown = 106		#
 
+	call_size         = 0
+	expr_size         = 0
 	legal_return_size = 0		# number of values that must or may be returned.
 					# 0 causes any return to be discarded.
 					# 1 or more retain only as many values, and make the call fail if not enough values are returned.
@@ -66,6 +68,7 @@ require "symasm.melang" glob
 					# full running size handling is :
 					# local sz { push 0 -$sz (compile_expr...) (compile one call) +$sz add -$sz (...) +$sz add (computed constant : count of expressions in return (all children - all calls)) }
 					# TODO : handle running size in call parameters lists also !
+
 	expr_list_calls = 0		# temporary variable : count calls in a script_expr_list
 	expr_list_exprs = 0		# temporary variable : count single expressions in a script_expr_list
 
@@ -498,16 +501,20 @@ language
 
  script_print ::= "print" script_print_loop.
  script_print_loop = ( script_expr "," script_print_loop | script_expr ).
- script_expr = ( script_string | script_anon_fun | b_expr | m_expr ).
+ script_expr = (script_expr_atom | script_expr_tuple).
+ 
+ script_expr_atom ::= ( script_string | script_anon_fun | b_expr | m_expr ).
+ script_expr_tuple ::= script_call.
 
  script_return ::= "return" script_expr_list.
- script_expr_list ::= _epsilon (script_expr ",")* script_expr.
+ script_expr_list ::= _epsilon (script_expr ",")* script_expr script_expr_list_end.
+ script_expr_list_end ::= _epsilon.
 
  script_assign ::= script_var_list "=" script_expr_list.
 
  script_int ::= int.
  script_float ::= float.
- number = ( script_float | script_int | script_call | script_var | "(" m_expr ")" ).
+ number = ( script_float | script_int | script_call_ret_1 | script_var | "(" m_expr ")" ).
 
  script_var ::= ( script_var (script_array_access|script_struc_access) | ( script_env | script_id )).
  script_var_list ::= _epsilon (script_var ",")* script_var.
@@ -520,7 +527,9 @@ language
  m_expr = expr4.
  b_expr = bexpr4.
 
-atom = ( script_float | script_int | script_call | script_var | "(" script_expr ")" ).
+atom = ( script_float | script_int | script_call_ret_1 | script_var | "(" script_expr ")" ).
+
+script_call_ret_1 ::= script_call.
 
 m_minus ::= "-" number.
 m_div ::= ( m_div "/" expr0 | expr0 "/" expr0 ).
@@ -776,13 +785,23 @@ asm
 		][
 			push "check_argc_pass" call @gen_label -$supargc
 			# throw if failed
-			<< push i( +$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec)
+			<< dup 0
+			   push i( +$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec)
 			   eq
 			   SZ
 			   jmp l(+$supargc)
-			   push "WrongParameterCount"
+			   push "WrongParameterCount ("
+			   push i( +$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec) toS
+			   strcat
+			   push " expected, "
+			   strcat
+			   dup -1 toS
+			   strcat
+			   push " given)"
+			   strcat
 			   throw
 			   (+$supargc):
+			   pop
 			>>
 			+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
 			+$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec
@@ -848,6 +867,9 @@ walker exprListType {
 
 	# entry point
 	on script_expr_list asm pp_curNode compileStateDown end
+	on script_expr_atom asm compileStateDown end
+	on script_expr_tuple asm compileStateDown end
+	on script_expr_end asm compileStateNext end
 
 	# expr is a call
 	on script_call asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
@@ -902,14 +924,42 @@ asm
 				# sinon, running size
 				$exprListRunningSize -$list_algo
 				push "selecting list algo : Running size\n" print 1
+				<< enter 1 push 0 setmem -1 >>
 			]]
 		]]
 	}
+	push 0 -$expr_size
 	compileStateDown
+end
+
+compile script_expr_list_end
+asm
+	+$list_algo $exprListRunningSize [
+		<< getmem -1 add i(+$expr_size) leave 1 >>
+	]
+	compileStateNext
+end
+
+compile script_expr_atom
+asm
+	astCompileChild 0
+	+$expr_size inc -$expr_size
+	compileStateNext
+end
+
+compile script_expr_tuple
+asm
+	# it is a call inside
+	astCompileChild 0
+	+$list_algo $exprListRunningSize [
+		<< getmem -1 add setmem -1 >>
+	]
+	compileStateNext
 end
 
 compile script_var_list
 asm
+	astGetChildrenCount -$legal_expr_size
 	compileStateDown
 end
 
@@ -923,6 +973,17 @@ asm
 	compileStateNext
 end
 
+compile script_call_ret_1
+asm
+	enter 1	+$legal_return_size setmem -1
+	push 1
+	+$legal_return_size
+	astCompileChild 0
+	getmem -1 -$legal_return_size
+	leave 1
+	compileStateNext
+end
+
 compile script_call
 asm
 	local counter, max, clo_backup, ret_fail, ret_good {
@@ -930,17 +991,17 @@ asm
 		push 1
 		-$counter
 		astGetChildrenCount dec -$max
-#		push "before loop : max = " +$max push "\\n" print 3
-#		push "before loop : call_local_ofs = " +$call_local_ofs push "\\n" print 3
+		pp_curNode
+		push "before loop : max = " +$max push "\\n" print 3
+		push "before loop : call_local_ofs = " +$call_local_ofs push "\\n" print 3
 
 	_call_param_loop:
 		+$counter astGetChildrenCount inf [
 			+$counter astCompileChild
-			#<< setmem i(push 0 +$counter sub) >>
 			+$counter inc -$counter jmp @_call_param_loop
 		]
-		# push argc for use in function header
-		<< push i(astGetChildrenCount dec) >>
+		### push argc for use in function header
+		##<< push i(astGetChildrenCount dec) >>
 		# (push function object)
 		astCompileChild 0
 		# call
@@ -953,14 +1014,15 @@ asm
 				# discard some results if there are more
 				# FIXME : clean up, remove {inf,eq,sub}.Int, remove botched code, rewrite everything in here.
 				<<
-					enter 1 setmem -1
-					getmem -1 inf i(+$legal_return_size) SZ jmp l(+$ret_fail)
-					getmem -1 eq i(+$legal_return_size) SNZ jmp l(+$ret_good)
-					getmem -1 sub i(+$legal_return_size) popN
+					dup 0 inf i(+$legal_return_size) SZ jmp l(+$ret_fail)
+					dup 0 eq i(+$legal_return_size) SNZ jmp l(+$ret_good)
+					dup 0 sub i(+$legal_return_size) popN
 					jmp l(+$ret_good)
 				(+$ret_fail):
+					pop
 					push "InvalidReturnSize" throw
 				(+$ret_good):
+					pop
 				>>
 			][
 				# compute running size, counter is in mem -1
@@ -971,8 +1033,8 @@ asm
 			<< popN >>
 		]]
 
-#		push "after loop : max = " +$max push "\\n" print 3
-#		push "after loop : call_local_ofs = " +$call_local_ofs push "\\n" print 3
+		push "after loop : max = " +$max push "\\n" print 3
+		push "after loop : call_local_ofs = " +$call_local_ofs push "\\n" print 3
 
 #		astCompileChild 0
 #		push 1

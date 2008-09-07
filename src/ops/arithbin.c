@@ -233,12 +233,12 @@ void _VM_CALL vm_op_sub(vm_t vm, word_t immed) {
 	vm_peek_data(vm,0,&dtb,&b);
 	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
-	printf("debug sub : a=%li b=%li\n", a, b);
+	/*printf("debug sub : a=%li b=%li\n", a, b);*/
 	assert(sizeof(long)==sizeof(size_t));
 	assert(sizeof(size_t)==sizeof(word_t));
 	assert(4==sizeof(word_t));
 	fast_apply_bin_func(dta,a,dtb,b,_sub,_sub,a,dta);
-	printf("debug sub : a=%li\n", a);
+	/*printf("debug sub : a=%li\n", a);*/
 	vm_poke_data(vm,dta,a);
 }
 
@@ -400,6 +400,34 @@ void _VM_CALL vm_op_nEq(vm_t vm, word_t unused) {
 	fast_apply_bin_func(dta,a,dtb,b,_neq,_neq,a,dta);
 	vm_poke_data(vm,dta,a);
 	/*vm_printf("%li\n",a);*/
+}
+
+void _VM_CALL vm_op_sin(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	_IFC conv;
+	float f;
+	assert(d->type==DataFloat);
+	conv.i = d->data;
+	conv.f = sinf(conv.f);
+	vm_push_data(vm, DataFloat, conv.i);
+}
+
+void _VM_CALL vm_op_cos(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	_IFC conv;
+	assert(d->type==DataFloat);
+	conv.i = d->data;
+	conv.f = cosf(conv.f);
+	vm_push_data(vm, DataFloat, conv.i);
+}
+
+void _VM_CALL vm_op_tan(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	_IFC conv;
+	assert(d->type==DataFloat);
+	conv.i = d->data;
+	conv.f = tanf(conv.f);
+	vm_push_data(vm, DataFloat, conv.i);
 }
 
 /*@}*/

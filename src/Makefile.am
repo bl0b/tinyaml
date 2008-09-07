@@ -2,8 +2,8 @@
 bin_PROGRAMS = tinyaml tinyaml_dbg
 lib_LTLIBRARIES = libtinyaml.la
 
-libtinyaml_la_CFLAGS = -I ../include -DTINYAML_EXT_DIR="\"$(pkglibdir)\""
-libtinyaml_la_LIBADD = -ldl -ltinyap -lm -lpthread
+libtinyaml_la_CFLAGS = $(tinyap_CFLAGS) -I ../include -DTINYAML_EXT_DIR="\"$(pkglibdir)\""
+libtinyaml_la_LIBADD = $(tinyap_LIBS) -lm
 #libtinyaml_la_LIBADD = -ldl /usr/local/lib/libtinyap.a -lm -lpthread
 
 libtinyaml_la_SOURCES =	containers/list.c \

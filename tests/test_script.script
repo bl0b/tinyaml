@@ -1,0 +1,44 @@
+script
+	global foo, bar, x,y,z,t
+
+#	asm _line_4: nop end
+#	x,y,z,t = 1,2,3,4
+#	asm _line_6: nop end
+#	print(x," ",y," ",z," ",t,"\n")
+
+	asm _line_9: nop end
+	foo = function(test,n) print("hep hep : ", test, "\n") return n, test end
+
+	asm _line_12: nop end
+	bar = "plop"
+
+	asm _line_15: nop end
+	x,y = foo(bar,23)
+	asm _line_17: nop end
+	print("x=",x," y=",y,"\n")
+
+	asm _line_20: nop end
+	x,y,z,t = foo(bar,23), foo("coin",42)
+
+	asm _line_23: nop end
+	print("x=",x," y=",y," z=",z," t=",t,"\n")
+
+	print("hophop\n")
+	function hopper(x,y)
+		return function(z)
+			local sq
+			sq = z*z
+			print("hop : x=",x," y=",y," sq=",sq,"\n")
+			return y*sq+x
+		end
+	end
+	print("hophop\n")
+
+	t = hopper(2,5)
+	print("hophop\n")
+	y = t(3)
+	print("t=hopper(2,5)\nt(3)=",y,"\n")
+	x,y,z = "t=hopper(2,5)\nt(5)=",t(5),"\n"
+	print(x,y,z)
+end
+

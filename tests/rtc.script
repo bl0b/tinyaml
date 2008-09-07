@@ -15,8 +15,8 @@ script
 
 	function rtcSchedule(date,func)
 		asm
-			getmem -2
-			getmem -1
+			#getmem -2
+			#getmem -1
 			RTC_sched
 		end
 	end
@@ -37,8 +37,7 @@ script
 	end
 
 	function disp(str)
-		local date asm setmem -1 end # get date from stack
-		print "Display : ",str,"\ at ",date,"\n"
+		print "Display : ",str," at ",rtcDate(),"\n"
 	end
 
 

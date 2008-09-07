@@ -63,28 +63,24 @@ static inline float i2f(long int i) {
 
 #define fast_apply_bin_func(_ta,_a,_tb,_b,_opi,_opf,_ret,_ret_typ)	do {\
 		_IFC _R,_X,_Y;\
-		switch(((((word_t)_ta)-1)<<1)|(((word_t)_tb)-1)) {\
+		switch(((_ta==DataFloat)<<1)|(_tb==DataFloat)) {\
 		case 0:\
-			printf("int int\n");\
 			_R.i = _opi(*(long*)(&_a), *(long*)(&_b));\
 			break;\
 		case 1:\
-			printf("float int\n");\
 			_X.i = (_b);\
 			_R.f = _opf(i2f(*(long*)(&_a)), _X.f);\
 			break;\
 		case 2:\
-			printf("int float\n");\
 			_X.i = (_a);\
 			_R.f = _opf(_X.f, i2f(*(long*)(&_b)));\
 			break;\
 		case 3:\
-			printf("float float\n");\
 			_X.i = (_a);\
 			_Y.i = (_b);\
 			_R.f = _opf(_X.f, _Y.f);\
 		};\
-		_ret_typ=(_ta|_tb);\
+		_ret_typ=(_ta==DataFloat||_tb==DataFloat)?DataFloat:DataInt;\
 		_ret=_R.i;\
 	} while(0)
 /*@}*/
