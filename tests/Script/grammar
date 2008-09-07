@@ -31,10 +31,8 @@ language
  script_while ::= "while" b_expr "do" sb_end.
  script_if ::= "if" b_expr "then" ( sb_else sb_end | sb_end ).
 
- sb_end ::= sbloop_end.
- sb_else ::= sbloop_else.
- sbloop_end = ( script_instruction sbloop_end | "end" ).
- sbloop_else = ( script_instruction sbloop_else | "else" ).
+ sb_end ::= script_instruction* "end".
+ sb_else ::= script_instruction* "else".
 
  script_call ::= script_var "(" ( ")" | script_expr_list ")" ).
  script_call_ret_1 ::= script_call.
@@ -42,7 +40,7 @@ language
  script_call_ret_any ::= script_call.
 
  script_print ::= "print" "(" script_expr_list ")".
- script_expr ::= ( script_string | script_anon_fun | b_expr | m_expr | script_call_ret_any ).
+ script_expr ::= ( script_string | script_anon_fun | b_expr | m_expr | script_call_ret_any | script_var ).
 
  script_return ::= "return" script_expr_list.
  #script_expr_list ::= _epsilon (script_expr ",")* script_expr script_expr_list_end.
@@ -64,13 +62,11 @@ language
 
  script_env ::= "&" sym.
 
- script_array_access ::= "[" m_expr "]".
+ script_array_access ::= "[" (m_expr|script_call_ret_1|script_var) "]".
  script_struc_access ::= "." sym.
 
  m_expr = expr4.
  b_expr = bexpr4.
-
- atom = ( script_float | script_int | script_call_ret_1 | script_var | "(" script_expr ")" ).
 
 m_minus ::= "-" number.
 m_div ::= ( m_div "/" expr00 | expr00 "/" expr00 ).
@@ -78,27 +74,30 @@ m_mul ::= ( m_mul "*" expr11 | expr11 "*" expr11 ).
 m_sub ::= ( m_sub "-" expr22 | expr22 "-" expr22 ).
 m_add ::= ( m_add "+" expr33 | expr33 "+" expr33 ).
 
-b_not ::= "not" m_expr.
-b_and ::= ( b_and "and" bexpr1 | bexpr1 "and" bexpr1 ).
-b_or ::= ( b_or "or" bexpr2 | bexpr2 "or" bexpr2 ).
+b_not ::= "not" (m_expr | script_call_ret_1 | script_var).
+b_and ::= ( b_and "and" bexpr11 | bexpr11 "and" bexpr11 ).
+b_or ::= ( b_or "or" bexpr22 | bexpr22 "or" bexpr22 ).
 
-comp ::= bexpr2 /(<|>|=|!=|>=|<=)/ bexpr2.
+comp ::= bexpr33 /(<|>|=|!=|>=|<=)/ bexpr33.
 
-expr0 = ( m_minus | number | script_call_ret_any | script_var ).
-expr00 = ( m_minus | number | script_call_ret_1 | script_var ).
-expr1 = ( m_div | expr0 ).
-expr11 = ( m_div | expr0 | script_call_ret_1 | script_var ).
-expr2 = ( m_mul | expr1 ).
-expr22 = ( m_mul | expr1 | script_call_ret_1 | script_var ).
-expr3 = ( m_sub | expr2 ).
-expr33 = ( m_sub | expr2 | script_call_ret_1 | script_var ).
-expr4 = ( m_add | expr3 ).
+expr0	= ( m_minus | number ).
+expr00	= ( m_minus | number | script_call_ret_1 | script_var ).
+expr1	= ( m_div | expr0 ).
+expr11	= ( m_div | expr0 | script_call_ret_1 | script_var ).
+expr2	= ( m_mul | expr1 ).
+expr22	= ( m_mul | expr1 | script_call_ret_1 | script_var ).
+expr3	= ( m_sub | expr2 ).
+expr33	= ( m_sub | expr2 | script_call_ret_1 | script_var ).
+expr4	= ( m_add | expr3 ).
 
-bexpr1 = ( b_not | m_expr | script_call_ret_1 | script_var ).
-bexpr2 = ( b_and | bexpr1 ).
-bexpr3 = ( b_or | bexpr2 ).
+bexpr1	= ( b_not | m_expr ).
+bexpr11	= ( b_not | m_expr | script_call_ret_1 | script_var ).
+bexpr2	= ( b_and | bexpr1 ).
+bexpr22	= ( b_and | bexpr1 | script_call_ret_1 | script_var ).
+bexpr3	= ( b_or | bexpr2 ).
+bexpr33	= ( b_or | bexpr2 | script_call_ret_1 | script_var ).
 
-bexpr4 = ( comp | bexpr2 ).
+bexpr4 = ( comp | bexpr3 ).
 
 end
 

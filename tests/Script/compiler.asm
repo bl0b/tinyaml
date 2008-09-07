@@ -315,25 +315,25 @@ asm
 		+$expr_list_calls push 0 sup [[
 			# si Nc > 0, running size
 			$exprListRunningSize -$list_algo
-			#push "selecting list algo : Running size for expr at " astGetRow push "," astGetCol push "\n" print 5
+			push "selecting list algo : Running size for expr at " astGetRow push "," astGetCol push "\n" print 5
 			#pp_curNode
 			+$call_local_ofs inc -$call_local_ofs
 			<< enter 1 push i(+$expr_list_exprs) setmem -1 >>
 		][
 			# sinon, push Nle
 			$exprListOnlyExprs -$list_algo
-			#push "selecting list algo : Only exprs\n" print 1
+			push "selecting list algo : Only exprs\n" print 1
 			astGetChildrenCount dec -$expr_size
 		]]
 	][
 		+$expr_list_calls push 1 eq [[
 			# si Nc == 1, do nothing
 			$exprListOnlyCall -$list_algo
-			#push "selecting list algo : Only one call\n" print 1
+			push "selecting list algo : Only one call\n" print 1
 		][
 			# sinon, running size
 			$exprListRunningSize -$list_algo
-			#push "selecting list algo : Running size for expr at " astGetRow push "," astGetCol push "\n" print 5
+			push "selecting list algo : Running size for expr at " astGetRow push "," astGetCol push "\n" print 5
 			#push "BEFORE expr_list : call_local_ofs=" +$call_local_ofs push "\n" print 3
 			#pp_curNode
 			+$call_local_ofs inc -$call_local_ofs
@@ -363,19 +363,20 @@ end
 compile script_expr_list_end
 asm
 	$exprListRunningSize +$list_algo eq [[
-		#push "LIST_ALGO @END Running size !\n" print 1
+		push "LIST_ALGO @END Running size !\n" print 1
 		<< getmem -1 leave 1 >>		# push elements count
 		+$call_local_ofs dec -$call_local_ofs
 		#push "AFTER expr_list : call_local_ofs=" +$call_local_ofs push "\n" print 3
-	][ $exprListOnlyExprs +$list_algo eq [
-		#push "LIST_ALGO @END Only exprs ! " +$expr_size push "\n" print 3
+	][ $exprListOnlyExprs +$list_algo eq [[
+		push "LIST_ALGO @END Only exprs ! " +$expr_size push "\n" print 3
 		<< push i(+$expr_size) >>
-	#][ $exprListOnlyCall +$list_algo eq [[
-	#	push "LIST_ALGO @END Only one call !\n" print 1
-	#][
-	#	push "LIST_ALGO @END !!??!!??\n" print 1
-	#]]
-	]]]
+	][ $exprListOnlyCall +$list_algo eq [[
+		push "LIST_ALGO @END Only one call !\n" print 1
+	][
+		push "LIST_ALGO @END !!??!!??\n" print 1
+	]]
+	]]
+	]]
 	getmem -1 -$expr_size
 	getmem -2 -$list_algo
 	getmem -3 -$call_local_ofs
@@ -430,7 +431,8 @@ asm
 	+$cur_fname push "" eq [ push "EmptyFuncName" throw ]
 	astCompileChild 0
 	local locsz {
-		#push "compiling RETURN in " +$cur_fname push "\n" print 3
+		push "compiling RETURN in " +$cur_fname push "\n" print 3
+		pp_curNode
 		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
 		+$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec
 		add
@@ -615,9 +617,9 @@ end
 
 compile script_assign
 asm
-	#push "########################################################\n" print 1
-	#pp_curNode
-	#push "========================================================\n" print 1
+	push "########################################################\n" print 1
+	pp_curNode
+	push "========================================================\n" print 1
 	local sym {
 		#getmem 1 astGetChildString 0 getSym -$sym
 		# process righthand side

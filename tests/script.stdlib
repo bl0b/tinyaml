@@ -88,7 +88,7 @@ script
 			asm getmem -3 arraySize setmem -2 end
 			i=0
 			while i<j do
-				a[i]=f(i,a[i])
+				a[i] = f(i,a[i])
 				i=i+1
 			end
 		end)

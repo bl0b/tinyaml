@@ -9,9 +9,14 @@ global bla,pouet
 asm _line_9: end
 
 function fibo(n)
+	#local a,b
 asm _line_12: nop end
 	if n<=2 then return 1 end
+	#a=fibo(n-1)
+	#b=fibo(n-2)
 asm _line_14: nop end
+	#return fibo(n-1)+b
+	#return a+fibo(n-2)
 	return fibo(n-1)+fibo(n-2)
 asm _line_16: nop end
 end
