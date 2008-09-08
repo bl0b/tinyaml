@@ -43,7 +43,9 @@ _loop:
 	ret 0
 
 _stop:
-	push "\nSTOP ! Date=" RTC_getDate push "\n" print 3
+	pop		# remove argc
+	setmem 0	# store date
+	push "\nSTOP ! Date=" getmem -1 push "\n" print 3
 	push 1
 	setmem 0
 	ret 0
