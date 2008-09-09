@@ -27,6 +27,8 @@
 
 #include "fastmath.h"
 
+#include <sys/stat.h>
+
 
 #define TINYAML_ABOUT	"This is not yet another meta-language.\n" \
 			"(c) 2007-2008 Damien 'bl0b' Leroux\n\n"
@@ -66,11 +68,27 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			w = file_writer_new(argv[i]);
 			vm_serialize_program(vm,p,w);
 			writer_close(w);
+			chmod(argv[i], 0755);
 		} else if(cmp_param(1,"--load","-l")) {
 			i+=1;
 			r = file_reader_new(argv[i]);
 			p=vm_unserialize_program(vm,r);
 			reader_close(r);
+		} else if(cmp_param(1,"--execute","-x")) {
+			i+=1;
+			r = file_reader_new(argv[i]);
+			p=vm_unserialize_program(vm,r);
+			reader_close(r);
+			vm_run_program_fg(vm,p,0,50);
+		} else if(cmp_param(1,"--execute-bg","-z")) {
+			i+=1;
+			r = file_reader_new(argv[i]);
+			p=vm_unserialize_program(vm,r);
+			reader_close(r);
+			if(vm->engine!=thread_engine) {
+				vm_set_engine(vm,thread_engine);
+			}
+			vm_run_program_bg(vm,p,0,50);
 		} else if(cmp_param(0,"--quiet","-q")) {
 			tinyaml_quiet = 1;
 		} else if(cmp_param(0,"--properties","-p")) {
@@ -108,6 +126,15 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 				  "\t--version,-v \t\tdisplay program version\n"
 				"\n\t--help,-h\t\tdisplay this text\n\n");
 			exit(0);
+		} else {	/* default to filename as in -x filename */
+			static char buf[1024];
+			sprintf(buf, "require \"%s\"", argv[i]);
+			p=vm_compile_buffer(vm, buf);
+			/*vm_run_program_fg(vm, p, 0, 50);*/
+			/*program_free(vm, p);*/
+			p=NULL;
+			/* convenience hack : default to quiet when invoked to execute files */
+			tinyaml_quiet = 1;
 		}
 	}
 

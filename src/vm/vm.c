@@ -216,13 +216,11 @@ opcode_dict_t vm_get_dict(vm_t vm) {
 
 
 
-#define PROG_FILE_MAGIC "BMLP"
 #define ENDIAN_TEST 0x01000000
-
 
 program_t vm_unserialize_program(vm_t vm, reader_t r) {
 	program_t ret;
-	if(strcmp(read_string(r),"BML_PRG")) {
+	if(strcmp(read_string(r),TINYAML_SHEBANG)) {
 		return NULL;
 	}
 
@@ -244,7 +242,7 @@ program_t vm_unserialize_program(vm_t vm, reader_t r) {
 
 vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
 	/* write header */
-	write_string(w,"BML_PRG");
+	write_string(w, TINYAML_SHEBANG);
 	write_word(w,ENDIAN_TEST);
 	program_serialize(vm,p,w);
 	return vm;

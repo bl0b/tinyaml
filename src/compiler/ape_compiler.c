@@ -470,7 +470,7 @@ WalkDirection ape_compiler_Include(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_Require(wast_t node, vm_t vm) {
 	/* compile and fg-execute the mentioned program */
 	FILE*f;
-	char buffy[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	char buffy[256] = "";
 	const char* fname = wa_op(wa_opd(node,0));
 	program_t p;
 	f = fopen(fname,"r");
@@ -478,9 +478,9 @@ WalkDirection ape_compiler_Require(wast_t node, vm_t vm) {
 		vm_printerrf("ERROR : compiler couldn't open file %s\n",fname);
 		return Error;
 	}
-	fread(buffy,8,1,f);
+	fread(buffy,strlen(TINYAML_SHEBANG),1,f);
 	fclose(f);
-	if(strcmp(buffy,"BML_PRG")) {
+	if(strcmp(buffy,TINYAML_SHEBANG)) {
 		/* looks like a source file */
 		/* try and compile the file */
 		opcode_chain_delete(vm->result);	/* discard result, anyway it is empty at this point */

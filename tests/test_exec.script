@@ -1,0 +1,6 @@
+#!/usr/bin/env /home/bl0b/bl0b_dev/tinyaml/tests/Script/script_compiler.wc
+
+script
+	print("Hello, World !\n")
+end
+
