@@ -372,7 +372,7 @@ void _VM_CALL vm_op_uninstCatcher_Label(vm_t vm, long rel_ofs) {
 
 /*! \brief \b throw pop a piece of data if it is available and use it as an exception.
  *
- * - pop exception data \c e if available OR set \c e to \c "Global failure : throw without data.",
+ * - pop exception data \c e if available OR set \c e to \c "GlobalFailure : throw without data.",
  * - pop a catch vector if available,
  * - clean call stack and jump to catch vector OR kill thread
  */
@@ -387,7 +387,7 @@ void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
 		vm->exception.type= d->type;
 	} else {
 		vm->exception.type=DataString;
-		vm->exception.data=(word_t)"Global failure : throw without data.";
+		vm->exception.data=(word_t)"GlobalFailure : throw without data.";
 	}
 	/*vm_printf("VM exception state @%p %i:%8.8lX\n",vm->exception,vm->exception.type,vm->exception.data);*/
 	/*if(vm->exception->type&DataManagedObjectFlag) {*/

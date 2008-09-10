@@ -112,12 +112,17 @@ void opcode_dict_add(opcode_dict_t od, opcode_arg_t arg_type, const char* name, 
 
 	const char* common_key;
 
+	if(!stub) {
+		vm_printerrf("[VM:ERROR] Tried to load NULL opcode %s:%i\n", name, arg_type);
+		return;
+	}
+
 	if(opcode_stub_by_name(od, arg_type, name)) {
 		return;
 	}
 	common_key = strdup(name);
 
-	hash_addelem(&od->stub_by_name[arg_type], (hash_elem)common_key, (hash_elem)stub);
+	hash_addelem(&od->stub_by_name[arg_type], (hash_key)common_key, (hash_elem)stub);
 	hash_addelem(&od->wordcode_by_stub, (hash_key)stub, (hash_elem) MAKE_WC(arg_type,ofs));
 	hash_addelem(&od->name_by_stub, (hash_key)stub, (hash_elem) common_key);
 	dynarray_set(&od->stub_by_index[arg_type],ofs,(word_t)stub);
@@ -125,7 +130,7 @@ void opcode_dict_add(opcode_dict_t od, opcode_arg_t arg_type, const char* name, 
 
 
 opcode_stub_t opcode_stub_by_name(opcode_dict_t od, opcode_arg_t arg_type, const char* name) {
-	return (opcode_stub_t) hash_find(&od->stub_by_name[arg_type], (hash_key)name);
+	return (opcode_stub_t) hash_find(&od->stub_by_name[arg_type], (hash_key)(char*)name);
 }
 
 opcode_stub_t opcode_stub_by_code(opcode_dict_t od, word_t wordcode) {
@@ -184,6 +189,10 @@ opcode_stub_t opcode_stub_resolve(opcode_arg_t arg_type, const char* name, void*
 	opcode_stub_t ret;
 	if(!name) {
 		return NULL;
+	}
+	ret = opcode_stub_by_name(&_glob_vm->opcodes, arg_type, name);
+	if(ret) {
+		return ret;
 	}
 	stub_name = (char*)malloc(strlen(name)+20);
 	switch(arg_type) {

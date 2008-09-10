@@ -468,67 +468,16 @@ WalkDirection ape_compiler_Include(wast_t node, vm_t vm) {
 
 
 WalkDirection ape_compiler_Require(wast_t node, vm_t vm) {
-	/* compile and fg-execute the mentioned program */
-	FILE*f;
-	char buffy[256] = "";
-	const char* fname = wa_op(wa_opd(node,0));
-	program_t p;
-	f = fopen(fname,"r");
-	if(!f) {
-		vm_printerrf("ERROR : compiler couldn't open file %s\n",fname);
-		return Error;
-	}
-	fread(buffy,strlen(TINYAML_SHEBANG),1,f);
-	fclose(f);
-	if(strcmp(buffy,TINYAML_SHEBANG)) {
-		/* looks like a source file */
-		/* try and compile the file */
-		opcode_chain_delete(vm->result);	/* discard result, anyway it is empty at this point */
-		vm->result=NULL;
-		p = vm_compile_file(vm, fname);
-		vm->result = opcode_chain_new();
-	} else {
-		/* looks like a serialized program */
-		/* unserialize program */
-		reader_t r = file_reader_new(fname);
-		p = vm_unserialize_program(vm,r);
-		reader_close(r);
-	}
-	if(p) {
-		vm_run_program_fg(vm,p,0,50);
-		/*vm_printf("Required file executed.\n");*/
-	} else {
-		vm_printerrf("ERROR : nothing to execute while requiring %s\n",fname);
-		return Error;
-	}
+	program_add_require(NULL, wa_op(wa_opd(node,0)));
+	opcode_chain_add_opcode(vm->result, OpcodeArgString, "__RQ__", wa_op(wa_opd(node,0)), -1, -1);
 	return Next;
 }
 
 
 WalkDirection ape_compiler_LoadLib(wast_t node, vm_t vm) {
-	static char libpath[PATH_MAX];
-	program_t p;
-	const char* libname = wa_op(wa_opd(node,0));
-	snprintf(libpath,PATH_MAX,TINYAML_EXT_DIR "/%s.tinyalib",libname);
-	p = (program_t) hash_find(&vm->loadlibs,libpath);
-	if(!p) {
-		opcode_chain_delete(vm->result);	/* discard result, anyway it is empty at this point */
-		vm->result=NULL;
-		p = vm_compile_file(vm,libpath);
-		vm->result = opcode_chain_new();
-		hash_addelem(&vm->loadlibs,strdup(libpath),p);
-		if(p) {
-			vm_run_program_fg(vm,p,0,50);
-			/*vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);*/
-			return Next;
-		} else {
-			vm_printerrf("ERROR : couldn't load library %s\n",libname);
-			return Error;
-		}
-	} else {
-		/*vm_printerrf("[VM:INFO] Library %s already loaded.\n",libname);*/
-		return Error;
-	}
+	program_add_loadlib(NULL, wa_op(wa_opd(node,0)));
+	opcode_chain_add_opcode(vm->result, OpcodeArgString, "__LL__", wa_op(wa_opd(node,0)), -1, -1);
+	return Next;
 }
 
 

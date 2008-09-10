@@ -37,6 +37,9 @@ void program_reserve_data(program_t, word_t);
 word_t program_get_code_size(program_t);
 void program_fetch(program_t, word_t, word_t*, word_t*);
 
+void program_add_loadlib(program_t, const char*);
+void program_add_require(program_t, const char*);
+
 void program_serialize(vm_t vm, program_t p, writer_t w);
 program_t program_unserialize(vm_t vm, reader_t r);
 

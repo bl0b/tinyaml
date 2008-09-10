@@ -192,11 +192,8 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	word_t op = (word_t)opcode_stub_by_name(od,ocn->arg_type, ocn->name);
 	word_t arg;
 	union { word_t i; float f; } conv;
+	int skip_wr=0;
 	/*char*str;*/
-	if(!op) {
-		vm_printerrf("[COMP:ERR] : at %i:%i : illegal opcode %s:%i\n",ocn->row,ocn->col,ocn->name,ocn->arg_type);
-		op=(word_t)vm_op_nop;
-	}
 	/*vm_printf("got opcode %s.",ocn->name);*/
 	switch(ocn->arg_type) {
 	case OpcodeNoArg:
@@ -215,6 +212,13 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	case OpcodeArgString:
 		/*vm_printf("String\t(%s)", ocn->arg);*/
 		arg = program_find_string(p, ocn->arg);
+		if(!strcmp(ocn->name, "__LL__")) {
+			text_seg_find_by_text(&p->loadlibs, ocn->arg);
+			skip_wr=1;
+		} else if(!strcmp(ocn->name, "__RQ__")) {
+			text_seg_find_by_text(&p->requires, ocn->arg);
+			skip_wr=1;
+		}
 		break;
 	case OpcodeArgLabel:
 		/*vm_printf("Label \t(%s)", ocn->arg);*/
@@ -242,7 +246,13 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 		vm_printf("[ERROR:VM] Arg type not supported %X\n",ocn->arg_type);
 	};
 	/*vm_printf("\tserialized %8.8lX : %8.8lX\n",op,arg);*/
-	program_write_code(p,op,arg);
+	if(!skip_wr) {
+		if(!op) {
+			vm_printerrf("[COMP:ERR] : at %i:%i : illegal opcode %s:%i\n",ocn->row,ocn->col,ocn->name,ocn->arg_type);
+			op=(word_t)vm_op_nop;
+		}
+		program_write_code(p,op,arg);
+	}
 }
 
 

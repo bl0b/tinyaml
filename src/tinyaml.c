@@ -126,7 +126,7 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 				  "\t--version,-v \t\tdisplay program version\n"
 				"\n\t--help,-h\t\tdisplay this text\n\n");
 			exit(0);
-		} else {	/* default to filename as in -x filename */
+		} else {	/* default to execute/compile filename */
 			static char buf[1024];
 			sprintf(buf, "require \"%s\"", argv[i]);
 			p=vm_compile_buffer(vm, buf);

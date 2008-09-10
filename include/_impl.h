@@ -198,6 +198,7 @@ struct _vm_t {
 	/* all programs */
 	struct _slist_t all_programs;
 	struct _hashtab_t loadlibs;
+	struct _hashtab_t required;
 	/* globals */
 	vm_dyn_env_t env;
 	struct _data_stack_entry_t exception;
@@ -238,6 +239,8 @@ struct _program_t {
 	/* globals */
 	vm_dyn_env_t env;
 	/* segments */
+	struct _text_seg_t loadlibs;
+	struct _text_seg_t requires;
 	struct _text_seg_t strings;
 	struct _label_tab_t labels;
 	struct _dynarray_t gram_nodes_indexes;

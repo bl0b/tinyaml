@@ -1,5 +1,4 @@
 lib
-
       # stack management
         opcode push:Int
         opcode push:Float

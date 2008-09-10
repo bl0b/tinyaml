@@ -21,10 +21,12 @@
 #include "text_seg.h"
 #include "program.h"
 #include "fastmath.h"
+#include "opcode_chain.h"
 #include "opcode_dict.h"
 #include "vm.h"
 #include "object.h"
 
+#include <limits.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -36,6 +38,9 @@ void _VM_CALL vm_op_SZ(vm_t,word_t);
 void _VM_CALL vm_op_dec(vm_t,word_t);
 void _VM_CALL vm_op_jmp_Label(vm_t,word_t);
 vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio);
+
+
+
 
 word_t clean_data_seg[20] = {
 	(word_t)vm_op_push_Int,	0,		/* counter, */
@@ -52,6 +57,75 @@ word_t clean_data_seg[20] = {
 };
 
 
+
+
+void program_add_require(program_t prg, const char*fname) {
+	/* compile and fg-execute the mentioned program */
+	FILE*f;
+	char buffy[256] = "";
+	program_t p;
+	f = fopen(fname,"r");
+	if(!f) {
+		vm_printerrf("ERROR : compiler couldn't open file %s\n",fname);
+		/*return Error;*/
+		return;
+	}
+	fread(buffy,strlen(TINYAML_SHEBANG),1,f);
+	fclose(f);
+	if(strcmp(buffy,TINYAML_SHEBANG)) {
+		/* looks like a source file */
+		/* try and compile the file */
+		if(_glob_vm->result) {
+			opcode_chain_delete(_glob_vm->result);	/* discard result, anyway it is empty at this point */
+			_glob_vm->result=NULL;
+			p = vm_compile_file(_glob_vm, fname);
+			_glob_vm->result = opcode_chain_new();
+		} else {
+			p = vm_compile_file(_glob_vm, fname);
+		}
+	} else {
+		/* looks like a serialized program */
+		/* unserialize program */
+		reader_t r = file_reader_new(fname);
+		p = vm_unserialize_program(_glob_vm,r);
+		reader_close(r);
+	}
+	if(p) {
+		vm_run_program_fg(_glob_vm,p,0,50);
+		vm_printf("Required file executed.\n");
+	} else {
+		vm_printerrf("ERROR : nothing to execute while requiring %s\n",fname);
+		/*return Error;*/
+	}
+}
+
+
+
+void program_add_loadlib(program_t prg, const char*libname) {
+	static char libpath[PATH_MAX];
+	opcode_chain_t backup;
+	program_t p;
+	snprintf(libpath,PATH_MAX,TINYAML_EXT_DIR "/%s.tinyalib",libname);
+	p = (program_t) hash_find(&_glob_vm->loadlibs,libpath);
+	if(!p) {
+		backup=_glob_vm->result;
+		_glob_vm->result=NULL;
+		p = vm_compile_file(_glob_vm, libpath);
+		_glob_vm->result = backup;
+		hash_addelem(&_glob_vm->loadlibs,strdup(libpath),p);
+		if(p) {
+			vm_run_program_fg(_glob_vm,p,0,50);
+			vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);
+		} else {
+			vm_printerrf("ERROR : couldn't load library %s\n",libname);
+		}
+	} else {
+		vm_printerrf("[VM:INFO] Library %s already loaded.\n",libname);
+	}
+}
+
+
+
 program_t program_new() {
 	program_t ret = (program_t)malloc(sizeof(struct _program_t));
 	/*init_hashtab(&ret->labels, (hash_func) hash_str, (compare_func) strcmp);*/
@@ -60,6 +134,8 @@ program_t program_new() {
 	dynarray_init(&ret->labels.offsets);
 	dynarray_set(&ret->labels.offsets,0,0);
 	text_seg_init(&ret->strings);
+	text_seg_init(&ret->loadlibs);
+	text_seg_init(&ret->requires);
 	dynarray_init(&ret->gram_nodes_indexes);
 	dynarray_init(&ret->data);
 	dynarray_init(&ret->code);
@@ -155,14 +231,18 @@ void program_serialize(vm_t vm, program_t p, writer_t w) {
 	vm_dyn_env_t env;
 	/* optimize opcode dictionary */
 	opcode_dict_t odopt = opcode_dict_optimize(vm,p);
-	/* write dict */
-	opcode_dict_serialize(odopt,w);
 	/* optimize env */
 	env = program_env_optimize(vm, p);
+	/* write libs */
+	text_seg_serialize(&p->loadlibs,w,"LIB");
+	/* write requires */
+	text_seg_serialize(&p->requires,w,"REQ");
 	/* write env */
 	text_seg_serialize(&env->symbols,w,"ENV");
 	/* write text segment */
 	text_seg_serialize(&p->strings,w,"STRINGS");
+	/* write dict */
+	opcode_dict_serialize(odopt,w);
 	/* write code segment */
 	write_string(w,"LABELS-");
 	/* write labels count */
@@ -218,11 +298,21 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	/*vm_printf("program_unserialize\n");*/
 	p=program_new();
 	p->env=vm->env;
-	od = opcode_dict_new();
-	opcode_dict_unserialize(od,r,vm->dl_handle);
 
+	text_seg_unserialize(&p->loadlibs,r,"LIB");
+	text_seg_unserialize(&p->requires,r,"REQ");
 	text_seg_unserialize(&env->symbols,r,"ENV");
 	text_seg_unserialize(&p->strings,r,"STRINGS");
+
+	for(i=1;i<dynarray_size(&p->loadlibs.by_index);i+=1) {
+		program_add_loadlib(p, text_seg_find_by_index(&p->loadlibs,i));
+	}
+	for(i=1;i<dynarray_size(&p->requires.by_index);i+=1) {
+		program_add_require(p, text_seg_find_by_index(&p->requires,i));
+	}
+
+	od = opcode_dict_new();
+	opcode_dict_unserialize(od,r,vm->dl_handle);
 
 	str = read_string(r);
 	assert(!strcmp(str,"LABELS-"));
