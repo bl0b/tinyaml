@@ -255,7 +255,7 @@ void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index) {
 		vm_printf("### program->env should be set ! ###\n");
 		env = vm->env;
 	}
-	/*vm_printf("vm_op_envGet %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);*/
+	vm_printf("vm_op_envGet %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);
 	index<<=1;
 	vm_push_data(vm,env->data.data[index],env->data.data[index+1]);
 }
@@ -280,8 +280,9 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 	vm_data_t dk = _vm_pop(vm);
 	vm_data_t dc = _vm_pop(vm);
 	vm_dyn_env_t env = vm->current_thread->program->env;
+	vm_data_t env_dc;
 	word_t index;
-	word_t data=0;
+	word_t type=0, data=0;
 	if(!env) {
 		vm_printf("### program->env should be set ! ###\n");
 		env = vm->env;
@@ -290,17 +291,33 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 	/* slow but safe */
 	index = text_seg_text_to_index(&env->symbols,text_seg_find_by_text(&env->symbols,(const char*)dk->data));
 
-	/*vm_printf("vm_op_envAdd %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);*/
+	/*vm_printf("vm_op_envAdd %lu:%s (env size %i)\n",index,(const char*)env->symbols.by_index.data[index], dynarray_size(&env->data));*/
 
 	if(dc->type&DataManagedObjectFlag) {
-		data = (word_t) vm_obj_clone_obj(vm,PTR_TO_OBJ(dc->data));
-		vm_obj_ref_ptr(vm,(void*)data);
-	} else {
-		data = dc->data;
+		/*data = (word_t) OBJ_TO_PTR(vm_obj_clone_obj(vm,PTR_TO_OBJ(dc->data)));*/
+		vm_obj_ref_ptr(vm,(void*)dc->data);
 	}
-	index<<=1;
-	dynarray_set(&env->data,index,dc->type);
-	dynarray_set(&env->data,index+1,data);
+
+	/*vm_printf("vm_op_envAdd pouet 1 1\n");*/
+	index <<= 1;
+	/*env_dc = ((vm_data_t)env->data.data)+index;*/
+	if(index<env->data.size) {
+		type = dynarray_get(&env->data, index);
+		/*vm_printf("             pouet 1 2\n");*/
+		data = dynarray_get(&env->data, index+1);
+	}
+	/*vm_printf("vm_op_envAdd pouet 2\n");*/
+	if(type&DataManagedObjectFlag) {
+		vm_obj_deref_ptr(vm,(void*)data);
+	}
+	/*vm_printf("vm_op_envAdd pouet 3\n");*/
+	dynarray_set(&env->data, index+1, dc->data);
+	/*vm_printf("vm_op_envAdd pouet 4\n");*/
+	dynarray_set(&env->data, index, dc->type);
+	/*vm_printf("vm_op_envAdd pouet 5\n");*/
+
+	/*dynarray_set(&env->data,index,dc->type);*/
+	/*dynarray_set(&env->data,index+1,data);*/
 }
 
 void _VM_CALL vm_op_envSet_EnvSym(vm_t vm, long index) {
@@ -311,10 +328,10 @@ void _VM_CALL vm_op_envSet_EnvSym(vm_t vm, long index) {
 		vm_printf("### program->env should be set ! ###\n");
 		env = vm->env;
 	}
-	/*vm_printf("vm_op_envSet %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);*/
-	env_dc = &((vm_data_t)env->data.data)[index];
-	if(env_dc->type&DataManagedObjectFlag) {
-		vm_obj_deref_ptr(vm,PTR_TO_OBJ(env_dc->data));
+	vm_printf("vm_op_envSet %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);
+	env_dc = ((vm_data_t)env->data.data)+index;
+	if(env_dc->type&DataManagedObjectFlag&&env_dc->data!=dc->data) {
+		vm_obj_deref_ptr(vm,env_dc->data);
 	}
 	env_dc->type = dc->type;
 	env_dc->data = dc->data;

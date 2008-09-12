@@ -370,6 +370,23 @@ void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
 	vm_push_data(vm,DataInt, idx);
 }
 
+void _VM_CALL vm_op_getSymName(vm_t vm, word_t x) {
+	vm_data_t k = _vm_pop(vm);
+	vm_data_t t = _vm_pop(vm);
+	char* sym;
+	text_seg_t ts;
+	if(t->type==DataObjEnv) {
+		ts = & ((vm_dyn_env_t)t->data)->symbols;
+	} else {
+		assert(t->type==DataObjSymTab);
+		ts = (text_seg_t) t->data;
+	}
+	assert(k->type==DataInt);
+	sym=text_seg_find_by_index(ts, k->data);
+	/*vm_printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
+	vm_push_data(vm,DataString, (word_t)sym);
+}
+
 void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
 	vm_data_t k = _vm_pop(vm);
 	vm_data_t t = _vm_pop(vm);

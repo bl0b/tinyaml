@@ -259,6 +259,8 @@ void blocker_free(vm_blocker_t b) {
 }
 
 void blocker_suspend(vm_t vm,vm_blocker_t b,thread_t t) {
+	assert(b);
+	assert(t);
 	gpush(b,&t);
 	vm_obj_ref_ptr(vm,t);
 	thread_set_state(vm,t,ThreadBlocked);
@@ -266,6 +268,7 @@ void blocker_suspend(vm_t vm,vm_blocker_t b,thread_t t) {
 
 void blocker_resume(vm_t vm,vm_blocker_t b) {
 	thread_t t;
+	assert(b);
 	while(gstack_size(b)) {
 		t = *(thread_t*)_gpop(b);
 		/*vm_printf("task arrived ! resuming thread %p\n",t);*/

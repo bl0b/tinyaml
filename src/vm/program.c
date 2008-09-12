@@ -92,7 +92,7 @@ void program_add_require(program_t prg, const char*fname) {
 	}
 	if(p) {
 		vm_run_program_fg(_glob_vm,p,0,50);
-		vm_printf("Required file executed.\n");
+		/*vm_printf("Required file executed.\n");*/
 	} else {
 		vm_printerrf("ERROR : nothing to execute while requiring %s\n",fname);
 		/*return Error;*/
@@ -115,12 +115,12 @@ void program_add_loadlib(program_t prg, const char*libname) {
 		hash_addelem(&_glob_vm->loadlibs,strdup(libpath),p);
 		if(p) {
 			vm_run_program_fg(_glob_vm,p,0,50);
-			vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);
+			/*vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);*/
 		} else {
 			vm_printerrf("ERROR : couldn't load library %s\n",libname);
 		}
 	} else {
-		vm_printerrf("[VM:INFO] Library %s already loaded.\n",libname);
+		/*vm_printerrf("[VM:INFO] Library %s already loaded.\n",libname);*/
 	}
 }
 

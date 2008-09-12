@@ -11,7 +11,7 @@
 /*! \brief Is called when an assertion has failed. Kills the concerned thread. */
 extern void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, const char* function);
 
-#ifdef NODEBUG
+#if defined(NODEBUG)||defined(NDEBUG)
 #define assert(_x_)
 #else
 /*! \brief Evaluate an assertion and catch problems. */

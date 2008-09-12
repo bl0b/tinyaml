@@ -1,3 +1,5 @@
+loadlib MessageQueue
+
 data 0 0 0 0 end
 
 asm

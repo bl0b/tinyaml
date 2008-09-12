@@ -82,7 +82,7 @@ asm
 	fill_glob_dict:
 		# addsym(node_childString(counter,dic)
 #		push "fill glob #" +$counter push "\n" print 3
-		+$glob_dic +$counter astGetChildString addSym
+		envGet &_globSymTab +$counter astGetChildString addSym
 		# counter += 1
 		+$counter inc -$counter
 		# } while(counter<size)
@@ -97,7 +97,7 @@ compile script_glob_fun
 asm
 	local sz {
 		#pp_curNode
-		+$glob_dic astGetChildString 0 getSym [
+		envGet &_globSymTab astGetChildString 0 getSym [
 			#push "Symbol " astGetChildString 0 push "\ already defined !\n" print 3
 			compileStateError
 			ret 0
@@ -107,11 +107,11 @@ asm
 
 		push 1 push 0 write_data
 		#+$glob_dic symTabSz -$sz
-		+$glob_dic
+		envGet &_globSymTab
 		#+$sz
 		+$cur_fname
 		addSym
-		+$glob_dic +$cur_fname getSym -$sz
+		envGet &_globSymTab +$cur_fname getSym -$sz
 
 		# do "cur_fname = ...fun..."
 		astCompileChild 1

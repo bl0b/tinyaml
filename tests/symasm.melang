@@ -24,6 +24,8 @@ asm
 	arrayNew setmem 1
 	call @globSymTabNew
 	call @locSymTabNew
+	dynFunNew @globSymTabNew push "_globSymTabNew" envAdd
+	dynFunNew @locSymTabNew push "_locSymTabNew" envAdd
 	jmp @_skip_0
 
 
@@ -33,7 +35,9 @@ asm
 #
 
 locSymTabNew:
-	newSymTab setmem 4
+	newSymTab
+	dup 0 setmem 4
+	push "_locSymTab" envAdd
 	ret 0
 
 getLocSym:
@@ -69,7 +73,9 @@ getLocCount:
 
 
 globSymTabNew:
-	newSymTab setmem 2
+	newSymTab
+	dup 0 setmem 2
+	push "_globSymTab" envAdd
 	ret 0
 
 getGlobSym:
@@ -111,7 +117,7 @@ end
 
 language
 	GlobSymTab ::= "glob" GlobSym+ "end".
-	GlobSym ::= sym "=" ( gs_Int | gs_Float | gs_String ).
+	GlobSym ::= sym "=" ( gs_Float | gs_Int | gs_String ).
 
 	gs_Int ::= int.
 	gs_Float ::= float.

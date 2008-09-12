@@ -20,6 +20,7 @@
 #define _BML_OBJ_H_
 
 #include <stdio.h>
+#include "vm_assert.h"
 /*! \addtogroup objects
  * @{
  */
@@ -120,6 +121,8 @@ static inline void vm_obj_ref_ptr(vm_t vm, void* ptr) {
  */
 static inline void vm_obj_deref_ptr(vm_t vm, void* ptr) {
 	vm_obj_t o = PTR_TO_OBJ(ptr);
+	assert(ptr);
+	assert(o);
 	assert(_is_obj_obj(o));
 	/*assert(o->ref_count>0);*/
 	if(o->ref_count>0) {

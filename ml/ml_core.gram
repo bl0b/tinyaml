@@ -242,6 +242,7 @@ Space ::= "Space" .
 NewLine ::= "NewLine" .
 Indent ::= "Indent" .
 Dedent ::= "Dedent" .
+Comment ::= //#([^\n\r]*)/\1/ .
 _whitespace = /([ \r\n\t]|#[^\r\n]*)+/ .
 #
 # Repetitions

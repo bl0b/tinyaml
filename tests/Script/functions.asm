@@ -3,11 +3,12 @@ asm
 	jmp @_skip_0
 
 reset_tables:
-	newSymTab -$glob_dic
+	#envGet &_globSymTabNew call
 	newSymTab -$func_dic
 	arrayNew  -$func_tab
 	+$func_tab push 0 push 0 arraySet
 	stackNew -$local_dic_stack
+	stackNew -$lst_backup
 	ret 0
 
 inc_exprs:
@@ -108,14 +109,43 @@ funcDeclAddReturn:
 
 # string:func_name -> nil
 funcDeclEnter:
-	local fdecl {
+	local fdecl, i, st {
 		call @funcDeclGet -$fdecl
 		+$local_dic_stack +$fdecl stackPush
+		+$lst_backup envGet &_locSymTab stackPush
+		newSymTab envSet &_locSymTab
+		push 1 -$i
+		+$fdecl+(FuncDecl.locals) -$st
+	_fde_foreach_local:
+		+$i +$st symTabSz inf [
+			envGet &_locSymTab
+			+$st +$i getSymName
+			addSym
+			+$i inc -$i
+			jmp@_fde_foreach_param
+		]
+
+		push 1 -$i
+		+$fdecl+(FuncDecl.parameters) -$st
+	_fde_foreach_param:
+		+$i +$st symTabSz inf [
+			envGet &_locSymTab
+			+$st +$i getSymName
+			addSym
+			+$i inc -$i
+			jmp@_fde_foreach_param
+		]
+
 	}
 	ret 0
 
 funcDeclLeave:
 	+$local_dic_stack stackPop
+	+$lst_backup stackPeek 0
+	push "POUET " dup -1 envGet &_locSymTab push "\n" print 4
+	envSet &_locSymTab
+	push "POUETPOUET\n" print 1
+	+$lst_backup stackPop
 	ret 0
 
 # string:symbol -> int:context (cf. symIs...)
@@ -218,7 +248,7 @@ getSymContext:
 		]
 	]
 
-	+$glob_dic +$symbol getSym -$symofs
+	envGet &_globSymTab +$symbol getSym -$symofs
 	+$symofs [
 		+$symofs -$_sym_ofs
 ###		push "Symbol '" +$symbol push "' is global at ofs " +$_sym_ofs push "\\n" print 5

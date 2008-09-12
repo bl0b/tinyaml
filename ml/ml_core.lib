@@ -155,7 +155,8 @@ lib
         opcode newSymTab                # create a new sym tab and push
                                         # it onto data stack
         opcode symTabSz
-        opcode getSym                   #pop key, pop table, push result
+        opcode getSym                   #pop key, pop table, push index
+        opcode getSymName               #pop key, pop table, push symbol
         opcode addSym                   # pop key, pop table
 
       # runtime environment

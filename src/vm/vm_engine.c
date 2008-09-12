@@ -111,7 +111,8 @@ static void render_stack(generic_stack_t s, word_t sz, const char*prefix, void(*
 	long stop = -sz;
 	while(counter>stop) {
 		vm_printerrf("%s%li : ",prefix,-counter);
-		renderer(_gpeek(s,counter));
+		renderer(s->stack+s->tok_sp+(counter*s->token_size));
+		/*renderer(_gpeek(s,counter));*/
 		fputc('\n',stderr);
 		counter-=1;
 	}
