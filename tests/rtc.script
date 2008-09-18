@@ -1,4 +1,4 @@
-#!./tinyascript
+#!/usr/local/share/tinyaml/script.wc
 
 loadlib RTC
 

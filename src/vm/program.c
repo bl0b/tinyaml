@@ -58,44 +58,85 @@ word_t clean_data_seg[20] = {
 
 
 
+FILE* find_file(const char*fname) {
+	FILE*f;
+	static char buf[512];
+	f = fopen(fname, "r");				/* try $PWD first */
+	if(!f) {
+		sprintf(buf,"~/.tinyaml/%s", fname);
+		f = fopen(buf, "r");			/* try ~/.tinyaml/ then */
+		if(!f) {
+			sprintf(buf, TINYAML_DATA_DIR "/%s", fname);
+			f = fopen(buf, "r");		/* finally, try site dir */
+			if(f) {
+				fclose(f);
+				return strdup(buf);
+			}
+		} else {
+			fclose(f);
+			return strdup(buf);
+		}
+	} else {
+		fclose(f);
+		return strdup(fname);
+	}
+	return NULL;
+}
+
 
 void program_add_require(program_t prg, const char*fname) {
 	/* compile and fg-execute the mentioned program */
 	FILE*f;
 	char buffy[256] = "";
+	char* found_fname;
 	program_t p;
-	f = fopen(fname,"r");
-	if(!f) {
-		vm_printerrf("ERROR : compiler couldn't open file %s\n",fname);
-		/*return Error;*/
-		return;
-	}
-	fread(buffy,strlen(TINYAML_SHEBANG),1,f);
-	fclose(f);
-	if(strcmp(buffy,TINYAML_SHEBANG)) {
-		/* looks like a source file */
-		/* try and compile the file */
-		if(_glob_vm->result) {
-			opcode_chain_delete(_glob_vm->result);	/* discard result, anyway it is empty at this point */
-			_glob_vm->result=NULL;
-			p = vm_compile_file(_glob_vm, fname);
-			_glob_vm->result = opcode_chain_new();
+	p = (program_t) hash_find(&_glob_vm->required,fname);
+	if(!p) {
+		found_fname = find_file(fname);
+		if(!found_fname) {
+			vm_printerrf("[VM:ERR] : compiler couldn't find file %s\n",fname);
+			/*return Error;*/
+			return;
+		}
+		f = fopen(found_fname, "r");
+		if(!f) {
+			vm_printerrf("[VM:ERR] : compiler couldn't open file %s\n",fname);
+			/*return Error;*/
+			return;
+		}
+		fread(buffy,strlen(TINYAML_SHEBANG),1,f);
+		fclose(f);
+		if(strcmp(buffy,TINYAML_SHEBANG)) {
+			/* looks like a source file */
+			/* try and compile the file */
+			if(_glob_vm->result) {
+				opcode_chain_delete(_glob_vm->result);	/* discard result, anyway it is empty at this point */
+				/*_glob_vm->result=NULL;*/
+				p = vm_compile_file(_glob_vm, found_fname);
+				_glob_vm->result = opcode_chain_new();
+			} else {
+				p = vm_compile_file(_glob_vm, found_fname);
+			}
 		} else {
-			p = vm_compile_file(_glob_vm, fname);
+			/* looks like a serialized program */
+			/* unserialize program */
+			reader_t r = file_reader_new(found_fname);
+			p = vm_unserialize_program(_glob_vm,r);
+			reader_close(r);
+		}
+		if(p) {
+			vm_run_program_fg(_glob_vm,p,0,50);
+			vm_printf("[VM:INFO] Required file executed.\n");
+			hash_addelem(&_glob_vm->required,strdup(fname),p);
+		} else {
+			vm_printerrf("[VM:ERR] Nothing to execute while requiring %s\n",fname);
+			/*return Error;*/
+		}
+		if(found_fname) {
+			free(found_fname);
 		}
 	} else {
-		/* looks like a serialized program */
-		/* unserialize program */
-		reader_t r = file_reader_new(fname);
-		p = vm_unserialize_program(_glob_vm,r);
-		reader_close(r);
-	}
-	if(p) {
-		vm_run_program_fg(_glob_vm,p,0,50);
-		/*vm_printf("Required file executed.\n");*/
-	} else {
-		vm_printerrf("ERROR : nothing to execute while requiring %s\n",fname);
-		/*return Error;*/
+		vm_printerrf("[VM:INFO] Required file %s has already been loaded.\n",fname);
 	}
 }
 
@@ -115,12 +156,12 @@ void program_add_loadlib(program_t prg, const char*libname) {
 		hash_addelem(&_glob_vm->loadlibs,strdup(libpath),p);
 		if(p) {
 			vm_run_program_fg(_glob_vm,p,0,50);
-			/*vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);*/
+			vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);
 		} else {
-			vm_printerrf("ERROR : couldn't load library %s\n",libname);
+			vm_printerrf("[VM:ERR] Couldn't load library %s\n",libname);
 		}
 	} else {
-		/*vm_printerrf("[VM:INFO] Library %s already loaded.\n",libname);*/
+		vm_printerrf("[VM:INFO] Library %s has already been loaded.\n",libname);
 	}
 }
 
@@ -176,7 +217,14 @@ void program_free(vm_t vm, program_t p) {
 word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg, vm_dyn_env_t smallenv) {
 	switch(arg_type) {
 	case OpcodeArgEnvSym:
+		vm_printerrf("[VM:INFO] Serializing EnvSym #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));
 		arg = text_seg_text_to_index(&smallenv->symbols, text_seg_find_by_index(&p->env->symbols, arg));
+		if(!arg) {
+			vm_printerrf("[VM:ERR] Serializing EnvSym : Couldn't resolve environment symbol  #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));
+			vm_fatal("Aborted.");
+		} else {
+			vm_printerrf("[VM:INFO] Serializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&p->env->symbols, arg), arg);
+		}
 		break;
 	case OpcodeArgString:
 		arg = text_seg_text_to_index(&p->strings,(const char*)arg);
@@ -190,7 +238,14 @@ word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg, vm_d
 word_t opcode_arg_unserialize(program_t p, opcode_arg_t arg_type, word_t arg, vm_dyn_env_t smallenv) {
 	switch(arg_type) {
 	case OpcodeArgEnvSym:
+		/*vm_printerrf("[VM:INFO] Unserializing EnvSym #%i '%s'\n", arg, text_seg_find_by_index(&smallenv->symbols, arg));*/
 		arg = text_seg_text_to_index(&p->env->symbols, text_seg_find_by_index(&smallenv->symbols, arg));
+		if(!arg) {
+			vm_printerrf("[VM:ERR] Unserializing EnvSym : Couldn't resolve environment symbol  #%i '%s'\n", arg, text_seg_find_by_index(&smallenv->symbols, arg));
+			vm_fatal("Aborted.");
+		/*} else {*/
+			/*vm_printerrf("[VM:INFO] Unserializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&smallenv->symbols, arg), arg);*/
+		}
 		break;
 	case OpcodeArgString:
 		arg = (word_t) text_seg_find_by_index(&p->strings,arg);
@@ -297,19 +352,26 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 
 	/*vm_printf("program_unserialize\n");*/
 	p=program_new();
-	p->env=vm->env;
 
 	text_seg_unserialize(&p->loadlibs,r,"LIB");
-	text_seg_unserialize(&p->requires,r,"REQ");
-	text_seg_unserialize(&env->symbols,r,"ENV");
-	text_seg_unserialize(&p->strings,r,"STRINGS");
 
 	for(i=1;i<dynarray_size(&p->loadlibs.by_index);i+=1) {
+		vm_printerrf("[VM:INFO] Program requires library '%s'\n", text_seg_find_by_index(&p->loadlibs,i));
 		program_add_loadlib(p, text_seg_find_by_index(&p->loadlibs,i));
 	}
+
+	text_seg_unserialize(&p->requires,r,"REQ");
+
 	for(i=1;i<dynarray_size(&p->requires.by_index);i+=1) {
+		vm_printerrf("[VM:INFO] Program requires file '%s'\n", text_seg_find_by_index(&p->requires,i));
 		program_add_require(p, text_seg_find_by_index(&p->requires,i));
 	}
+
+	text_seg_unserialize(&env->symbols,r,"ENV");
+
+	p->env=vm->env;
+
+	text_seg_unserialize(&p->strings,r,"STRINGS");
 
 	od = opcode_dict_new();
 	opcode_dict_unserialize(od,r,vm->dl_handle);
@@ -461,6 +523,9 @@ const char* lookup_label_by_offset(struct _label_tab_t* ts, word_t IP) {
 const char* program_lookup_label(program_t p, word_t IP) {
 //	return lookup_label_by_offset(&p->labels,IP);
 	int i;
+	if(!p->labels.offsets.data) {
+		return NULL;
+	}
 	for(i=0;i<p->labels.offsets.size;i+=1) {
 		if(p->labels.offsets.data[i]==IP) {
 			return (const char*)p->labels.labels.by_index.data[i];

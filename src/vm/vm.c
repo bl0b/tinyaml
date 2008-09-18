@@ -61,6 +61,7 @@ vm_t vm_new() {
 	ret = (vm_t)malloc(sizeof(struct _vm_t));
 	_glob_vm = ret;
 	tinyap_init();
+	ret->compile_reent=0;
 	ret->engine=stub_engine;
 	ret->engine->vm=ret;
 	ret->result=NULL;
@@ -71,6 +72,7 @@ vm_t vm_new() {
 	tinyap_set_grammar_ast(ret->parser,ast_unserialize(ml_core_grammar));
 	opcode_dict_init(&ret->opcodes);
 	init_hashtab(&ret->loadlibs, (hash_func) hash_str, (compare_func) strcmp);
+	init_hashtab(&ret->required, (hash_func) hash_str, (compare_func) strcmp);
 	ret->current_node=NULL;
 	gstack_init(&ret->cn_stack,sizeof(wast_t));
 	ret->threads_count=0;
@@ -82,6 +84,8 @@ vm_t vm_new() {
 	init_hashtab(&ret->compile_vectors.by_text, (hash_func) hash_str, (compare_func) strcmp);
 	dynarray_set(&ret->compile_vectors.by_index,1,0);
 	dynarray_set(&ret->compile_vectors.by_index,0,0);
+	dlist_init(&ret->init_routines);
+	dlist_init(&ret->term_routines);
 	slist_init(&ret->all_handles);
 	slist_init(&ret->all_programs);
 	dlist_init(&ret->ready_threads);
@@ -144,6 +148,8 @@ void vm_del(vm_t ret) {
 
 	dynarray_deinit(&ret->compile_vectors.by_index,NULL);
 	clean_hashtab(&ret->compile_vectors.by_text,htab_free_dict);
+	clean_hashtab(&ret->loadlibs, NULL);
+	clean_hashtab(&ret->required, NULL);
 
 	tinyap_delete(ret->parser);
 	opcode_dict_deinit(&ret->opcodes);
@@ -255,6 +261,8 @@ void wa_del(wast_t w);
 
 program_t vm_compile_file(vm_t vm, const char* fname) {
 	program_t p=NULL;
+	word_t reent = vm->compile_reent;
+	vm->compile_reent=0;
 
 	/*vm_printf("vm_compile_file(%s)\n",fname);*/
 
@@ -272,12 +280,15 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 	} else {
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
+	vm->compile_reent=reent;
 	return p;
 }
 
 
 program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 	program_t p=NULL;
+	word_t reent = vm->compile_reent;
+	vm->compile_reent=0;
 	/*vm_printf("vm_compile_buffer(%s)\n",buffer);*/
 	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
 	tinyap_parse(vm->parser);
@@ -293,6 +304,7 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 	} else {
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
+	vm->compile_reent=reent;
 	return p;
 }
 
@@ -602,6 +614,7 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 		const char* label = program_lookup_label(t->program,t->IP);
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
 		fprintf(stdout,"\nEXEC:%p:%s (%p:%lX)\t%-20.20s %-40.40s | ",t,thread_state_to_str(t->state),t->program,t->IP,label?label:"",disasm);
+		fflush(stdout);
 		free((char*)disasm);
 	}
 // */

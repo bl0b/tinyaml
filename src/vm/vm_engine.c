@@ -23,6 +23,11 @@ void _VM_CALL put_stderr(const char*s) {
 void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* ofs) {
 	struct _label_tab_t* l = &cs->labels;
 	word_t i=1;
+	if(l->offsets.size==0) {
+		*label = NULL;
+		*ofs = ip;
+		return;
+	}
 	while(i<(l->offsets.size-1) && ip>l->offsets.data[i+1]) { i+=1; }
 	if(i>=l->offsets.size) {
 		*ofs = ip;

@@ -62,10 +62,11 @@ compile catch_bloc asm
 	compileStateNext
 end
 
+#FIXME TODO have onInit and onTerm opcodes for handling user compiler init/term routines to handle things like reset_tables
 
 compile script_glob
 asm
-	call @reset_tables
+	#call @reset_tables
 	#pp_curNode
 	# size,counter
 	local size, counter {
@@ -154,9 +155,6 @@ asm
 		+$cur_fname
 		call @newFuncDecl
 
-		+$cur_fname
-		call @funcDeclEnter
-
 		<< jmp l(+$endfun_lbl) (+$fun_lbl): >>
 
 		+$cur_fname call @funcDeclGet +$fun_lbl -(FuncDecl.label)
@@ -167,6 +165,9 @@ asm
 		doWalk "analyzeFuncDecl"
 
 		+$fname_backup -$cur_fname
+
+		+$cur_fname
+		call @funcDeclEnter
 
 		# insert function header
 		#	- if no vararg : check against dynamic argc, throw badarg if nEq
@@ -434,7 +435,7 @@ asm
 	astCompileChild 0
 	local locsz {
 		#push "compiling RETURN in " +$cur_fname push "\n" print 3
-		pp_curNode
+		#pp_curNode
 		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
 		+$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec
 		add
@@ -736,7 +737,7 @@ end
 compile b_and
 asm
 	astCompileChild 0
-	astCompileChild 1
+	astCompileChild 2
 	<< and >>
 	compileStateNext
 end
@@ -745,7 +746,7 @@ end
 compile b_or
 asm
 	astCompileChild 0
-	astCompileChild 1
+	astCompileChild 2
 	<< or >>
 	compileStateNext
 end
@@ -753,7 +754,7 @@ end
 
 compile b_not
 asm
-	astCompileChild 0
+	astCompileChild 1
 	<< not >>
 	compileStateNext
 end
@@ -837,6 +838,7 @@ end
 
 compile script_while
 asm
+	#pp_curNode
 
 	local while_lbl, endwhile_lbl {
 		+$cur_fname toS strcat "_while" call @gen_label -$while_lbl
@@ -885,8 +887,7 @@ compile script_array_access asm
 		<< dup -1 >>
 		astCompileChild 0
 		<< arraySet >>
-		push 2
-		<< pop >>
+		<< pop 2 >>
 		push 1 -$is_lvalue
 	][
 		astCompileChild 0

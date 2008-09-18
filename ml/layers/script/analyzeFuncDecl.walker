@@ -1,0 +1,137 @@
+
+walker analyzeFuncDecl {
+
+	init asm
+		nop
+	end
+
+	terminate asm
+		nop
+	end
+
+	default asm
+		#push "analyzeFuncDecl default on " astGetOp push "\n" print 3
+		compileStateNext
+	end
+
+	on script_fun_decl asm
+		# process param list
+		walkChild 0
+
+		+$cur_fname
+		call @funcDeclEnter
+
+		# process body
+		walkChild 1
+
+		call @funcDeclLeave
+
+		compileStateDone
+	end
+
+	on script_glob_fun asm walkChild 1 compileStateNext end
+	on script_anon_fun asm compileStateDown end
+
+	on script_var asm compileStateDown end
+	on script_array_access asm compileStateDown end
+	#on script_struc_access asm compileStateNext end
+	#on script_throw asm compileStateNext end
+	#on script_try asm compileStateNext end
+	#on script_expr asm compileStateNext end
+	#on script_return asm compileStateNext end
+
+
+	on script_param_list asm
+		local counter {				# counter
+			push 0 -$counter
+#			pp_curNode
+		_spl_loop:
+			+$counter astGetChildrenCount nEq [
+				#+$cur_fname
+				#+$counter
+				#astGetChildString
+				#call @funcDeclAddParam
+				+$counter walkChild
+				+$counter inc -$counter
+				jmp @_spl_loop
+			]
+		}
+		compileStateDone
+	end
+
+	on script_param asm +$cur_fname astGetChildString 0 call @funcDeclAddParam compileStateNext end
+	on script_vararg asm +$cur_fname astGetChildString 0 call @funcDeclAddVararg compileStateNext end
+
+
+	on script_local asm
+		local counter {				# counter
+			push 0 -$counter
+		_sl_loop:
+			+$counter astGetChildrenCount nEq [
+				#+$counter walkChild
+				+$cur_fname
+				+$counter astGetChildString
+				call @funcDeclAddLocal
+				+$counter inc -$counter
+				jmp @_sl_loop
+			]
+		}
+		compileStateNext
+	end
+	
+
+	on script_id asm
+		local sc {
+			+$cur_fname
+			astGetChildString 0
+			call @getSymContext 
+			-$sc
+			+$sc $symIsLocal eq [
+				nop
+			]
+			+$sc $symIsParam eq [
+				nop
+			]
+			+$sc $symIsGlobal eq [
+				nop
+			]
+			+$sc $symIsClosure eq [
+				nop
+			]
+			+$sc $symMustEnclose eq [
+				nop
+	#			push "symbol must be enclosed\\n" print 1
+			]
+			+$sc $symUnknown eq [
+				nop
+	#			push "symbol is unknown\\n" print 1
+			]
+		}
+		compileStateNext
+	end
+
+
+	on script_assign	asm compileStateDown end
+	on script_fun_body	asm compileStateDown end
+	on script_print		asm compileStateDown end
+	on script_expr_list	asm compileStateDown end
+	#on script_expr_list_end	asm compileStateNext end
+	#on script_var_list_end	asm compileStateNext end
+	on script_var_list	asm compileStateDown end
+	on instruction_seq	asm compileStateDown end
+	on m_expr		asm compileStateDown end
+	on b_expr		asm compileStateDown end
+	on comp			asm compileStateDown end
+	on m_add		asm compileStateDown end
+	on m_sub		asm compileStateDown end
+	on m_mul		asm compileStateDown end
+	on m_div		asm compileStateDown end
+	on b_not		asm compileStateDown end
+	on b_and		asm compileStateDown end
+	on b_or			asm compileStateDown end
+	on script_call		asm compileStateDown end
+	on script_if		asm compileStateDown end
+	on sb_end		asm compileStateDown end
+	on sb_else		asm compileStateDown end
+}
+

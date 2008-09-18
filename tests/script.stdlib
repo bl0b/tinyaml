@@ -1,3 +1,5 @@
+require "script.wc"
+
 #################################################################################
 # Standard library for tinyaml script language.				#
 #									#

@@ -84,10 +84,10 @@ void gpush(generic_stack_t s, void* w) {
 */	if(s->sz <= s->tok_sp) {
 		s->sz+=1024;
 		s->stack = realloc(s->stack, s->sz*s->token_size);
-		memset(s->stack+s->tok_sp+s->token_size,0,(s->sz-s->sp-1)*s->token_size);
+		memset(((char*)s->stack)+s->tok_sp+s->token_size,0,(s->sz-s->sp-1)*s->token_size);
 	}
 
-	memmove(s->stack+s->tok_sp,w,s->token_size);
+	memmove(((char*)s->stack)+s->tok_sp,w,s->token_size);
 /*	vm_printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
 	//s->stack[s->sp] = w;
 */}
@@ -104,9 +104,11 @@ void* _gpop(generic_stack_t s) {
 
 void* _gpeek(generic_stack_t s, int rel_ofs) {
 	assert(s->sp>=(word_t)-rel_ofs);
-/*	vm_printf("gpeek\n");
+/*
+	vm_printf("gpeek\n");
 	vm_printf("stack state : %lu tokens, (size %lu, token_size %lu)\n",1+s->sp,s->sz,s->token_size);
-*/	return s->stack+s->tok_sp+(rel_ofs*s->token_size);
+//*/
+	return (void*)( ((char*)s->stack) + s->tok_sp + (rel_ofs*s->token_size) );
 }
 
 void free_gstack(generic_stack_t s) {

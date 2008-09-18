@@ -26,6 +26,7 @@
 #include "vm_assert.h"
 
 #include "vm.h"
+#include "list.h"
 #include "opcode_chain.h"
 #include "opcode_dict.h"
 #include "program.h"
@@ -109,15 +110,43 @@ program_t compile_wast(wast_t node, vm_t vm) {
 	return ret;
 }
 
+void _VM_CALL vm_op_getmem_Int(vm_t, word_t);
+void _VM_CALL vm_op_call(vm_t, word_t);
+void _VM_CALL vm_op_ret_Int(vm_t, word_t);
+
+void exec_routine(word_t df_ptr) {
+	struct _program_t x;
+	memset(&x,0,sizeof(struct _program_t));
+	x.env = _glob_vm->env;
+	x.data.size = 2;
+	x.data.data = (word_t[]) { DataObjFun, df_ptr };
+	x.labels.labels.by_index.size=1;
+	x.labels.labels.by_index.data=(word_t[]) { 0 };
+	x.labels.offsets.size=1;
+	x.labels.offsets.data=0;
+	x.code.size = 6;
+	x.code.data = (word_t[]){
+		(word_t)vm_op_getmem_Int, 0,
+		(word_t)vm_op_call, 0,
+		(word_t)vm_op_ret_Int, 0
+	};
+
+	printf("[VM:DEBUG] About to exec dynFun @%x\n", df_ptr);
+
+	vm_run_program_fg(_glob_vm,&x,0,50);
+}
+
 
 void* ape_compiler_init(vm_t vm) {
 	/* allow reentrant calls */
+	vm->compile_reent+=1;
 	gpush(&vm->cn_stack,&vm->current_node);
-	if(vm->result==NULL) {
-		/*vm_printf("###      NEW       top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
+	if(vm->compile_reent==1) {
+		vm_printf("###      NEW       top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));
 		vm->result = opcode_chain_new();
-	/*} else {*/
-		/*vm_printf("###      NEW       sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
+		dlist_forward(&vm->init_routines, word_t, exec_routine);
+	} else {
+		vm_printf("###      NEW       sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));
 	}
 	/*vm_printf("vm new ochain : %p\n",vm->result);*/
 	return vm;
@@ -126,6 +155,10 @@ void* ape_compiler_init(vm_t vm) {
 
 void ape_compiler_free(vm_t vm) {
 	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
+	vm->compile_reent-=1;
+	if(!vm->compile_reent) {
+		dlist_reverse(&vm->term_routines, word_t, exec_routine);
+	}
 }
 
 

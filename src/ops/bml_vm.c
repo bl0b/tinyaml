@@ -26,6 +26,21 @@
 #include "opcode_chain.h"
 #include "object.h"
 
+void _VM_CALL vm_op_onCompInit(vm_t vm, word_t unused) {
+	vm_data_t df = _vm_pop(vm);
+	assert(df->type==DataObjFun);
+	vm_obj_ref_ptr(vm, (void*)df->data);
+	dlist_insert_tail(&vm->init_routines, (word_t)df->data);
+}
+
+void _VM_CALL vm_op_onCompTerm(vm_t vm, word_t unused) {
+	vm_data_t df = _vm_pop(vm);
+	assert(df->type==DataObjFun);
+	vm_obj_ref_ptr(vm, (void*)df->data);
+	dlist_insert_tail(&vm->term_routines, (word_t)df->data);
+}
+
+
 /*! \addtogroup vcop_data
  * @{
  */

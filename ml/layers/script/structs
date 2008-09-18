@@ -1,0 +1,13 @@
+
+struc FuncDecl {
+	returns		# int : maximum count of returned values
+	parameters	# symtab : parameters
+	locals		# symtab : local variables
+	closure		# symtab : enclosed variables
+	closure_ofs	# array : offsets of variables to clone in closure
+	label		# string : start label
+	endlabel	# string : end label
+	has_vararg	# int : 0 if function doesn't use a variable argument
+}
+
+

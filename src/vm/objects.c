@@ -163,7 +163,8 @@ generic_stack_t vm_stack_new() {
 			(void*(*)(vm_t,void*)) vm_stack_clone,
 			DataObjStack);
 	/*vm_printf("new Stack\n");*/
-	gstack_init(ret,sizeof(struct _data_stack_entry_t));
+	/*gstack_init(ret,sizeof(struct _data_stack_entry_t));*/
+	gstack_init(ret, sizeof(word_t)*2);
 	return ret;
 }
 

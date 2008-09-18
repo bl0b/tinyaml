@@ -114,6 +114,8 @@ lib
         opcode astCompileChild
 
       # compiler manipulation
+        opcode onCompInit               # pop dynFun
+        opcode onCompTerm               # pop dynFun
         opcode __addCompileMethod:Label
         opcode write_data               # pop data, pop rep, write
         opcode write_label:String

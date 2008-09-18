@@ -32,5 +32,5 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memmove memset strdup])
 
-AC_CONFIG_FILES([Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile])
+AC_CONFIG_FILES([Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile ml/layers/Makefile ml/layers/metasm/Makefile ml/layers/symasm/Makefile ml/layers/script/Makefile])
 AC_OUTPUT

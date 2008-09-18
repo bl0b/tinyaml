@@ -179,12 +179,15 @@ struct _vm_t {
 	/* embedded parser */
 	tinyap_t parser;
 	/* meta-compiler */
+	word_t compile_reent;
 	struct _text_seg_t compile_vectors;
 	program_t current_edit_prg;
 	opcode_chain_t result;
 	WalkDirection compile_state;
 	wast_t current_node;
 	struct _generic_stack_t cn_stack;
+	struct _dlist_t init_routines;
+	struct _dlist_t term_routines;
 	/* support of virtual AST walkers */
 	const char* virt_walker;
 	WalkDirection virt_walker_state;

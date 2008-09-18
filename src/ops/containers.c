@@ -91,7 +91,7 @@ void _VM_CALL vm_op_arrayGet_Int(vm_t vm, word_t index) {
 		assert(da->size>ofs+1);
 		dynarray_reserve(da,ofs+2);
 		/* FIXME ? */
-		vm_printf("[ARRAY:WRN] index is out of bounds (%lu >= %lu\n",index,da->size);
+		vm_printf("[VM:WRN] Array index is out of bounds (%lu >= %lu\n",index,da->size);
 		vm_push_data(vm,DataInt,0);
 	}
 }
@@ -252,11 +252,12 @@ void _VM_CALL vm_op_mapHasKey(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index) {
 	vm_dyn_env_t env = vm->current_thread->program->env;
 	if(!env) {
-		vm_printf("### program->env should be set ! ###\n");
+		/*vm_printf("### program->env should be set ! ###\n");*/
 		env = vm->env;
 	}
-	vm_printf("vm_op_envGet %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);
+	/*vm_printf("vm_op_envGet %lu:%s ",index,(const char*)env->symbols.by_index.data[index]);*/
 	index<<=1;
+	/*vm_printf("%i:%X\n", env->data.data[index],env->data.data[index+1]);*/
 	vm_push_data(vm,env->data.data[index],env->data.data[index+1]);
 }
 
@@ -284,14 +285,14 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 	word_t index;
 	word_t type=0, data=0;
 	if(!env) {
-		vm_printf("### program->env should be set ! ###\n");
+		/*vm_printf("### program->env should be set ! ###\n");*/
 		env = vm->env;
 	}
 
 	/* slow but safe */
 	index = text_seg_text_to_index(&env->symbols,text_seg_find_by_text(&env->symbols,(const char*)dk->data));
 
-	/*vm_printf("vm_op_envAdd %lu:%s (env size %i)\n",index,(const char*)env->symbols.by_index.data[index], dynarray_size(&env->data));*/
+	/*vm_printf("vm_op_envAdd %lu:%s (env size %i) ",index,(const char*)env->symbols.by_index.data[index], dynarray_size(&env->data));*/
 
 	if(dc->type&DataManagedObjectFlag) {
 		/*data = (word_t) OBJ_TO_PTR(vm_obj_clone_obj(vm,PTR_TO_OBJ(dc->data)));*/
@@ -316,6 +317,7 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 	dynarray_set(&env->data, index, dc->type);
 	/*vm_printf("vm_op_envAdd pouet 5\n");*/
 
+	/*vm_printf("%i:%X\n", env->data.data[index],env->data.data[index+1]);*/
 	/*dynarray_set(&env->data,index,dc->type);*/
 	/*dynarray_set(&env->data,index+1,data);*/
 }
@@ -325,16 +327,23 @@ void _VM_CALL vm_op_envSet_EnvSym(vm_t vm, long index) {
 	vm_data_t dc = _vm_pop(vm);
 	vm_data_t env_dc;
 	if(!env) {
-		vm_printf("### program->env should be set ! ###\n");
+		/*vm_printf("### program->env should be set ! ###\n");*/
 		env = vm->env;
 	}
-	vm_printf("vm_op_envSet %lu:%s\n",index,(const char*)env->symbols.by_index.data[index]);
-	env_dc = ((vm_data_t)env->data.data)+index;
-	if(env_dc->type&DataManagedObjectFlag&&env_dc->data!=dc->data) {
-		vm_obj_deref_ptr(vm,env_dc->data);
+	if(dc->type&DataManagedObjectFlag) {
+		/*data = (word_t) OBJ_TO_PTR(vm_obj_clone_obj(vm,PTR_TO_OBJ(dc->data)));*/
+		vm_obj_ref_ptr(vm,(void*)dc->data);
 	}
-	env_dc->type = dc->type;
-	env_dc->data = dc->data;
+
+	/*vm_printf("vm_op_envSet %lu:%s ",index,(const char*)env->symbols.by_index.data[index]);*/
+	index <<= 1;
+	/*vm_printf("(former %i:%X) ", env->data.data[index],env->data.data[index+1]);*/
+	if(env->data.data[index]&DataManagedObjectFlag) {
+		vm_obj_deref_ptr(vm,(void*)env->data.data[index+1]);
+	}
+	dynarray_set(&env->data,index,dc->type);
+	dynarray_set(&env->data,index+1,dc->data);
+	/*vm_printf("%i:%X\n", env->data.data[index],env->data.data[index+1]);*/
 }
 
 
@@ -345,11 +354,11 @@ void _VM_CALL vm_op_envLookup(vm_t vm, long index) {
 	vm_dyn_env_t env = vm->current_thread->program->env;
 	/* let string objects in */
 	assert(key->type=DataString||key->type==DataObjStr);
-	index = text_seg_text_to_index(&env->symbols,(const char*)key->data);
 	if(!env) {
-		vm_printf("### program->env should be set ! ###\n");
+		/*vm_printf("### program->env should be set ! ###\n");*/
 		env = vm->env;
 	}
+	index = text_seg_text_to_index(&env->symbols,(const char*)key->data);
 	vm_push_data(vm,DataInt,index);
 }
 /*@}*/
@@ -368,26 +377,36 @@ void _VM_CALL vm_op_stackPush(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	vm_data_t sk = _vm_pop(vm);
 	assert(sk->type==DataObjStack);
+	/*printf("Push data : %i:%X\n", d->type, d->data);*/
+	if(d->type&DataManagedObjectFlag) {
+		vm_obj_ref_ptr(vm, (void*)d->data);
+	}
 	gpush((generic_stack_t)sk->data,d);
 }
 
 
 void _VM_CALL vm_op_stackPop_Int(vm_t vm, word_t counter) {
 	vm_data_t sk = _vm_pop(vm);
+	vm_data_t d;
 	assert(sk->type==DataObjStack);
 	while(counter>0) {
-		(void)_gpop((generic_stack_t)sk->data);
+		d = _gpop((generic_stack_t)sk->data);
+		if(d->type&DataManagedObjectFlag) {
+			vm_obj_deref_ptr(vm, (void*)d->data);
+		}
 		counter-=1;
 	}
 	/*vm_push_data(vm, d->type, d->data);*/
 }
 
 
-void _VM_CALL vm_op_stackPeek_Int(vm_t vm, long ofs) {
+void _VM_CALL vm_op_stackPeek_Int(vm_t vm, long peek_ofs) {
 	vm_data_t sk = _vm_pop(vm);
 	vm_data_t d;
 	assert(sk->type==DataObjStack);
-	d = (vm_data_t) _gpeek((generic_stack_t)sk->data,-ofs);
+	assert(peek_ofs>=0);
+	d = (vm_data_t) _gpeek((generic_stack_t)sk->data,-peek_ofs);
+	/*printf("Peek data : %i:%X\n", d->type, d->data);*/
 	vm_push_data(vm, d->type, d->data);
 }
 
