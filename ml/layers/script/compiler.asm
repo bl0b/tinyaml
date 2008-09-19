@@ -147,7 +147,7 @@ asm
 	#push "@@@   at start, $cur_fname = " +$cur_fname push "   @@@\n" print 3
 	local locsz, fun_lbl, endfun_lbl, fname_backup, supargc, argc, top, count {
 		+$cur_fname call @gen_label -$fun_lbl
-		push "endfun" call @gen_label -$endfun_lbl
+		+$cur_fname push "_end" strcat call @gen_label -$endfun_lbl
 
 		#push "start label \"" +$fun_lbl push "\"\n" print 3
 		#push "end label \"" +$endfun_lbl push "\"\n" print 3
@@ -174,27 +174,37 @@ asm
 		#	- if vararg : compute supplementary argc, copy sup' args into an array, install the array as last arg
 		# first, code to fetch dynamic argc
 		+$cur_fname call @funcDeclGet +(FuncDecl.has_vararg) [[
-			nop
-	#		-$argc
-	#		+$argc
-	#		# compute supargc
-	#		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) sub 2 -$supargc
-	#		# check that supargc>=0
-	#		<<supEq i(+$supargc) >>
-	#
-	#		# prepare array counter max
-	#		+$argc
-	#		+$supargc
-	#		sub
-	#
-	#		# throw if failed
-	#		push "check_argc_pass" call @gen_label -$supargc
-	#		<< SZ >>
-	#		+$supargc write_ocLabel "jmp"
-	#		push "WrongParameterCount" << throw >>
-	#		+$supargc write_label
-	#
-	#	+$cur_fname push "_vastart_loop" strcat -$endfun_lbl
+			+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz sub 2 -$argc
+			# check that supargc>=0
+	
+			+$cur_fname push "_vastart_loop" strcat -$fun_lbl
+			+$cur_fname push "_vastart_done" strcat -$endfun_lbl
+
+			# throw if failed
+			+$cur_fname push "_chk_argc_pass" strcat call @gen_label -$supargc
+			<<	dup 0 push i(+$argc) supEq SZ jmp l(+$supargc)
+				push "WrongParameterCount"
+				throw
+			(+$supargc):
+				enter 1
+				push i(push 0 +$argc) sub
+				setmem -1
+				arrayNew
+			(+$fun_lbl):
+				getmem -1 push 0 infEq SZ jmp l(+$endfun_lbl)
+				# array is now on top of stack
+				# swap with data
+				swap 1
+				# push index
+				getmem -1 dec setmem -1 getmem -1
+				# set value
+				arraySet
+				jmp l(+$fun_lbl)
+			(+$endfun_lbl):
+				leave 1
+				#setmem i(push -1 +$argc sub)			# set array
+			>>
+	
 	#	# start count
 	#<<
 	#	enter 2
@@ -235,25 +245,25 @@ asm
 			   throw
 			   (+$supargc):
 			>>
-			+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
-			+$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec
-			add
-			-$locsz
-			+$locsz [ << enter i(+$locsz) >> ]
-			+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
-			dup 0 [[
-				push 0 +$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec sub -$top
-				+$top dup -1 sub -$count
-			_prep_parm_loop:
-				#push "sur le param " +$count push " sur " +$top push "\n" print 5
-				<< setmem i(+$count) >>
-				+$count inc -$count
-				#push "suivant " +$count push " < 0 ?\\n" print 3
-				+$count +$top inf SZ jmp @_prep_parm_loop
-			_prep_parm_done:
-			][
-				pop
-			]]
+		]]
+		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
+		+$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec
+		add
+		-$locsz
+		+$locsz [ << enter i(+$locsz) >> ]
+		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
+		dup 0 [[
+			push 0 +$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec sub -$top
+			+$top dup -1 sub -$count
+		_prep_parm_loop:
+			#push "sur le param " +$count push " sur " +$top push "\n" print 5
+			<< setmem i(+$count) >>
+			+$count inc -$count
+			#push "suivant " +$count push " < 0 ?\\n" print 3
+			+$count +$top inf SZ jmp @_prep_parm_loop
+		_prep_parm_done:
+		][
+			pop
 		]]
 
 
@@ -271,7 +281,11 @@ asm
 		+$locsz [ << leave i(+$locsz) >> ]
 
 		# if no return statement has been issued, default to void return (size 0)
-		<< push 0 ret 0 (+$endfun_lbl): dynFunNew l(+$fun_lbl) >>
+		<<	push 0
+			ret 0
+		(+$cur_fname call @funcDeclGet +(FuncDecl.endlabel)):
+			dynFunNew l(+$cur_fname call @funcDeclGet +(FuncDecl.label))
+		>>
 
 		push 0 -$locsz
 		#push "\   @@@   NOW $cur_fname = " +$cur_fname push "   @@@\\n" print 3

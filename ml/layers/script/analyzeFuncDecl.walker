@@ -10,11 +10,12 @@ walker analyzeFuncDecl {
 	end
 
 	default asm
-		#push "analyzeFuncDecl default on " astGetOp push "\n" print 3
+		push "analyzeFuncDecl default on " astGetOp push "\n" print 3
 		compileStateNext
 	end
 
 	on script_fun_decl asm
+		pp_curNode
 		# process param list
 		walkChild 0
 
@@ -59,8 +60,13 @@ walker analyzeFuncDecl {
 		compileStateDone
 	end
 
-	on script_param asm +$cur_fname astGetChildString 0 call @funcDeclAddParam compileStateNext end
-	on script_vararg asm +$cur_fname astGetChildString 0 call @funcDeclAddVararg compileStateNext end
+	on script_param asm
+		+$cur_fname astGetChildString 0 call @funcDeclAddParam compileStateNext
+	end
+	on script_vararg asm
+		+$cur_fname astGetChildString 0 call @funcDeclAddVararg compileStateNext
+		+$cur_fname astGetChildString 0 call @funcDeclAddParam compileStateNext		# let the param be known
+	end
 
 
 	on script_local asm

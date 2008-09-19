@@ -110,10 +110,10 @@ funcDeclAddReturn:
 # string:func_name -> nil
 funcDeclEnter:
 	local fdecl, i, st {
-		push "## FUNCDECL ENTER " dup -1 push "\n" print 3
+		#push "## FUNCDECL ENTER " dup -1 push "\n" print 3
 		call @funcDeclGet -$fdecl
 		+$local_dic_stack +$fdecl stackPush
-		push "lst_backup " +$lst_backup push " <= " envGet &_locSymTab push "\n" print 5
+		#push "lst_backup " +$lst_backup push " <= " envGet &_locSymTab push "\n" print 5
 		+$lst_backup envGet &_locSymTab stackPush
 		newSymTab envSet &_locSymTab
 		push 1 -$i
@@ -142,13 +142,13 @@ funcDeclEnter:
 	ret 0
 
 funcDeclLeave:
-	push "## FUNCDECL LEAVE\n" print 1
+	#push "## FUNCDECL LEAVE\n" print 1
 	+$local_dic_stack stackPop
-	push "POU " +$lst_backup push " " +$lst_backup stackSize push " ET\n" print 5
+	#push "POU " +$lst_backup push " " +$lst_backup stackSize push " ET\n" print 5
 	+$lst_backup stackPeek 0
-	push "POUET " dup -1 envGet &_locSymTab push "\n" print 4
+	#push "POUET " dup -1 envGet &_locSymTab push "\n" print 4
 	envSet &_locSymTab
-	push "POUETPOUET\n" print 1
+	#push "POUETPOUET\n" print 1
 	+$lst_backup stackPop
 	ret 0
 
@@ -216,7 +216,7 @@ getSymContext:
 				arraySet
 #				push "Symbol local '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
 				+$backup +(FuncDecl.closure) +$symbol getSym dec -$_sym_ofs
-				push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
+				#push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
 				$symIsClosure jmp @_sc_ret ]
 	
 			+$locdic +(FuncDecl.parameters) +$symbol getSym -$symofs

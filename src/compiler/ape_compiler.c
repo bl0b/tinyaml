@@ -142,11 +142,11 @@ void* ape_compiler_init(vm_t vm) {
 	vm->compile_reent+=1;
 	gpush(&vm->cn_stack,&vm->current_node);
 	if(vm->compile_reent==1) {
-		vm_printf("###      NEW       top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));
+		/*vm_printf("###      NEW       top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 		vm->result = opcode_chain_new();
 		dlist_forward(&vm->init_routines, word_t, exec_routine);
-	} else {
-		vm_printf("###      NEW       sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));
+	/*} else {*/
+		/*vm_printf("###      NEW       sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 	}
 	/*vm_printf("vm new ochain : %p\n",vm->result);*/
 	return vm;

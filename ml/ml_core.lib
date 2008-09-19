@@ -8,6 +8,7 @@ lib
         opcode popN
         opcode pop:Int          # pop n values
         opcode dup:Int          # duplicate n-th value on top of stack
+        opcode swap:Int         # swap top and top-offset on data stack
 
       # objects
         opcode clone

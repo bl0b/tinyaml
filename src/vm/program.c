@@ -527,7 +527,7 @@ const char* program_lookup_label(program_t p, word_t IP) {
 		return NULL;
 	}
 	for(i=0;i<p->labels.offsets.size;i+=1) {
-		if(p->labels.offsets.data[i]==IP) {
+		if(p->labels.offsets.data[i]==IP+2) {
 			return (const char*)p->labels.labels.by_index.data[i];
 		}
 	}

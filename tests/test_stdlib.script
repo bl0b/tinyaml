@@ -1,4 +1,4 @@
-require "script.stdlib"
+require "script.wc"
 
 script
 	global a,i

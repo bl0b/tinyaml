@@ -62,9 +62,9 @@ void _VM_CALL vm_op_push_String(vm_t vm, word_t data) {
 	vm_push_data(vm, DataString, data);
 }
 
-void _VM_CALL vm_op_push_Opcode(vm_t vm, word_t data) {
-	vm_push_data(vm, DataInt, data);
-}
+/*void _VM_CALL vm_op_push_Opcode(vm_t vm, word_t data) {*/
+	/*vm_push_data(vm, DataInt, data);*/
+/*}*/
 
 void _VM_CALL vm_op_pop(vm_t vm, word_t unused) {
 	vm_pop_data(vm,1);
@@ -85,6 +85,20 @@ void _VM_CALL vm_op_dup_Int(vm_t vm, int data) {
 	word_t b;
 	vm_peek_data(vm,data,&a,&b);
 	vm_push_data(vm, a, b);
+}
+
+#define quick_swap(a,b) do { a^=b; b^=a; a^=b; } while(0)
+
+void _VM_CALL vm_op_swap_Int(vm_t vm, long offset) {
+	/* dirty hack : swap top and (top-offset)-th value in stack */
+	vm_data_t top, swappee;
+	assert(offset>0);
+	printf("GET TOP\n"); fflush(stdout);
+	top = (vm_data_t)_gpeek(&vm->current_thread->data_stack, 0);
+	printf("GET SWAPPEE\n"); fflush(stdout);
+	swappee = (vm_data_t)_gpeek(&vm->current_thread->data_stack, -offset);
+	quick_swap(top->type, swappee->type);
+	quick_swap(top->data, swappee->data);
 }
 
 
