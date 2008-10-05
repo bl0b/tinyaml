@@ -50,6 +50,8 @@ jmp_buf _glob_vm_jmpbuf;
 
 const char* thread_state_to_str(thread_state_t ts);
 
+program_t dynFun_exec = NULL;
+
 /* the VM is a singleton */
 vm_t vm_new() {
 	vm_t ret;
@@ -111,6 +113,10 @@ vm_t vm_new() {
 
 	ret->env = vm_env_new();
 	vm_obj_ref_ptr(ret,ret->env);
+
+	if(!dynFun_exec) {
+		dynFun_exec = vm_compile_buffer(ret, "asm call ret 0 end");
+	}
 
 	return ret;
 }
@@ -321,14 +327,7 @@ vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio) {
 	return vm;
 }
 
-thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {
-	thread_t t;
-	/*dlist_node_t dn;*/
-	if(!p) {
-		return NULL;
-	}
-	vm->engine->_client_lock(vm->engine);
-	t = vm_thread_new(vm,prio,p,ip);
+thread_t vm_add_thread_helper(vm_t vm, thread_t t, int fg) {
 	vm_obj_ref_ptr(vm, t);
 	t->state=ThreadStateMax;
 	t->_sync=fg;
@@ -349,6 +348,18 @@ thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {
 
 	/*dlist_insert_sorted(&vm->ready_threads,dn,comp_prio);*/
 	thread_set_state(vm,t,ThreadReady);
+}
+
+thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {
+	thread_t t;
+	/*dlist_node_t dn;*/
+	if(!p) {
+		return NULL;
+	}
+	vm->engine->_client_lock(vm->engine);
+	t = vm_thread_new(vm,prio,p,ip);
+
+	vm_add_thread_helper(vm, t, fg);
 
 	vm->engine->_client_unlock(vm->engine);
 
@@ -869,4 +880,11 @@ int vm_printerrf(const char* fmt, ...) {
 	_glob_vm->engine->_put_err(buffer);
 	return strlen(buffer);
 }
+
+void _VM_CALL e_run_subthread(vm_engine_t e, program_t p, word_t ip, word_t prio);
+
+thread_t vm_exec_dynFun(vm_t vm, vm_dyn_func_t df) {
+	return NULL;
+}
+
 

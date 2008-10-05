@@ -39,16 +39,18 @@ lib
         opcode call_vc          # pop function object, pop array or
                                 # VObj, use the latter as closure and
                                 # call the former.
-        opcode call:Label       # intra-segment call
+        opcode call:Label       # intra-segment call (no closure support)
         opcode retval:Int       # copy stack top then pop out n values
                                 # then poke old stack top then return
         opcode ret:Int          # pop out n values then return
 
       # function objects
         opcode dynFunNew:Label    # push func obj
-        opcode dynFunAddClosure   # pop (data to clone), peek func obj
-        opcode getClosure:Int     # pop (data to clone), peek func obj
-        opcode getClosure         # pop (data to clone), peek func obj
+        opcode dynFunAddClosure   # pop (data to clone)
+        opcode getClosure:Int     # pop (data to clone)
+        opcode getClosure         # pop index, pop (data to clone)
+        opcode setClosure:Int     # pop (data to set)
+        opcode setClosure         # pop index, pop (data to set)
 
       # address space management
         opcode enter:Int        # reserve n local variables
@@ -217,6 +219,7 @@ lib
 
       # threading
         opcode newThread:Label          # pop prio
+        opcode newThread                # pop prio
         opcode getPid                   # push int
         opcode yield                    # yield current thread
         opcode joinThread               # pop int thread pid
@@ -231,7 +234,7 @@ lib
 
       # FIXME: output and debug mechanisms
         opcode print:Int
-        opcode print                    # pop n
+        opcode print                    # pop number of items, pop each item
 
 
 

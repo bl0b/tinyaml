@@ -83,7 +83,7 @@ script
 	addTo("Array","new",
 		function(args...) return args end)		# thanks vararg algorithm ;)
 	addTo("Array","size",
-		function(a) asm getmem -1 arraySize push 1 ret 0 end end)
+		function(a) asm getmem -1 arraySize setmem -1 end return a end)
 	addTo("Array","apply",
 		function(a,f)
 			local i,j
@@ -111,5 +111,8 @@ script
 	addTo("SymTab","size",
 		function(st) asm getmem -1 symTabSz push 1 ret 0 end end)
 
+	exportGroup("Thread")
+	addTo("Thread","new",
+		function(thread, prio) asm getmem -2 getmem -1 newThread setmem -1 end return thread end)
 end
 

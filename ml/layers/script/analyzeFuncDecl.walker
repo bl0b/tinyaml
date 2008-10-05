@@ -15,7 +15,7 @@ walker analyzeFuncDecl {
 	end
 
 	on script_fun_decl asm
-		pp_curNode
+		#pp_curNode
 		# process param list
 		walkChild 0
 
@@ -38,7 +38,7 @@ walker analyzeFuncDecl {
 	#on script_struc_access asm compileStateNext end
 	#on script_throw asm compileStateNext end
 	#on script_try asm compileStateNext end
-	#on script_expr asm compileStateNext end
+	#on p_ScriptExpr asm compileStateNext end
 	#on script_return asm compileStateNext end
 
 

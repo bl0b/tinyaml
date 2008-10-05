@@ -14,7 +14,7 @@ asm
 	RTC_setTempo
 
 	push 0			# lowest prio
-	newThread @_nop
+	dynFunNew @_nop newThread
 	setmem 2
 	push 99
 	newThread @_th

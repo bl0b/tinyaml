@@ -401,7 +401,7 @@ asm
 	compileStateNext
 end
 
-compile script_expr
+compile p_ScriptExpr
 asm
 	#+$expr_size inc -$expr_size
 	compileStateDown

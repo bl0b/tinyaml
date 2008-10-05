@@ -274,6 +274,8 @@ int vm_printf(const char* fmt, ...);
 int vm_printerrf(const char* fmt, ...);
 /*@}*/
 
+thread_t vm_exec_dynFun(vm_t, vm_dyn_func_t);
+
 #define TINYAML_SHEBANG "#!/usr/bin/env tinyaml\nBML_PRG"
 
 #endif

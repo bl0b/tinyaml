@@ -9,7 +9,7 @@ walker exprListType {
 	on script_expr_atom asm compileStateDown end
 	on script_expr_tuple asm compileStateDown end
 	on script_expr_end asm compileStateNext end
-	on script_expr asm compileStateDown end
+	on p_ScriptExpr asm compileStateDown end
 	on script_call_ret_any asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
 	on script_call_ret_0 asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
 	on script_call_ret_1 asm +$expr_list_calls inc -$expr_list_calls compileStateNext end

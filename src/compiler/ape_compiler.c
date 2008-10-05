@@ -115,25 +115,25 @@ void _VM_CALL vm_op_call(vm_t, word_t);
 void _VM_CALL vm_op_ret_Int(vm_t, word_t);
 
 void exec_routine(word_t df_ptr) {
-	struct _program_t x;
-	memset(&x,0,sizeof(struct _program_t));
-	x.env = _glob_vm->env;
-	x.data.size = 2;
-	x.data.data = (word_t[]) { DataObjFun, df_ptr };
-	x.labels.labels.by_index.size=1;
-	x.labels.labels.by_index.data=(word_t[]) { 0 };
-	x.labels.offsets.size=1;
-	x.labels.offsets.data=0;
-	x.code.size = 6;
-	x.code.data = (word_t[]){
-		(word_t)vm_op_getmem_Int, 0,
-		(word_t)vm_op_call, 0,
-		(word_t)vm_op_ret_Int, 0
-	};
+	/*struct _program_t x;*/
+	/*memset(&x,0,sizeof(struct _program_t));*/
+	/*x.env = _glob_vm->env;*/
+	/*x.data.size = 2;*/
+	/*x.data.data = (word_t[]) { DataObjFun, df_ptr };*/
+	/*x.labels.labels.by_index.size=1;*/
+	/*x.labels.labels.by_index.data=(word_t[]) { 0 };*/
+	/*x.labels.offsets.size=1;*/
+	/*x.labels.offsets.data=0;*/
+	/*x.code.size = 6;*/
+	/*x.code.data = (word_t[]){*/
+		/*(word_t)vm_op_getmem_Int, 0,*/
+		/*(word_t)vm_op_call, 0,*/
+		/*(word_t)vm_op_ret_Int, 0*/
+	/*};*/
 
 	printf("[VM:DEBUG] About to exec dynFun @%x\n", df_ptr);
 
-	vm_run_program_fg(_glob_vm,&x,0,50);
+	/*vm_run_program_fg(_glob_vm,&x,0,50);*/
 }
 
 

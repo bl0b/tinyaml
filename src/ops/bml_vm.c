@@ -93,9 +93,9 @@ void _VM_CALL vm_op_swap_Int(vm_t vm, long offset) {
 	/* dirty hack : swap top and (top-offset)-th value in stack */
 	vm_data_t top, swappee;
 	assert(offset>0);
-	printf("GET TOP\n"); fflush(stdout);
+	/*printf("GET TOP\n"); fflush(stdout);*/
 	top = (vm_data_t)_gpeek(&vm->current_thread->data_stack, 0);
-	printf("GET SWAPPEE\n"); fflush(stdout);
+	/*printf("GET SWAPPEE\n"); fflush(stdout);*/
 	swappee = (vm_data_t)_gpeek(&vm->current_thread->data_stack, -offset);
 	quick_swap(top->type, swappee->type);
 	quick_swap(top->data, swappee->data);
@@ -461,6 +461,22 @@ void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 	/*vm_printf("new thread has handle %p\n",t);*/
 	vm_push_data(vm,DataObjThread,(word_t)t);
 }
+
+extern program_t dynFun_exec;
+void _VM_CALL vm_op_newThread(vm_t vm, word_t unused) {
+	vm_data_t df = _vm_pop(vm);
+	struct _data_stack_entry_t argc = { DataInt, 0 };
+	vm_data_t prio = _vm_pop(vm);
+	thread_t t;
+	assert(df->type==DataObjFun);
+	assert(prio->type==DataInt);
+	t = vm_thread_new(vm,prio->data,dynFun_exec,0);
+	gpush(&t->data_stack, &argc);
+	gpush(&t->data_stack, df);
+	vm_add_thread_helper(vm, t, 0);
+	vm_push_data(vm,DataObjThread,(word_t)t);
+}
+
 
 void _VM_CALL vm_op_getPid(vm_t vm, word_t unused) {
 	vm_push_data(vm,DataObjThread,(word_t) vm->current_thread);
