@@ -34,13 +34,13 @@ libtinyaml_la_SOURCES =	containers/list.c \
 tinyaml_dbg_SOURCES = tinyaml_dbg.c
 tinyaml_dbg_LDADD = libtinyaml.la -lcurses
 tinyaml_dbg_LDFLAGS = -Wl,--export-dynamic
-tinyaml_dbg_CFLAGS = -I ../include
+tinyaml_dbg_CFLAGS = $(tinyap_CFLAGS) -I ../include
 
 
 tinyaml_SOURCES = tinyaml.c
 tinyaml_LDADD = libtinyaml.la
 tinyaml_LDFLAGS = -Wl,--export-dynamic
-tinyaml_CFLAGS = -I ../include
+tinyaml_CFLAGS = $(tinyap_CFLAGS) -I ../include
 
 
 
@@ -58,5 +58,5 @@ ml_core_gram.c: ../ml/ml_core.gram ../ml/ml_core.lib
 # The following is for profiling purpose only
 
 tinyaml_static:
-	gcc -ldl -lm -pthread -DTINYAML_EXT_DIR="\"/usr/local/lib/tinyaml/\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c ./*/*.c ml_core_gram.c /usr/local/lib/libtinyap.a -o tinyaml_static
+	gcc -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"/usr/local/lib/tinyaml/\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c ./*/*.c ml_core_gram.c /usr/local/lib/libtinyap.a -o tinyaml_static
 

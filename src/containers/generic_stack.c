@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "_impl.h"
-#include "stack.h"
+#include "generic_stack.h"
 
 generic_stack_t new_gstack(word_t token_size) {
 	generic_stack_t ret = (generic_stack_t) malloc(sizeof(struct _generic_stack_t));
