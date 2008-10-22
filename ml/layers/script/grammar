@@ -45,12 +45,14 @@ language
  script_return ::= "return" script_expr_list.
  #script_expr_list ::= _epsilon (p_ScriptExpr ",")* p_ScriptExpr script_expr_list_end.
  script_expr_list ::= script_el_loop? script_expr_list_end.
- script_el_atom = (p_ScriptExpr|script_call_ret_any|script_var).
+ script_el_atom = (p_ScriptExpr|script_call_ret_any|script_var|script_expand).
  script_el_loop = script_el_atom ("," script_el_loop)*.
 # (script_el_loop "," (p_ScriptExpr|script_call_ret_any) | (p_ScriptExpr|script_call_ret_any) ).
  script_expr_list_end ::= _epsilon.
 
  script_assign ::= script_var_list "=" script_expr_list.
+
+ script_expand ::= "*" script_el_atom.
 
  script_int ::= int.
  script_float ::= float.

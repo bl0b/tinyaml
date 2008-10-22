@@ -18,6 +18,7 @@ walker exprListType {
 
 	# expr is a call
 	on script_call asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
+	on script_expand asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
 
 	# expr is an atom
 	on script_anon_fun asm call @inc_exprs compileStateNext end

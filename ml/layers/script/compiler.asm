@@ -358,6 +358,35 @@ asm
 	compileStateDown
 end
 
+compile script_expand
+asm
+	astCompileChild 0
+	local lbl, elbl {
+		# assume array on top of stack
+		push "expand_loop" call @gen_label -$lbl
+		push "expand_done" call @gen_label -$elbl
+		<<	enter 2
+			setmem -1
+			getmem -1 arraySize setmem -2
+		(+$lbl):
+			getmem -2 SNZ jmp l(+$elbl)
+			# push arr[sz-index]
+			getmem -1
+				dup 0
+				arraySize
+				getmem -2
+				sub
+			arrayGet
+			getmem -2 dec setmem -2
+			jmp l(+$lbl)
+		(+$elbl):
+			# push number of elements in array
+			getmem -1 arraySize
+			leave 2
+		>>
+	}
+end
+
 compile script_expr_atom
 asm
 	astCompileChild 0

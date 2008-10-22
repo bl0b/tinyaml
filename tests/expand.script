@@ -1,0 +1,23 @@
+script
+	global a, b
+
+	function pouet(args...)
+		local i
+		i=0
+		while i<&Array.size(args) do
+			print(i,"\t",args[i],"\n")
+			i=i+1
+		end
+		print("\n")
+	end
+
+	a = &Array.new( 1, 3, 5, 17, 23, 42 )
+	pouet(*a)
+
+	a = &Array.new( "a", "b" )
+	a, b = *a
+
+	print("a=",a,"\tb=",b,"\n")
+
+end
+
