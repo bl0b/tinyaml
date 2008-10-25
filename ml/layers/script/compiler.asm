@@ -140,6 +140,47 @@ asm
 	compileStateNext
 end
 
+compile script_anon_array
+asm
+	<< arrayNew >>
+	compileStateDown
+end
+
+compile script_anon_array_item
+asm
+	astCompileChild 0	# push data
+	<<
+		dup -1		# dup array
+		arraySize	# get new index
+		arraySet
+	>>
+	compileStateNext
+end
+
+
+compile script_anon_map
+asm
+	<< mapNew >>
+	compileStateDown
+end
+
+compile script_anon_map_item
+asm
+	astCompileChild 1	# push value
+	<< dup -1 >>		# dup map
+	<< mapSet s(astGetChildString 0) >>
+	compileStateNext
+end
+
+compile script_anon_array_end
+asm
+	compileStateNext
+end
+
+compile script_anon_map_end
+asm
+	compileStateNext
+end
 
 compile script_fun_decl
 asm
@@ -187,7 +228,7 @@ asm
 				throw
 			(+$supargc):
 				enter 1
-				push i(push 0 +$argc) sub
+				push i(+$argc) sub
 				setmem -1
 				arrayNew
 			(+$fun_lbl):
@@ -428,6 +469,12 @@ asm
 	getmem -3 -$call_local_ofs
 	leave 3
 	compileStateNext
+end
+
+compile p_ScriptExpr1
+asm
+	#+$expr_size inc -$expr_size
+	compileStateDown
 end
 
 compile p_ScriptExpr

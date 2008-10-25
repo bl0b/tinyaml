@@ -14,6 +14,8 @@ walker exprListType {
 	on script_call_ret_0 asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
 	on script_call_ret_1 asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
 	on script_var asm call @inc_exprs compileStateNext end
+	on script_anon_array asm call @inc_exprs compileStateNext end
+	on script_anon_map asm call @inc_exprs compileStateNext end
 	on script_expr_list_end asm compileStateNext end
 
 	# expr is a call
