@@ -48,7 +48,7 @@ language
  script_anon_array_item ::= p_ScriptExpr1.
  script_anon_map   ::= "{" script_anon_map_item_list? script_anon_map_end.
  script_anon_map_item_list = ( script_anon_map_item_list "," script_anon_map_item | script_anon_map_item ).
- script_anon_map_item   ::= string ":" p_ScriptExpr1.
+ script_anon_map_item   ::= sym ":" p_ScriptExpr1.
  script_anon_map_end ::= "}".
  script_anon_array_end ::= "]".
 
