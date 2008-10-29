@@ -413,10 +413,10 @@ end
 compile GlobGet asm
 	astGetChildString 0
 	call @getLocSym
-	dup 0 SZ jmp @_write1
+	dup 0 dec SZ jmp @_write1 # getLocSym returns 1 on failure, because getSym returns -1
 	astGetChildString 0
 	call @getGlobSym
-	dup 0 SNZ jmp @globUnknown
+	dup 0 inc SNZ jmp @globUnknown
 _write1:
 	write_ocInt "getmem"
 	compileStateNext
@@ -426,10 +426,10 @@ end
 compile GlobSet asm
 	astGetChildString 0
 	call @getLocSym
-	dup 0 SZ jmp @_write2
+	dup 0 dec SZ jmp @_write2
 	astGetChildString 0
 	call @getGlobSym
-	dup 0 SNZ jmp @globUnknown
+	dup 0 inc SNZ jmp @globUnknown
 _write2:
 	write_ocInt "setmem"
 	compileStateNext
@@ -438,10 +438,10 @@ end
 compile GlobIdx asm
 	astGetChildString 0
 	call @getLocSym
-	dup 0 SZ jmp @_write3
+	dup 0 dec SZ jmp @_write3
 	astGetChildString 0
 	call @getGlobSym
-	dup 0 SNZ jmp @globUnknown
+	dup 0 inc SNZ jmp @globUnknown
 _write3:
 	write_ocInt "push"
 	compileStateNext

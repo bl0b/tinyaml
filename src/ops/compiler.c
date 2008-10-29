@@ -37,7 +37,7 @@ ast_node_t ast_unserialize(const char*);
 void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
 	word_t test = text_seg_text_to_index(&vm->gram_nodes,sernode);
 	if(!test) {
-		/*vm_printf("ML::appending new grammar rules\n");*/
+		vm_printf("ML::appending new grammar rules\n");
 		ast_node_t n = ast_unserialize(text_seg_find_by_text(&vm->gram_nodes,sernode));
 		tinyap_append_grammar(vm->parser,n);
 	}

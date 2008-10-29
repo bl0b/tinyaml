@@ -31,6 +31,7 @@
 void text_seg_init(text_seg_t seg);
 void text_seg_deinit(text_seg_t seg);
 void text_seg_free(text_seg_t seg);
+void text_seg_copy(text_seg_t dest, text_seg_t src);
 const char* text_seg_find_by_text(text_seg_t, const char*);
 const char* text_seg_find_by_index(text_seg_t, word_t);
 word_t text_seg_text_to_index(text_seg_t, const char*);

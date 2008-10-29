@@ -1,1 +1,1 @@
-TINYAML=../../../src/tinyaml
+TINYAML=../../../src/.libs/tinyaml

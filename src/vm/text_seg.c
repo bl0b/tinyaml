@@ -71,9 +71,20 @@ const char* text_seg_find_by_index(text_seg_t ts, word_t i) {
 }
 
 word_t text_seg_text_to_index(text_seg_t ts, const char*str) {
-	return (word_t)hash_find(&ts->by_text, (hash_key)str);
+	htab_entry_t e = hash_find_e(&ts->by_text, (hash_key)str);
+	if(!e) {
+		return -1;
+	} else {
+		return (word_t)e->e;
+	}
 }
 
+void text_seg_copy(text_seg_t dest, text_seg_t src) {
+	int i;
+	for(i=1;i<dynarray_size(&src->by_index);i+=1) {
+		(void)text_seg_find_by_text(dest, (const char*)dynarray_get(&src->by_index, i));
+	}
+}
 
 void text_seg_serialize(text_seg_t seg, writer_t w, const char* sec_name) {
 	int i,tot;

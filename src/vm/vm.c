@@ -803,6 +803,9 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 		if(vm->gc_pending.tail) {
 			dlist_node_t dn;
 			dn = vm->gc_pending.tail;
+			if(((vm_obj_t)dn->value)->ref_count!=0) {
+				vm_printerrf("dn->magic==%X\n", ((vm_obj_t)dn->value)->magic);
+			}
 			assert(((vm_obj_t)dn->value)->ref_count==0);
 			vm->gc_pending.tail=dn->prev;
 			if(dn->prev) {

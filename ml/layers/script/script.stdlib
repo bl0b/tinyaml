@@ -29,6 +29,8 @@ script
 	exportGroup("String")
 
 	addTo("String","compare",strcmp)
+	addTo("String","length",
+		function(a) asm getmem -1 strlen push 1 ret 0 end end)
 	addTo("String","append",
 		function(a,b) asm getmem -1 getmem -2 strcat push 1 ret 0 end end)
 	addTo("String","charAt",
@@ -80,10 +82,19 @@ script
 		function(walkerName) asm getmem -1 doWalk end end)
 
 	exportGroup("Array")
-	addTo("Array","new",
-		function(args...) return args end)		# thanks vararg algorithm ;)
+	function _anew(args...) return args end
+	addTo("Array","new", _anew)		# thanks vararg algorithm ;)
 	addTo("Array","size",
 		function(a) asm getmem -1 arraySize setmem -1 end return a end)
+	function _afe(a,f)
+		local i,j
+		asm getmem -3 arraySize setmem -2 end
+		i=0
+		while i<j do
+			f(i,a[i])
+			i=i+1
+		end
+	end
 	addTo("Array","apply",
 		function(a,f)
 			local i,j
@@ -94,16 +105,41 @@ script
 				i=i+1
 			end
 		end)
-	addTo("Array","foreach",
-		function(a,f)
-			local i,j
-			asm getmem -3 arraySize setmem -2 end
-			i=0
-			while i<j do
-				f(i,a[i])
-				i=i+1
+	addTo("Array","foreach", _afe)
+	function _af(a,p)
+		local i,j,k,ret
+		asm getmem -5 arraySize setmem -3 end
+		i,j=0,0
+		ret=_anew()
+		while i<k do
+			if p(a[i]) then
+				ret[j]=a[i]
+				j=j+1
 			end
-		end)
+			i=i+1
+		end
+		return ret
+		end
+	addTo("Array", "filter", _af)
+	function _ari(a,f,init)
+		local accum
+		accum=init
+		_afe(a, function(x) accum = f(accum, x) end)
+		return accum
+	end
+	function _ar(a,f)
+		local accum,i,j
+		asm getmem -4 arraySize setmem -3 end
+		i=2
+		accum=f(a[0],a[1])
+		while i<j do
+			accum=f(accum,a[i])
+			i=i+1
+		end
+		return accum
+	end
+	addTo("Array", "reducei", _ari)
+	addTo("Array", "reduce", _ar)
 
 	exportGroup("SymTab")
 	addTo("SymTab","new",
@@ -112,7 +148,17 @@ script
 		function(st) asm getmem -1 symTabSz push 1 ret 0 end end)
 
 	exportGroup("Thread")
-	addTo("Thread","new",
-		function(thread, prio) asm getmem -2 getmem -1 newThread setmem -1 end return thread end)
+	function _tn(prio, thread)
+		local ret
+		asm +$prio +$thread newThread -$ret end
+		return ret
+	end
+	function _tj(thread)
+		asm getmem -1 joinThread end
+	end
+	addTo("Thread","new",_tn)
+	addTo("Thread","join",_tj)
+	addTo("Thread","PID", function() asm getPid push 1 ret 0 end end)
+
 end
 

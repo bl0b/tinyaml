@@ -472,6 +472,9 @@ void _VM_CALL vm_op_newThread(vm_t vm, word_t unused) {
 	assert(prio->type==DataInt);
 	t = vm_thread_new(vm,prio->data,dynFun_exec,0);
 	gpush(&t->data_stack, &argc);
+	if(df->type&DataManagedObjectFlag) {
+		vm_obj_ref_ptr(vm,(void*)df->data);
+	}
 	gpush(&t->data_stack, df);
 	vm_add_thread_helper(vm, t, 0);
 	vm_push_data(vm,DataObjThread,(word_t)t);

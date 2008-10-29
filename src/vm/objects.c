@@ -23,9 +23,12 @@ char* vm_string_new_buf(word_t sz) {
 }
 
 
+text_seg_t vm_symtab_new();
+
 text_seg_t vm_symtab_clone(vm_t vm, text_seg_t seg) {
-	/* FIXME : shouldn't be such a semi-singleton */
-	return seg;
+	text_seg_t ret = vm_symtab_new();
+	text_seg_copy(ret, seg);
+	return ret;
 }
 
 void symtab_deinit(vm_t vm, text_seg_t seg);
@@ -91,21 +94,24 @@ void vm_da_deinit(vm_t vm, dynarray_t da) {
 }
 
 
-void vm_da_clone(vm_t vm, dynarray_t da) {
-	dynarray_t ret = vm_array_new();
+void vm_da_copy(vm_t vm, dynarray_t dest, dynarray_t src) {
 	word_t i;
-	dynarray_reserve(ret,dynarray_size(da));
+	dynarray_reserve(dest,dynarray_size(src));
 	/* FIXME : too heavy to be done at once */
-	for(i=0;i<da->size;i+=2) {
-		ret->data[i]=da->data[i];
-		if((vm_data_type_t)da->data[i] &DataManagedObjectFlag) {
-			vm_obj_ref_ptr(vm,(void*)da->data[i+1]);
-			ret->data[i+1]=(word_t)vm_obj_clone_obj(vm,PTR_TO_OBJ(da->data[i+1]));
+	for(i=0;i<src->size;i+=2) {
+		dest->data[i]=src->data[i];
+		if((vm_data_type_t)src->data[i] &DataManagedObjectFlag) {
+			vm_obj_ref_ptr(vm,(void*)src->data[i+1]);
+			dest->data[i+1]=(word_t)vm_obj_clone_obj(vm,PTR_TO_OBJ(src->data[i+1]));
 		} else {
-			ret->data[i+1]=da->data[i+1];
+			dest->data[i+1]=src->data[i+1];
 		}
 	}
-	dynarray_deinit(da,NULL);
+}
+
+void vm_da_clone(vm_t vm, dynarray_t da) {
+	dynarray_t ret = vm_array_new();
+	vm_da_copy(vm, ret, da);
 }
 
 
@@ -127,9 +133,13 @@ void vm_env_deinit(vm_t vm, vm_dyn_env_t env) {
 	symtab_deinit(vm,&env->symbols);
 }
 
+vm_dyn_env_t vm_env_new();
+
 vm_dyn_env_t vm_env_clone(vm_t vm, vm_dyn_env_t env) {
-	/* TODO */
-	return env;
+	vm_dyn_env_t ret = vm_env_new();
+	text_seg_copy(&ret->symbols, &env->symbols);
+	vm_da_copy(vm, &ret->data, &env->data);
+	return ret;
 }
 
 vm_dyn_env_t vm_env_new() {

@@ -109,7 +109,7 @@ bexpr22	= ( b_and | bexpr1 | script_call_ret_1 | script_var ).
 bexpr3	= ( b_or | bexpr2 ).
 bexpr33	= ( b_or | bexpr2 | script_call_ret_1 | script_var ).
 
-bexpr4 = ( comp | bexpr3 ).
+bexpr4 = ( comp | bexpr3 | script_call_ret_1 | script_var ).
 
 end
 
