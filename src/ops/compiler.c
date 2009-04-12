@@ -29,6 +29,8 @@
 
 ast_node_t ast_unserialize(const char*);
 
+void* try_walk(wast_t node, const char* pname, vm_t vm);
+
 /*! \addtogroup vcop_comp
  * @{
  */
@@ -36,8 +38,9 @@ ast_node_t ast_unserialize(const char*);
 
 void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
 	word_t test = text_seg_text_to_index(&vm->gram_nodes,sernode);
-	if(!test) {
-		vm_printf("ML::appending new grammar rules\n");
+	/*vm_printf("langDef :: test=%i\n", test);*/
+	if(test==-1) {
+		/*vm_printf("ML::appending new grammar rules\n");*/
 		ast_node_t n = ast_unserialize(text_seg_find_by_text(&vm->gram_nodes,sernode));
 		tinyap_append_grammar(vm->parser,n);
 	}
@@ -75,7 +78,7 @@ void _VM_CALL vm_op_write_data(vm_t vm, word_t x) {
 		opcode_chain_add_data(vm->result, d->type, (const char*)d->data, tmp_r, -1, -1);
 		break;
 	case DataManagedObjectFlag:
-		vm_printerrf("[COMPILER:ERR] Inline Objects aren't allowed in the data segment !\n");
+		vm_printerrf("[COMP:ERR] Inline Objects aren't allowed in the data segment !\n");
 	default:;
 	}
 	/*vm_printf("vm_op_write_data\n");*/
@@ -223,6 +226,7 @@ void _VM_CALL vm_op_compileStateDone(vm_t vm, word_t x) {
 }
 
 void _VM_CALL vm_op_compileStateError(vm_t vm, word_t x) {
+	/*vm_printerrf("ERROR ! %s:%i\n", __FILE__, __LINE__);*/
 	vm->compile_state=Error;
 }
 
@@ -247,15 +251,19 @@ void _VM_CALL vm_op_astGetChildrenCount(vm_t vm, word_t x) {
 
 void _VM_CALL vm_op_astCompileChild_Int(vm_t vm, word_t x) {
 	assert(x<wa_opd_count(vm->current_node));
-	/*vm_printf("calling sub compiler\n");*/
-	/*tinyap_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
-	tinyap_walk(wa_opd(vm->current_node,x), "compiler", vm);
+/*	vm_printf("calling sub compiler on child #%lu\n", x);*/
+/*	tinyap_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
+	try_walk(wa_opd(vm->current_node,x), "compiler", vm);
 }
 
 
 void _VM_CALL vm_op_doWalk_String(vm_t vm, const char* walker) {
+	const char* backup = vm->virt_walker;
 	vm->virt_walker = walker;
-	tinyap_walk(vm->current_node, "virtual", vm);
+	vm_compinput_push_walker(vm, walker);
+	try_walk(vm->current_node, "virtual", vm);
+	vm_compinput_pop(vm);
+	vm->virt_walker = backup;
 }
 
 void _VM_CALL vm_op_doWalk(vm_t vm, word_t unused) {
@@ -268,8 +276,8 @@ void _VM_CALL vm_op_doWalk(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_walkChild_Int(vm_t vm, word_t idx) {
 	assert(idx<wa_opd_count(vm->current_node));
 	/*vm_printf("calling sub compiler\n");*/
-	/*tinyap_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
-	tinyap_walk(wa_opd(vm->current_node,idx), "virtual", vm);
+	/*try_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
+	try_walk(wa_opd(vm->current_node,idx), "virtual", vm);
 }
 
 
@@ -283,7 +291,7 @@ void _VM_CALL vm_op_walkChild(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_astCompileChild(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataInt);
-	/*tinyap_walk(vm->current_node, "prettyprint", vm);*/
+	/*try_walk(vm->current_node, "prettyprint", vm);*/
 	assert(d->data<wa_opd_count(vm->current_node));
 	vm_op_astCompileChild_Int(vm,d->data);
 }
@@ -323,7 +331,9 @@ void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
 
 	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
-		tinyap_walk(wa, "compiler", vm);
+		vm_compinput_push_buffer(vm, buffer);
+		try_walk(wa, "compiler", vm);
+		vm_compinput_pop(vm);
 		wa_del(wa);
 	} else {
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));

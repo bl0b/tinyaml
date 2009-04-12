@@ -152,6 +152,9 @@ vm_t vm_new();
 /*! destroy the given Virtual Machine */
 void vm_del(vm_t);
 
+vm_t vm_set_error_handler(vm_t vm, vm_error_handler handler);
+vm_error_handler vm_get_error_handler(vm_t vm);
+
 /*! \brief link an external library file to the VM. Actual file name is dependant on architecture. On Linux, it is $prefix/lib/tinyaml/libtinyaml_&lt;lib_file_name&gt;.so */
 vm_t vm_set_lib_file(vm_t, const char*);
 /*! \brief declare a new opcode with (name, argument type, C function). */

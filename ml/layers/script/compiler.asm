@@ -98,8 +98,8 @@ compile script_glob_fun
 asm
 	local sz {
 		#pp_curNode
-		envGet &_globSymTab astGetChildString 0 getSym [
-			#push "Symbol " astGetChildString 0 push "\ already defined !\n" print 3
+		envGet &_globSymTab astGetChildString 0 getSym push -1 nEq [
+			push "Symbol " astGetChildString 0 push "\ already defined !\n" print 3
 			compileStateError
 			ret 0
 		]

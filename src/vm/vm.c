@@ -52,6 +52,83 @@ const char* thread_state_to_str(thread_state_t ts);
 
 program_t dynFun_exec = NULL;
 
+void default_error_handler(vm_t vm, const char* input, int is_buffer) {
+	int ofs, sz;
+	compinput_t ci;
+	const char* buf;
+	vm_data_t d;
+	wast_t wa;
+	sz = vm->compinput_stack.sp;
+	vm_printerrf("Error during compilation :\n");
+	for(ofs=-sz;ofs<=0;ofs+=1) {
+		d = (vm_data_t) _gpeek(&vm->compinput_stack, ofs);
+		ci = (compinput_t) d->type;
+		buf = (const char*) d->data;
+		vm_printerrf(" * in ");
+		switch(ci) {
+		case CompInFile:
+			vm_printerrf("file %s\n", buf);
+			break;
+		case CompInBuffer:
+			if(strlen(buf)<=43) {
+				vm_printerrf("buffer << %s >>\n", buf);
+			} else {
+				vm_printerrf("buffer << %20.20s...%20.20s >>\n", buf, buf+strlen(buf)-20);
+			}
+			break;
+		case CompInVWalker:
+			vm_printerrf("walker %s\n", buf);
+			break;
+		default:
+			vm_printerrf("<UNHANDLED %i:%s>\n", ci, buf);
+		};
+	}
+	sz = vm->cn_stack.sp;
+	vm_printerrf("Node stack :\n");
+	for(ofs=-sz;ofs<=0;ofs+=1) {
+		wa = *(wast_t*) _gpeek(&vm->cn_stack, ofs);
+		if(wa) {
+			vm_printerrf(" * %i:%i %s (%i)\n", wa_row(wa), wa_col(wa), wa_op(wa), wa_opd_count(wa));
+		}
+	}
+	vm_printerrf("at %i:%i (%s)\n", wa_row(vm->current_node), wa_col(vm->current_node), wa_op(vm->current_node));
+	exit(-1);
+}
+
+vm_t vm_set_error_handler(vm_t vm, vm_error_handler handler) {
+	vm->onCompileError = handler;
+	return vm;
+}
+
+vm_error_handler vm_get_error_handler(vm_t vm) {
+	return vm->onCompileError;
+}
+
+void vm_compinput_push_file(vm_t vm, const char*filename) {
+	struct _data_stack_entry_t d;
+	d.type=(vm_data_type_t)CompInFile;
+	d.data=(word_t)filename;
+	gpush(&vm->compinput_stack, &d);
+}
+
+void vm_compinput_push_buffer(vm_t vm, const char*buffer) {
+	struct _data_stack_entry_t d;
+	d.type=(vm_data_type_t)CompInBuffer;
+	d.data=(word_t)buffer;
+	gpush(&vm->compinput_stack, &d);
+}
+
+void vm_compinput_push_walker(vm_t vm, const char*wname) {
+	struct _data_stack_entry_t d;
+	d.type=(vm_data_type_t)CompInVWalker;
+	d.data=(word_t)wname;
+	gpush(&vm->compinput_stack, &d);
+}
+
+void vm_compinput_pop(vm_t vm) {
+	_gpop(&vm->compinput_stack);
+}
+
 /* the VM is a singleton */
 vm_t vm_new() {
 	vm_t ret;
@@ -63,6 +140,8 @@ vm_t vm_new() {
 	ret = (vm_t)malloc(sizeof(struct _vm_t));
 	_glob_vm = ret;
 	tinyap_init();
+	ret->onCompileError = default_error_handler;
+	gstack_init(&ret->compinput_stack,sizeof(struct _data_stack_entry_t));
 	ret->compile_reent=0;
 	ret->engine=stub_engine;
 	ret->engine->vm=ret;
@@ -273,6 +352,7 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 	/*vm_printf("vm_compile_file(%s)\n",fname);*/
 
 	tinyap_set_source_file(vm->parser,fname);
+	vm_compinput_push_file(vm, fname);
 	tinyap_parse(vm->parser);
 
 	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
@@ -285,7 +365,9 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	} else {
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+		vm->onCompileError(vm, "<not implemented>", 0);
 	}
+	vm_compinput_pop(vm);
 	vm->compile_reent=reent;
 	return p;
 }
@@ -297,6 +379,7 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 	vm->compile_reent=0;
 	/*vm_printf("vm_compile_buffer(%s)\n",buffer);*/
 	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
+	vm_compinput_push_buffer(vm, buffer);
 	tinyap_parse(vm->parser);
 
 	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
@@ -309,7 +392,9 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	} else {
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+		vm->onCompileError(vm, "<not implemented>", 0);
 	}
+	vm_compinput_pop(vm);
 	vm->compile_reent=reent;
 	return p;
 }
@@ -327,7 +412,9 @@ vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio) {
 	return vm;
 }
 
+/* FIXME : include support for thread args */
 thread_t vm_add_thread_helper(vm_t vm, thread_t t, int fg) {
+	struct _data_stack_entry_t argc = { DataInt, 0 };
 	vm_obj_ref_ptr(vm, t);
 	t->state=ThreadStateMax;
 	t->_sync=fg;
@@ -342,6 +429,8 @@ thread_t vm_add_thread_helper(vm_t vm, thread_t t, int fg) {
 		/*vm_printf("SchedulerRoundRobin\n");*/
 		vm->scheduler = SchedulerRoundRobin;
 	}
+	/* push argc on top of data stack */
+	gpush(&t->data_stack, &argc);
 
 	/*dn = (dlist_node_t) malloc(sizeof(struct _dlist_node_t));*/
 	/*dn->value=(word_t)t;*/
@@ -547,7 +636,7 @@ vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o) {
 	dn = vm->gc_pending.head;
 	while(dn&&(void*)dn->value!=o) { dn = dn->next; }
 	if(dn) {
-		fprintf(stdout,"[VM:ERR] object %p is already collected ! collection aborted.\n",o);
+		vm_printerrf("[VM:ERR] object %p is already collected ! collection aborted.\n",o);
 	} else {
 		dlist_insert_head(&vm->gc_pending,o);
 	}
@@ -622,9 +711,14 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 
 //*
 	if(_vm_trace) {
-		const char* label = program_lookup_label(t->program,t->IP);
+/*		const char* label = program_lookup_label(t->program,t->IP);*/
+		static char ip_lbl_ofs_buf[46];
+		word_t ofs;
+		const char*label;
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
-		fprintf(stdout,"\nEXEC:%p:%s (%p:%lX)\t%-20.20s %-40.40s | ",t,thread_state_to_str(t->state),t->program,t->IP,label?label:"",disasm);
+		lookup_label_and_ofs(t->program,t->IP,&label,&ofs);
+		snprintf(ip_lbl_ofs_buf, 45, "(%p:%s+%lX)", t->program, label, ofs);
+		fprintf(stdout,"\nEXEC:%p %-60.60s %-40.40s | ",t, ip_lbl_ofs_buf, disasm);
 		fflush(stdout);
 		free((char*)disasm);
 	}

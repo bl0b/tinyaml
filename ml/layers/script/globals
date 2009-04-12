@@ -47,10 +47,10 @@ glob
 
 
 
-	glob_dic = 0			# symbol table for globals
+#	glob_dic = 0			# symbol table for globals
 	func_dic = 0			# symbol table for functions
 	func_tab = 0			# table of function decls
-	local_dic_stack = 0		# stack for inner local contexts
+#	local_dic_stack = 0		# stack for inner local contexts
 # for scope management :
 	symIsLocal = 101		# constants
 	symIsParam = 102		#
@@ -86,7 +86,7 @@ glob
 
 	list_algo = 0
 
-	lst_backup = 0
+	#lst_backup = 0
 
 	#function_has_returned = 0
 end

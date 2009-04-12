@@ -1,0 +1,104 @@
+require "symasm.wc" glob
+	cur_fname = ""
+	lbl_counter = 0
+	label = 0	# string : start label
+	endlabel = 0	# string : end label
+	n_param = 0
+end
+
+
+asm
+	dynFunNew @reset_tables onCompInit
+	jmp @_skip_0
+
+reset_tables:
+	ret 0
+
+# string:something -> string:label
+gen_label:
+	+$lbl_counter inc -$lbl_counter
+	push "_" +$lbl_counter toS strcat strcat
+	ret 0
+
+_skip_0:
+end
+
+
+
+language
+	procasm_func = ( procasm_envfunc | procasm_locfunc ).
+	procasm_envfunc ::= "export" procasm_locfunc.
+	procasm_locfunc ::= "func" procasm_funcname procasm_fundecl.
+	procasm_funcname ::= sym.
+	procasm_fundecl = "(" procasm_arglist ")" procasm_func_body.
+	procasm_arglist ::= _pal_lp.
+	_pal_lp = ((procasm_arg ",")* procasm_arg?).
+	procasm_arg ::= sym.
+	procasm_func_body ::= _pafb_lp.
+	_pafb_lp = (procasm_endfunc|_pa_op _pafb_lp).
+	procasm_endfunc ::= "endfunc".
+	_pa_op = (asm_statement).
+	procasm_call ::= "@" sym procasm_exprlist.
+	procasm_exprlist ::= "(" _pael_lp? ")".
+	_pael_lp = ({procasm_expr ","} _pael_lp | procasm_expr).
+	procasm_expr ::= p_Opcode+.
+end
+
+plug procasm_func into p_Code
+plug procasm_call into p_Opcode
+
+compile procasm_envfunc
+asm
+	astCompileChild 0
+	<< push s(+$cur_fname) envAdd >>
+	compileStateDown
+end
+
+compile procasm_expr asm compileStateDown end
+compile procasm_func_body asm compileStateDown end
+
+compile procasm_call
+asm
+	astCompileChild 1	# have all args and argc pushed
+	<< getmem i(astGetChildString 0 envGet &_GSTGet call) call >>
+	compileStateNext
+end
+
+compile procasm_locfunc asm compileStateDown end
+compile procasm_funcname
+asm
+	envGet &_LSTNew call
+	astGetChildString 0 -$cur_fname
+	+$cur_fname call @gen_label -$label
+	+$cur_fname call @gen_label -$endlabel
+	<< jmp l(+$endlabel) (+$label): >>
+	push 1 push 0 write_data
+	+$cur_fname envGet &_GSTAdd call
+	compileStateNext
+end
+
+compile procasm_endfunc
+asm
+	<<	leave i(+$n_param)
+		ret 0
+	(+$endlabel):
+		dynFunNew l(+$label)
+		setmem i(+$cur_fname envGet &_GSTGet call)
+	>>
+	compileStateNext
+end
+
+compile procasm_arglist asm astGetChildrenCount -$n_param << enter i(+$n_param) >> compileStateDown end
+
+compile procasm_arg
+asm
+	<< setmem i(astGetChildString 0 envGet &_LSTAdd call astGetChildString 0 envGet &_LSTFindSym call) >>
+	compileStateNext
+end
+
+
+compile procasm_exprlist
+asm
+	compileStateDown
+end
+

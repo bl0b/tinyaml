@@ -204,9 +204,10 @@ void _VM_CALL vm_op_mapSet_String(vm_t vm, const char* key) {
 	long index;
 	assert(d->type==DataObjEnv);
 	index = text_seg_text_to_index(&env->symbols,key);
-	if(!index) {
+	if(index==-1) {
 		index = text_seg_text_to_index(&env->symbols,text_seg_find_by_text(&env->symbols,key));
 	}
+	/*vm_printerrf("DEBUG INDEX %li\n", index);*/
 	index<<=1;
 	if(index>=env->data.size) {
 		assert(index<env->data.size+128);
@@ -238,7 +239,7 @@ void _VM_CALL vm_op_mapHasKey_String(vm_t vm, const char* key) {
 	long index;
 	assert(d->type==DataObjEnv);
 	index = text_seg_text_to_index(&env->symbols,key);
-	vm_push_data(vm,DataInt,index!=0);
+	vm_push_data(vm,DataInt,index!=-1);
 }
 
 

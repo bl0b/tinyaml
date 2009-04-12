@@ -35,6 +35,9 @@ ast_node_t newAtom(const char*data,int row,int col);
 ast_node_t newPair(const ast_node_t a,const ast_node_t d,const int row,const int col);
 
 
+extern volatile int _vm_trace;
+const char* state2str(WalkDirection wd);
+
 WalkDirection try_method(const char*op, vm_t vm, wast_t node) {
 	char* vec_name = (char*)malloc(strlen(op)+strlen(vm->virt_walker)+8);
 	word_t vec_ofs;
@@ -49,17 +52,23 @@ WalkDirection try_method(const char*op, vm_t vm, wast_t node) {
 		free(vec_name);
 	}
 	if(vec_ofs) {
-		WalkDirection backup = vm->compile_state;
+/*		WalkDirection backup = vm->compile_state;*/
 		program_t p = (program_t)*(vm->compile_vectors.by_index.data+vec_ofs);
 		word_t ip = *(vm->compile_vectors.by_index.data+vec_ofs+1);
-		/*vm_printf("virtual walker calling %p:%lX (%s)\n",p,ip,op);*/
+		if(_vm_trace) {
+			vm_printf("\nVWALKER_VECTOR %s::%s [%p:%lX]\n", vm->virt_walker, op, p,ip);
+		}
+/*		vm_printf("virtual walker calling %p:%lX (%s)\n",p,ip,op);*/
 		gpush(&vm->cn_stack,&vm->current_node);
 		vm->current_node = node;
 		vm_run_program_fg(vm,p,ip,50);
 		vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 		vm->virt_walker_state=vm->compile_state;
-		vm->compile_state=backup;
-		/*vm_printf("   vm return state : %i\n",vm->virt_walker_state);*/
+/*		vm->compile_state=backup;*/
+/*		vm_printf("   vm return state : %i\n",vm->virt_walker_state);*/
+		if(_vm_trace) {
+			vm_printf("\nVWALKER_VECTOR %s::%s return state : %s\n", vm->virt_walker, op, state2str(vm->compile_state));
+		}
 		return vm->virt_walker_state;
 	}
 
@@ -71,7 +80,7 @@ WalkDirection try_method(const char*op, vm_t vm, wast_t node) {
 
 void* ape_virtual_init(vm_t vm) {
 	/* allow reentrant calls */
-	gpush(&vm->cn_stack,&vm->current_node);
+/*	gpush(&vm->cn_stack,&vm->current_node);*/
 	try_method("__init__",vm,NULL);
 	return vm;
 }
@@ -79,7 +88,7 @@ void* ape_virtual_init(vm_t vm) {
 
 void ape_virtual_free(vm_t vm) {
 	try_method("__term__",vm,NULL);
-	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
+/*	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);*/
 }
 
 

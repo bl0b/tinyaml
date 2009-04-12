@@ -26,6 +26,9 @@
 program_t program_new();
 void program_free(vm_t, program_t);
 
+void program_set_source(program_t, const char*);
+const char* program_get_source(program_t);
+
 void program_add_label(program_t,word_t,const char*);
 word_t program_label_to_ofs(program_t, const char*);
 const char* program_ofs_to_label(program_t, word_t);

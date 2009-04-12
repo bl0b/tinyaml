@@ -1,4 +1,4 @@
-#!./tinyaml_script_interpreter.sh
+#!/usr/bin/tinyaml script.wc
 script
 
 global bla,pouet

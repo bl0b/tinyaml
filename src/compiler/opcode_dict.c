@@ -113,7 +113,7 @@ void opcode_dict_add(opcode_dict_t od, opcode_arg_t arg_type, const char* name, 
 	const char* common_key;
 
 	if(!stub) {
-		vm_printerrf("[VM:ERROR] Tried to load NULL opcode %s:%i\n", name, arg_type);
+		vm_printerrf("[VM:ERR] Tried to load NULL opcode %s:%i\n", name, arg_type);
 		return;
 	}
 

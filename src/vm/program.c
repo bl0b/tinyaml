@@ -58,7 +58,7 @@ word_t clean_data_seg[20] = {
 
 
 
-FILE* find_file(const char*fname) {
+const char* find_file(const char*fname) {
 	FILE*f;
 	static char buf[512];
 	f = fopen(fname, "r");				/* try $PWD first */
@@ -95,13 +95,11 @@ void program_add_require(program_t prg, const char*fname) {
 		found_fname = find_file(fname);
 		if(!found_fname) {
 			vm_printerrf("[VM:ERR] : compiler couldn't find file %s\n",fname);
-			/*return Error;*/
 			return;
 		}
 		f = fopen(found_fname, "r");
 		if(!f) {
 			vm_printerrf("[VM:ERR] : compiler couldn't open file %s\n",fname);
-			/*return Error;*/
 			return;
 		}
 		fread(buffy,strlen(TINYAML_SHEBANG),1,f);
@@ -126,17 +124,16 @@ void program_add_require(program_t prg, const char*fname) {
 		}
 		if(p) {
 			vm_run_program_fg(_glob_vm,p,0,50);
-			vm_printf("[VM:INFO] Required file executed.\n");
+			/*vm_printf("[VM:INFO] Required file executed.\n");*/
 			hash_addelem(&_glob_vm->required,strdup(fname),p);
 		} else {
 			vm_printerrf("[VM:ERR] Nothing to execute while requiring %s\n",fname);
-			/*return Error;*/
 		}
 		if(found_fname) {
 			free(found_fname);
 		}
-	} else {
-		vm_printerrf("[VM:INFO] Required file %s has already been loaded.\n",fname);
+	/*} else {*/
+		/*vm_printerrf("[VM:INFO] Required file %s has already been loaded.\n",fname);*/
 	}
 }
 
@@ -156,12 +153,12 @@ void program_add_loadlib(program_t prg, const char*libname) {
 		hash_addelem(&_glob_vm->loadlibs,strdup(libpath),p);
 		if(p) {
 			vm_run_program_fg(_glob_vm,p,0,50);
-			vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);
+			/*vm_printerrf("[VM:INFO] Library %s loaded.\n",libname);*/
 		} else {
 			vm_printerrf("[VM:ERR] Couldn't load library %s\n",libname);
 		}
-	} else {
-		vm_printerrf("[VM:INFO] Library %s has already been loaded.\n",libname);
+	/*} else {*/
+		/*vm_printerrf("[VM:INFO] Library %s has already been loaded.\n",libname);*/
 	}
 }
 
@@ -217,13 +214,13 @@ void program_free(vm_t vm, program_t p) {
 word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg, vm_dyn_env_t smallenv) {
 	switch(arg_type) {
 	case OpcodeArgEnvSym:
-		vm_printerrf("[VM:INFO] Serializing EnvSym #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));
+		/*vm_printerrf("[VM:INFO] Serializing EnvSym #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));*/
 		arg = text_seg_text_to_index(&smallenv->symbols, text_seg_find_by_index(&p->env->symbols, arg));
 		if(!arg) {
 			vm_printerrf("[VM:ERR] Serializing EnvSym : Couldn't resolve environment symbol  #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));
 			vm_fatal("Aborted.");
-		} else {
-			vm_printerrf("[VM:INFO] Serializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&p->env->symbols, arg), arg);
+		/*} else {*/
+			/*vm_printerrf("[VM:INFO] Serializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&p->env->symbols, arg), arg);*/
 		}
 		break;
 	case OpcodeArgString:
@@ -356,14 +353,14 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	text_seg_unserialize(&p->loadlibs,r,"LIB");
 
 	for(i=1;i<dynarray_size(&p->loadlibs.by_index);i+=1) {
-		vm_printerrf("[VM:INFO] Program requires library '%s'\n", text_seg_find_by_index(&p->loadlibs,i));
+		/*vm_printerrf("[VM:INFO] Program requires library '%s'\n", text_seg_find_by_index(&p->loadlibs,i));*/
 		program_add_loadlib(p, text_seg_find_by_index(&p->loadlibs,i));
 	}
 
 	text_seg_unserialize(&p->requires,r,"REQ");
 
 	for(i=1;i<dynarray_size(&p->requires.by_index);i+=1) {
-		vm_printerrf("[VM:INFO] Program requires file '%s'\n", text_seg_find_by_index(&p->requires,i));
+		/*vm_printerrf("[VM:INFO] Program requires file '%s'\n", text_seg_find_by_index(&p->requires,i));*/
 		program_add_require(p, text_seg_find_by_index(&p->requires,i));
 	}
 
@@ -502,18 +499,22 @@ const char* lookup_label_by_offset(struct _label_tab_t* ts, word_t IP) {
 	word_t lower=0,upper=ts->offsets.size;
 	word_t mid,val,found=0;
 
+	/* because of thread IP increment after jump */
+	IP += 2;
+
 	do {
-		mid = (lower+upper+1)>>1;
+		mid = (lower+upper)>>1;
 		val=ts->offsets.data[mid];
+/*		vm_printf("lookup label for @%i in [%i:%i] : label[%i] = @%i\n", IP, lower, upper, mid, val);*/
 		if(val==IP) {
 			found=mid;
-		} else if(val>IP) {
+		} else if(val<IP) {
 			lower=mid;
 		} else {
 			upper=mid;
 		}
-	} while((!found)&&upper!=lower);
-	return found?(const char*)ts->labels.by_index.data[found]:NULL;
+	} while((!found)&&upper>lower+1);
+	return found?(const char*)ts->labels.by_index.data[found]:"";
 }
 
 
@@ -521,17 +522,18 @@ const char* lookup_label_by_offset(struct _label_tab_t* ts, word_t IP) {
 
 
 const char* program_lookup_label(program_t p, word_t IP) {
-//	return lookup_label_by_offset(&p->labels,IP);
-	int i;
-	if(!p->labels.offsets.data) {
-		return NULL;
-	}
-	for(i=0;i<p->labels.offsets.size;i+=1) {
-		if(p->labels.offsets.data[i]==IP+2) {
-			return (const char*)p->labels.labels.by_index.data[i];
-		}
-	}
-	return NULL;
+	return lookup_label_by_offset(&p->labels,IP);
+/*	int i;*/
+/*	if(!p->labels.offsets.data) {*/
+/*		return NULL;*/
+/*	}*/
+/*	vm_printf("lookup label @%i\n", IP);*/
+/*	for(i=0;i<p->labels.offsets.size;i+=1) {*/
+/*		if(p->labels.offsets.data[i]==IP) {*/
+/*			return (const char*)p->labels.labels.by_index.data[i];*/
+/*		}*/
+/*	}*/
+/*	return NULL;*/
 }
 
 

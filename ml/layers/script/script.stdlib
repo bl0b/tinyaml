@@ -1,28 +1,33 @@
 require "script_compiler.wc"
 
 #################################################################################
-# Standard library for tinyaml script language.				#
-#									#
+# Standard library for tinyaml script language.					#
+#										#
 # All functions are grouped in the global environment as follows :		#
-# - &Compiler : contains all compilation-oriented functions.		#
-# - &String : string manipulation.					#
-#									#
+# - &Compiler : contains all compilation-oriented functions.			#
+# - &String : string manipulation.						#
+#										#
 #################################################################################
 
 script
 	function export(sym,val)
-		#print "exporting '",sym,"'\\n"
-		asm getmem -2 getmem -1 envAdd end
+		print("exporting '",sym,"'=",val,"\\n")
+		#asm getmem -2 getmem -1 envAdd end
+		asm +$val +$sym envAdd end
 	end
 	function addTo(name,field,value)
-		#print "adding '",field,"' to group '",name,"'\\n"
+		print("adding '",field,"'=",value," to group '",name,"'\n")
 		asm getmem -3 getmem -1 envGet getmem -2 mapSet push 0 end
 	end
 	function exportGroup(name)
 #		print "exporting Group '",name,"\\n"
 		asm mapNew getmem -1 envAdd end
 	end
-	function strcmp(a,b) asm getmem -1 getmem -2 strcmp push 1 ret 0 end end
+	function strcmp(a,b)
+		local r
+		asm getmem -1 getmem -2 strcmp -$r end
+		return r
+	end
 
 	export("export",export)
 
@@ -30,11 +35,19 @@ script
 
 	addTo("String","compare",strcmp)
 	addTo("String","length",
-		function(a) asm getmem -1 strlen push 1 ret 0 end end)
+		function(a)
+			local r
+			asm getmem -1 strlen -$r end
+			return r
+		end)
 	addTo("String","append",
-		function(a,b) asm getmem -1 getmem -2 strcat push 1 ret 0 end end)
+		function(a,b)
+			local r
+			asm getmem -1 getmem -2 strcat -$r end
+			return r
+		end)
 	addTo("String","charAt",
-		function(str,i) asm getmem -1 getmem -2 charAt push 1 ret 0 end end)
+		function(str,i) local r asm getmem -1 getmem -2 charAt -$r end return r end)
 	addTo("String","setCharAt",
 		function(str,i,c) asm getmem -1 getmem -3 getmem -2 setCharAt end end)
 
@@ -73,9 +86,9 @@ script
 	addTo("Compiler","printNode",
 		function() asm pp_curNode end end)
 	addTo("Compiler","getChildString",
-		function(i) asm getmem -1 astGetChildString push 1 ret 0 end end)
+		function(i) local r asm getmem -1 astGetChildString -$r end return r end)
 	addTo("Compiler","getChildrenCount",
-		function() asm astGetChildrenCount push 1 ret 0 end end)
+		function() local r asm astGetChildrenCount -$r end return r end)
 	addTo("Compiler","compileChild",
 		function(i) asm getmem -1 astCompileChild end end)
 	addTo("Compiler","walk",
@@ -85,7 +98,7 @@ script
 	function _anew(args...) return args end
 	addTo("Array","new", _anew)		# thanks vararg algorithm ;)
 	addTo("Array","size",
-		function(a) asm getmem -1 arraySize setmem -1 end return a end)
+		function(a) asm +$a arraySize -$a end return a end)
 	function _afe(a,f)
 		local i,j
 		asm getmem -3 arraySize setmem -2 end
@@ -143,22 +156,27 @@ script
 
 	exportGroup("SymTab")
 	addTo("SymTab","new",
-		function() asm newSymTab push 1 ret 0 end end)
+		function() local r asm newSymTab -$r end return r end)
 	addTo("SymTab","size",
-		function(st) asm getmem -1 symTabSz push 1 ret 0 end end)
+		function(st) local r asm getmem -1 symTabSz -$r end return r end)
 
 	exportGroup("Thread")
+	#function _tn(prio, thread)
+	#	local ret
+	#	asm +$prio +$thread newThread -$ret end
+	#	return ret
+	#end
 	function _tn(prio, thread)
-		local ret
-		asm +$prio +$thread newThread -$ret end
-		return ret
+		local r
+		asm +$prio +$thread newThread -$r end
+		return r
 	end
 	function _tj(thread)
-		asm getmem -1 joinThread end
+		asm +$thread joinThread end
 	end
 	addTo("Thread","new",_tn)
 	addTo("Thread","join",_tj)
-	addTo("Thread","PID", function() asm getPid push 1 ret 0 end end)
+	addTo("Thread","PID", function() local r asm getPid -$r end return r end)
 
 end
 

@@ -1,4 +1,5 @@
 SUBDIRS = src include extension ml tests
+ACLOCAL_AMFLAGS=-I m4
 
 thread_states.png: thread_states.dot
 	dot -Tpng -LO $< -o $@

@@ -28,10 +28,10 @@ void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* o
 		*ofs = ip;
 		return;
 	}
-	while(i<(l->offsets.size-1) && ip>l->offsets.data[i+1]) { i+=1; }
+	while(i<(l->offsets.size-1) && ip>=l->offsets.data[i+1]) { i+=1; }
 	if(i>=l->offsets.size) {
 		*ofs = ip;
-		*label = NULL;
+		*label = "";
 	} else {
 		*ofs = ip - l->offsets.data[i];
 		*label = (const char*)l->labels.by_index.data[i];

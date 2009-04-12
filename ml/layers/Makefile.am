@@ -1,4 +1,4 @@
-SUBDIRS=metasm symasm script
+SUBDIRS=metasm symasm procasm script
 layerdir=$(pkgdatadir)
 
 install: install-recursive .post-inst

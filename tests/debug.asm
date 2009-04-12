@@ -1,6 +1,8 @@
 #require "struc.melang"
 #require "melang_struc.wc"
-require "struc.routines"
+#require "struc.routines"
+
+require "symasm.wc"
 
 #data 0 0 "\\t" "\\n" end
 

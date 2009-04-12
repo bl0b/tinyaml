@@ -1,5 +1,5 @@
 
-bin_PROGRAMS = tinyaml tinyaml_dbg
+bin_PROGRAMS = tinyaml tinyaml_dbg tinyaml_static
 lib_LTLIBRARIES = libtinyaml.la
 
 libtinyaml_la_CFLAGS = $(tinyap_CFLAGS) -I ../include -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\""
@@ -57,6 +57,6 @@ ml_core_gram.c: ../ml/ml_core.gram ../ml/ml_core.lib
 
 # The following is for profiling purpose only
 
-tinyaml_static:
-	gcc -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"/usr/local/lib/tinyaml/\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c ./*/*.c ml_core_gram.c /usr/local/lib/libtinyap.a -o tinyaml_static
+tinyaml_static: $(libtinyaml_la_SOURCES)
+	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) /usr/local/lib/libtinyap.a -o tinyaml_static
 

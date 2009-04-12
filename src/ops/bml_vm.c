@@ -465,13 +465,13 @@ void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 extern program_t dynFun_exec;
 void _VM_CALL vm_op_newThread(vm_t vm, word_t unused) {
 	vm_data_t df = _vm_pop(vm);
-	struct _data_stack_entry_t argc = { DataInt, 0 };
+	/*struct _data_stack_entry_t argc = { DataInt, 0 };*/
 	vm_data_t prio = _vm_pop(vm);
 	thread_t t;
 	assert(df->type==DataObjFun);
 	assert(prio->type==DataInt);
 	t = vm_thread_new(vm,prio->data,dynFun_exec,0);
-	gpush(&t->data_stack, &argc);
+	/*gpush(&t->data_stack, &argc);*/
 	if(df->type&DataManagedObjectFlag) {
 		vm_obj_ref_ptr(vm,(void*)df->data);
 	}

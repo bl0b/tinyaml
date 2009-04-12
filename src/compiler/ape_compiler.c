@@ -38,6 +38,25 @@ ast_node_t newPair(const ast_node_t a,const ast_node_t d,const int row,const int
 
 word_t	docn_dat=0,docn_cod=0;
 
+const char* state2str(WalkDirection wd) {
+	static const char* wdStr[5] = { "Up", "Down", "Next", "Done", "Error" };
+	return wdStr[wd];
+}
+
+void* try_walk(wast_t node, const char* pname, vm_t vm) {
+	void* ret;
+	gpush(&vm->cn_stack,&vm->current_node);
+	vm->current_node = node;
+/*	vm_printerrf("start walking...\n");*/
+	ret = tinyap_walk(node, pname, vm);
+	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
+/*	vm_printerrf("done walking... (state=%s)\n", state2str(vm->compile_state));*/
+	if(vm->compile_state==Error) {
+		vm->onCompileError(vm, "<not implemented>", 0);
+	}
+	return ret;
+}
+
 void dump_ocn(opcode_chain_node_t ocn) {
 	switch(ocn->type) {
 	case NodeData:
@@ -73,11 +92,8 @@ void dump_ocn(opcode_chain_node_t ocn) {
 
 program_t compile_append_wast(wast_t node, vm_t vm, word_t* start_IP, int last) {
 	/*vm_printf("compile_wast\n");*/
-	gpush(&vm->cn_stack,&vm->current_node);
-	vm->current_node = node;
-	tinyap_walk(node, "compiler", vm);
+	try_walk(node, "compiler", vm);
 	vm_set_lib_file(vm,NULL);
-	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 	*start_IP = vm->current_edit_prg->code.size>>1;
 	/*ret->env = vm->env;*/
 	/*vm_printf("now %p\n",vm->result);*/
@@ -131,22 +147,27 @@ void exec_routine(word_t df_ptr) {
 		/*(word_t)vm_op_ret_Int, 0*/
 	/*};*/
 
-	printf("[VM:DEBUG] About to exec dynFun @%x\n", df_ptr);
+	/*printf("[VM:DEBUG] About to exec dynFun @%x\n", df_ptr);*/
 
 	/*vm_run_program_fg(_glob_vm,&x,0,50);*/
+	vm_dyn_func_t fun = (vm_dyn_func_t) df_ptr;
+
+	printf("[VM:DEBUG] About to exec dynFun @%p\n", (void*)df_ptr);
+
+	vm_run_program_fg(_glob_vm,fun->cs,fun->ip,50);
 }
 
 
 void* ape_compiler_init(vm_t vm) {
 	/* allow reentrant calls */
 	vm->compile_reent+=1;
-	gpush(&vm->cn_stack,&vm->current_node);
+/*	gpush(&vm->cn_stack,&vm->current_node);*/
 	if(vm->compile_reent==1) {
-		/*vm_printf("###      NEW       top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
+/*		vm_printf("###      NEW       top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 		vm->result = opcode_chain_new();
 		dlist_forward(&vm->init_routines, word_t, exec_routine);
-	/*} else {*/
-		/*vm_printf("###      NEW       sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
+/*	} else {*/
+/*		vm_printf("###      NEW       sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 	}
 	/*vm_printf("vm new ochain : %p\n",vm->result);*/
 	return vm;
@@ -154,32 +175,44 @@ void* ape_compiler_init(vm_t vm) {
 
 
 void ape_compiler_free(vm_t vm) {
-	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
+/*	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);*/
 	vm->compile_reent-=1;
 	if(!vm->compile_reent) {
+/*		vm_printf("###      DONE      top-level compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 		dlist_reverse(&vm->term_routines, word_t, exec_routine);
+/*	} else {*/
+/*		vm_printf("###      DONE      sub-compiler [at %p:%lX]\n",vm_get_CS(vm),vm_get_IP(vm));*/
 	}
 }
 
+
+extern volatile int _vm_trace;
 
 WalkDirection ape_compiler_default(wast_t node, vm_t vm) {
 	char* vec_name = (char*)malloc(strlen(wa_op(node))+10);
 	sprintf(vec_name,".compile_%s",wa_op(node));
 	word_t vec_ofs = (word_t)hash_find(&vm->compile_vectors.by_text,(hash_key)vec_name);
 
-	/*vm_printf("search for vector %s in %p gave %lu\n",vec_name, vm->result, vec_ofs);*/
+/*	vm_printf("search for vector %s in %p gave %lu\n",vec_name, vm->result, vec_ofs);*/
 
+/*	vm_printerrf("ERROR ! %s:%i (cur state = %s)\n", __FILE__, __LINE__, state2str(vm->compile_state));*/
+	vm->compile_state = Error;
 	if(vec_ofs) {
-		vm->compile_state = Error;
 		program_t p = (program_t)*(vm->compile_vectors.by_index.data+vec_ofs);
 		word_t ip = *(vm->compile_vectors.by_index.data+vec_ofs+1);
-		/*vm_printf("compiler calling %p:%lX (%s)\n",p,ip,wa_op(node));*/
+/*		vm_printf("compiler calling %p:%lX (%s)\n",p,ip,wa_op(node));*/
+		if(_vm_trace) {
+			vm_printf("\nCOMPILE_VECTOR %s [%p:%lX]\n", wa_op(node), p,ip);
+		}
 		gpush(&vm->cn_stack,&vm->current_node);
 		vm->current_node = node;
 		vm_run_program_fg(vm,p,ip,50);
 		vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
 		free(vec_name);
-		/*vm_printf("   vm return state : %i\n",vm->compile_state);*/
+/*		vm_printf("   vm return state : %i\n",vm->compile_state);*/
+		if(_vm_trace) {
+			vm_printf("\nCOMPILE_VECTOR %s return state : %s\n", wa_op(node), state2str(vm->compile_state));
+		}
 		return vm->compile_state;
 	}
 
@@ -194,23 +227,27 @@ void* ape_compiler_result(vm_t vm) {
 	return vm->result;
 }
 
+static inline WalkDirection update_vm_state(vm_t vm, WalkDirection wd) {
+	return vm->compile_state=wd;
+}
+
 WalkDirection ape_compiler_Program(wast_t node, vm_t vm) {
-	return Down;
+	return update_vm_state(vm, Down);
 }
 
 WalkDirection ape_compiler_AsmBloc(wast_t node, vm_t vm) {
-	return Down;
+	return update_vm_state(vm, Down);
 }
 
 WalkDirection ape_compiler_DeclLabel(wast_t node, vm_t vm) {
 	opcode_chain_add_label(vm->result,wa_op(wa_opd(node,0)), wa_row(node), wa_col(node));
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 WalkDirection ocao(wast_t node, vm_t vm, opcode_arg_t t) {
 	const char*op = wa_op(wa_opd(node,0));
 	if(t==OpcodeNoArg) {
-		/*vm_printf("ocao::opcode without arg\t\t%s\n",op);*/
+/*		vm_printf("ocao::opcode without arg\t\t%s\n",op);*/
 		opcode_chain_add_opcode(vm->result,t,op,NULL, wa_row(node), wa_col(node));
 	/*} else if(t==OpcodeArgOpcode) {*/
 		/*const char*type = wa_op(wa_opd(node,1))+strlen("DeclOpcode_");*/
@@ -222,35 +259,35 @@ WalkDirection ocao(wast_t node, vm_t vm, opcode_arg_t t) {
 		/*free(arg);*/
 	} else {
 		const char*arg = wa_op(wa_opd(node,1));
-		/*vm_printf("ocao::opcode with arg\t\t%s %s\n",op,arg);*/
+/*		vm_printf("ocao::opcode with arg\t\t%s %s\n",op,arg);*/
 		opcode_chain_add_opcode(vm->result,t,op,arg, wa_row(node), wa_col(node));
 	}
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 WalkDirection ape_compiler_Opcode_Int(wast_t node, vm_t vm) {
-	return ocao(node,vm,OpcodeArgInt);
+	return update_vm_state(vm, ocao(node,vm,OpcodeArgInt));
 }
 
 WalkDirection ape_compiler_Opcode_Float(wast_t node, vm_t vm) {
-	return ocao(node,vm,OpcodeArgFloat);
+	return update_vm_state(vm, ocao(node,vm,OpcodeArgFloat));
 }
 
 WalkDirection ape_compiler_Opcode_String(wast_t node, vm_t vm) {
-	return ocao(node,vm,OpcodeArgString);
+	return update_vm_state(vm, ocao(node,vm,OpcodeArgString));
 }
 
 WalkDirection ape_compiler_Opcode_Label(wast_t node, vm_t vm) {
-	return ocao(node,vm,OpcodeArgLabel);
+	return update_vm_state(vm, ocao(node,vm,OpcodeArgLabel));
 }
 
 WalkDirection ape_compiler_Opcode_EnvSym(wast_t node, vm_t vm) {
-	return ocao(node,vm,OpcodeArgEnvSym);
+	return update_vm_state(vm, ocao(node,vm,OpcodeArgEnvSym));
 }
 
 WalkDirection ape_compiler_Opcode_NoArg(wast_t node, vm_t vm) {
-	return ocao(node,vm,OpcodeNoArg);
+	return update_vm_state(vm, ocao(node,vm,OpcodeNoArg));
 }
 
 
@@ -259,14 +296,18 @@ WalkDirection ape_compiler_Opcode_NoArg(wast_t node, vm_t vm) {
  */
 
 
+WalkDirection ape_compiler_illegal_opcode(wast_t node, vm_t vm) {
+	return Error;
+}
+
 WalkDirection ape_compiler_Library(wast_t node, vm_t vm) {
-	return Down;
+	return update_vm_state(vm, Down);
 }
 
 
 WalkDirection ape_compiler_LibFile(wast_t node, vm_t vm) {
 	vm_set_lib_file(vm, wa_op(wa_opd(node,0)));
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
@@ -305,7 +346,7 @@ WalkDirection ape_compiler_DeclOpcode_Float(wast_t node, vm_t vm) {
 		vm_printerrf("warning : loading NULL opcode : %s:Float\n",name);
 	}
 	opcode_dict_add(vm_get_dict(vm), OpcodeArgFloat, name, os);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 WalkDirection ape_compiler_DeclOpcode_Int(wast_t node, vm_t vm) {
@@ -317,7 +358,7 @@ WalkDirection ape_compiler_DeclOpcode_Int(wast_t node, vm_t vm) {
 		vm_printerrf("warning : loading NULL opcode : %s:Int\n",name);
 	}
 	opcode_dict_add(vm_get_dict(vm), OpcodeArgInt, name, os);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 WalkDirection ape_compiler_DeclOpcode_Label(wast_t node, vm_t vm) {
@@ -329,7 +370,7 @@ WalkDirection ape_compiler_DeclOpcode_Label(wast_t node, vm_t vm) {
 		vm_printerrf("warning : loading NULL opcode : %s:Label\n",name);
 	}
 	opcode_dict_add(vm_get_dict(vm), OpcodeArgLabel, name, os);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 WalkDirection ape_compiler_DeclOpcode_EnvSym(wast_t node, vm_t vm) {
@@ -341,7 +382,7 @@ WalkDirection ape_compiler_DeclOpcode_EnvSym(wast_t node, vm_t vm) {
 		vm_printerrf("warning : loading NULL opcode : %s:EnvSym\n",name);
 	}
 	opcode_dict_add(vm_get_dict(vm), OpcodeArgEnvSym, name, os);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 WalkDirection ape_compiler_DeclOpcode_String(wast_t node, vm_t vm) {
@@ -353,7 +394,7 @@ WalkDirection ape_compiler_DeclOpcode_String(wast_t node, vm_t vm) {
 		vm_printerrf("warning : loading NULL opcode : %s:String\n",name);
 	}
 	opcode_dict_add(vm_get_dict(vm), OpcodeArgString, name, os);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 WalkDirection ape_compiler_DeclOpcode_NoArg(wast_t node, vm_t vm) {
@@ -365,13 +406,13 @@ WalkDirection ape_compiler_DeclOpcode_NoArg(wast_t node, vm_t vm) {
 		vm_printerrf("warning : loading NULL opcode : %s:NoArg\n",name);
 	}
 	opcode_dict_add(vm_get_dict(vm), OpcodeNoArg, name, os);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 
 WalkDirection ape_compiler_DataBloc(wast_t node, vm_t vm) {
-	return Down;
+	return update_vm_state(vm, Down);
 }
 
 
@@ -381,7 +422,7 @@ WalkDirection ape_compiler_DataInt(wast_t node, vm_t vm) {
 		rep=wa_op(wa_opd(node,1));
 	}
 	opcode_chain_add_data(vm->result,DataInt,wa_op(wa_opd(node,0)),rep, wa_row(node), wa_col(node));
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
@@ -391,13 +432,13 @@ WalkDirection ape_compiler_DataFloat(wast_t node, vm_t vm) {
 		rep=wa_op(wa_opd(node,1));
 	}
 	opcode_chain_add_data(vm->result,DataFloat,wa_op(wa_opd(node,0)),rep, wa_row(node), wa_col(node));
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 WalkDirection ape_compiler_DataString(wast_t node, vm_t vm) {
 	opcode_chain_add_data(vm->result,DataString,wa_op(wa_opd(node,0)),NULL, wa_row(node), wa_col(node));
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
@@ -411,7 +452,7 @@ WalkDirection ape_compiler_LangDef(wast_t node, vm_t vm) {
 	delete_node(n);
 	opcode_chain_add_opcode(vm->result, OpcodeArgString, "_langDef", str, wa_row(node), wa_col(node));
 	free((char*)str);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 char* gen_unique_label() {
@@ -439,7 +480,7 @@ WalkDirection ape_compiler_LangPlug(wast_t node, vm_t vm) {
 	/*tinyap_plug(vm->parser, plugin, plug);*/
 
 	free(methname);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 WalkDirection ape_compiler_LangComp(wast_t node, vm_t vm) {
@@ -460,7 +501,7 @@ WalkDirection ape_compiler_LangComp(wast_t node, vm_t vm) {
 	opcode_chain_add_label(vm->result,start, -1, -1);
 
 	//ape_compiler_AsmBloc(wa_opd(node,2),vm);
-	tinyap_walk(wa_opd(node,1), "compiler", vm);
+	try_walk(wa_opd(node,1), "compiler", vm);
 	
 	
 	/* plug compiling code */
@@ -473,12 +514,12 @@ WalkDirection ape_compiler_LangComp(wast_t node, vm_t vm) {
 	free((char*)start);
 	free((char*)end);
 	free(methname);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 WalkDirection ape_compiler_Preproc(wast_t node, vm_t vm) {
-	return Down;
+	return update_vm_state(vm, Down);
 }
 
 WalkDirection ape_compiler_Include(wast_t node, vm_t vm) {
@@ -489,13 +530,15 @@ WalkDirection ape_compiler_Include(wast_t node, vm_t vm) {
 
 	if(tinyap_get_output(vm->parser)) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
-		tinyap_walk(wa, "compiler", vm);
+		vm_compinput_push_file(vm, fname);
+		try_walk(wa, "compiler", vm);
+		vm_compinput_pop(vm);
 		wa_del(wa);
 	} else {
 		vm_printf("Including %s :\nparser output : %p\n", fname, tinyap_get_output(vm->parser));
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
@@ -503,14 +546,14 @@ WalkDirection ape_compiler_Include(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_Require(wast_t node, vm_t vm) {
 	program_add_require(NULL, wa_op(wa_opd(node,0)));
 	opcode_chain_add_opcode(vm->result, OpcodeArgString, "__RQ__", wa_op(wa_opd(node,0)), -1, -1);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 WalkDirection ape_compiler_LoadLib(wast_t node, vm_t vm) {
 	program_add_loadlib(NULL, wa_op(wa_opd(node,0)));
 	opcode_chain_add_opcode(vm->result, OpcodeArgString, "__LL__", wa_op(wa_opd(node,0)), -1, -1);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
@@ -531,13 +574,13 @@ WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 
 	if(tinyap_get_output(vm->parser)) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
-		tinyap_walk(wa, "compiler", vm);
+		try_walk(wa, "compiler", vm);
 		wa_del(wa);
 	} else {
 		vm_printf("parser output : %p\n",tinyap_get_output(vm->parser));
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
-	return Done;
+	return update_vm_state(vm, Done);
 }
 
 
@@ -547,17 +590,17 @@ WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 WalkDirection ape_compiler_NewWalker(wast_t node, vm_t vm) {
 	vm->virt_walker = strdup(wa_op(wa_opd(node,0)));
 
-	tinyap_walk(wa_opd(node,1), "compiler", vm);
-	/*tinyap_walk(node,"prettyprint",NULL);*/
+	try_walk(wa_opd(node,1), "compiler", vm);
+	/*try_walk(node,"prettyprint",NULL);*/
 
 	free((char*)vm->virt_walker);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 
 WalkDirection ape_compiler_WalkerBodies(wast_t node, vm_t vm) {
-	return Down;
+	return update_vm_state(vm, Down);
 }
 
 
@@ -580,7 +623,7 @@ void compile_walker_method(wast_t node, vm_t vm, const char* plugin, int body_in
 	opcode_chain_add_label(vm->result,start, -1, -1);
 
 	//ape_compiler_AsmBloc(wa_opd(node,2),vm);
-	tinyap_walk(wa_opd(node,body_index), "compiler", vm);
+	try_walk(wa_opd(node,body_index), "compiler", vm);
 	
 	
 	/* plug compiling code */
@@ -599,25 +642,25 @@ void compile_walker_method(wast_t node, vm_t vm, const char* plugin, int body_in
 
 WalkDirection ape_compiler_WalkerInit(wast_t node, vm_t vm) {
 	compile_walker_method(node,vm,"__init__",0);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 WalkDirection ape_compiler_WalkerTerminate(wast_t node, vm_t vm) {
 	compile_walker_method(node,vm,"__term__",0);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 WalkDirection ape_compiler_WalkerDefault(wast_t node, vm_t vm) {
 	compile_walker_method(node,vm,"__dflt__",0);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 
 WalkDirection ape_compiler_WalkerBody(wast_t node, vm_t vm) {
 	compile_walker_method(node,vm,wa_op(wa_opd(node,0)),1);
-	return Next;
+	return update_vm_state(vm, Next);
 }
 
 

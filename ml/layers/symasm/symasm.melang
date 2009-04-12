@@ -17,20 +17,40 @@ data
 	0	# 3 : int counter for unique labels
 
 	0	# 4 : symtab of local frame
+	0	# 5 : stack of local frames (symtabs)
+	0	# 6 : relative offset to peek symtab at from local frames stack
+	0	# 7 : symtab of current closure symbols
 end
 
 asm
-	newSymTab setmem 0
-	arrayNew setmem 1
-	dynFunNew @globSymTabNew push "_globSymTabNew" envAdd
-	dynFunNew @locSymTabNew push "_locSymTabNew" envAdd
-	dynFunNew @__init_symasm
+	dynFunNew @__init_symasm dup 0 push "__init_symasm" envAdd 	# I: none, O: none
 	dup 0 onCompInit
 	call
+	dynFunNew @globSymTabNew push "_GSTNew" envAdd			# I: none, O: none
+	dynFunNew @getGlobSym push "_GSTGet" envAdd			# I: none, O: none
+	dynFunNew @addGlobSym push "_GSTAdd" envAdd			# I: none, O: none
+	dynFunNew @GSTFindSym push "_GSTFindSym" envAdd			# I: str (sym), O: int (sym ofs, -1 == not found)
+	dynFunNew @closureSymTabNew push "_CSTNew" envAdd			# I: none, O: none
+	dynFunNew @CSTAdd push "_CSTAdd" envAdd				# I: str (sym), O: none
+	dynFunNew @CSTFindSym push "_CSTFindSym" envAdd			# I: str (sym), O: int (sym ofs, -1 == not found)
+	dynFunNew @locSymTabNew push "_LSTNew" envAdd			# I: none, O: none
+	dynFunNew @addLocSym push "_LSTAdd" envAdd			# I: none, O: none
+	dynFunNew @LSTPop push "_LSTPop" envAdd				# I: none, O: none
+	dynFunNew @LSTStackSize push "_LSTStackSize" envAdd		# I: none, O: int (item count)
+	dynFunNew @LSTSelect push "_LSTSelect" envAdd			# I: int (rel ofs of selected frame in stack), O: none
+	dynFunNew @LSTGetSize push "_LSTGetSize" envAdd			# I: none, O: int (symtab size)
+	dynFunNew @LSTFindSym push "_LSTFindSym" envAdd			# I: str (sym), O: int (sym ofs, -1 == not found)
+	#dynFunNew @getSymOfs push "getSymOfs" envAdd
+	call @__init_symasm
 	jmp @_skip_0
 
 __init_symasm:
+	newSymTab setmem 0
+	arrayNew setmem 1
+	stackNew setmem 5
+	getmem 5 newSymTab stackPush
 	call @globSymTabNew
+	call @closureSymTabNew
 	call @locSymTabNew
 	ret 0
 
@@ -38,10 +58,54 @@ __init_symasm:
 # calling convention : args and return are pushed onto data stack. callee must free stack.
 #
 
+LSTPush:
+	getmem 5 getmem 4 stackPush
+	push 0 setmem 6			# reset frame selection register
+	ret 0
+
+LSTPop:
+	getmem 5 stackPop
+	getmem 5 stackPeek 0 setmem 4
+	push 0 setmem 6			# reset frame selection register
+	ret 0
+
+LSTStackSize:
+	getmem 5 stackSize
+	ret 0
+
+LSTSelect:
+	setmem 6
+	ret 0
+
+LSTGetSize:
+	getmem 5 getmem 6 stackPeek symTabSz
+	ret 0
+
+LSTFindSym:
+	enter 4
+		setmem -3				# sym
+		push 0 setmem -4			# base
+		push 0 setmem -1			# counter
+		push 0 getmem 5 stackSize add setmem -2	# limit
+	_lstfs_lp:
+		getmem 5 getmem -1 stackPeek getmem -3 getSym
+		dup 0 push -1 nEq SZ jmp @_lstfs_ret		# if not -1, return
+		pop
+		getmem 5 getmem -1 stackPeek symTabSz dec getmem -4 add setmem -4	# base += symtab_size
+		getmem -1 inc setmem -1
+		getmem -1 getmem -2 nEq SZ jmp @_lstfs_lp		# while counter<stacksize
+		push 1							# return error
+		ret 0
+	_lstfs_ret:
+		getmem -4 add push 0 swap 1 sub
+	leave 4
+	ret 0
+
 locSymTabNew:
-	newSymTab
-	dup 0 setmem 4
-	push "_locSymTab" envAdd
+	#push "new locSymTab\\n" print 1
+	newSymTab setmem 4
+	call @LSTPush
+	#push "_locSymTab" envAdd
 	ret 0
 
 getLocSym:
@@ -73,10 +137,27 @@ getLocCount:
 	ret 0
 
 
+closureSymTabNew:
+	newSymTab setmem 7
+	ret 0
+
+CSTGet:
+	# string:symbol on top of stack
+		getmem 7
+		dup -1
+	getSym
+	retval 1
+
+CSTAdd:
+	getmem 7 swap -1
+	addSym
+	ret 0
+
+
 globSymTabNew:
 	newSymTab
 	dup 0 setmem 2
-	push "_globSymTab" envAdd
+	#push "_globSymTab" envAdd
 	ret 0
 
 getGlobSym:
@@ -90,7 +171,7 @@ getGlobSym:
 addGlobSym:
 	enter 1
 		setmem -1
-		#push "addGlobSym " getmem -1 push "\\n" print 3
+		push "addGlobSym " getmem -1 push "\\n" print 3
 		getmem 2
 		getmem -1
 	addSym
@@ -148,6 +229,8 @@ language
 	sab_c = ( "]" | asm_statement sab_c ).
 	sab_cc = ( "]]" | asm_statement sab_cc ).
 	sab_co = ( "][" | asm_statement sab_co ).
+
+	#symasm_illeg = ( "enter" | "leave" | "getmem" | "setmem" ).
 end
 
 plug IfNZ into p_Opcode
@@ -161,6 +244,7 @@ plug StrucNew into p_Opcode
 plug StrucGet into p_Opcode
 plug StrucSet into p_Opcode
 plug LocalFrame into p_Opcode
+#plug symasm_illeg into p_Opcode_Illegal
 
 compile SubAsmBloc asm
 	compileStateDown
@@ -303,7 +387,7 @@ _no_leave:
 	leave 1
 
 	# reinit the symbol table
-	call @locSymTabNew
+	call @LSTPop
 
 	compileStateNext
 end
@@ -412,13 +496,28 @@ end
 
 compile GlobGet asm
 	astGetChildString 0
-	call @getLocSym
+	#call @getLocSym
+	dup 0
+	call @LSTFindSym
 	dup 0 dec SZ jmp @_write1 # getLocSym returns 1 on failure, because getSym returns -1
-	astGetChildString 0
+	pop
+	#astGetChildString 0
+	dup 0
+	call @CSTGet
+	dup 0 inc SZ jmp @_write0
+	pop
+	#astGetChildString 0
+	#dup 0
 	call @getGlobSym
 	dup 0 inc SNZ jmp @globUnknown
 _write1:
 	write_ocInt "getmem"
+	pop
+	compileStateNext
+	ret 0
+_write0:
+	write_ocInt "getClosure"
+	pop
 	compileStateNext
 end
 
@@ -452,7 +551,7 @@ asm
 	ret 0
 globUnknown:
 	pop
-	push "Unknown symbol '" astGetChildString 0 push "' At" astGetRow push ":" astGetCol
+	push "Unknown symbol '" astGetChildString 0 push "' At " astGetRow push ":" astGetCol
 	push "\n"
 	print 7
 	compileStateError

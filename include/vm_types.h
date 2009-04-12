@@ -45,6 +45,9 @@ typedef struct _vm_t* vm_t;
  */
 /*! \brief An entry of the the VM's opcode dictionary. */
 typedef struct _opcode_t* opcode_t;
+
+typedef void (*vm_error_handler)(vm_t, const char*, int);
+
 /*@}*/
 
 /*! \weakgroup vm_prgs
@@ -134,6 +137,14 @@ typedef enum {
 	OpcodeArgEnvSym,	/*!< Global symbol */
 	OpcodeTypeMax		/*!< Boundary \note This is not a valid type. */
 } opcode_arg_t;
+
+typedef enum {
+	CompInNone=0,
+	CompInFile,
+	CompInBuffer,
+	CompInVWalker,
+	CompInMax
+} compinput_t;
 /*@}*/
 
 /*! \weakgroup thread_t

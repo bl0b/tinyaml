@@ -8,10 +8,12 @@ AM_CONFIG_HEADER([include/config.h])
 
 AM_INIT_AUTOMAKE
 
+AC_CONFIG_MACRO_DIR([m4])
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_LIBTOOL
-AC_PROG_RANLIB
+LT_INIT
 AM_PROG_CC_C_O
 
 # Checks for libraries.
@@ -32,5 +34,5 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memmove memset strdup])
 
-AC_CONFIG_FILES([Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile ml/layers/Makefile ml/layers/metasm/Makefile ml/layers/symasm/Makefile ml/layers/script/Makefile])
+AC_CONFIG_FILES([Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile ml/layers/Makefile ml/layers/metasm/Makefile ml/layers/symasm/Makefile ml/layers/procasm/Makefile ml/layers/script/Makefile])
 AC_OUTPUT

@@ -188,6 +188,9 @@ struct _vm_t {
 	struct _generic_stack_t cn_stack;
 	struct _dlist_t init_routines;
 	struct _dlist_t term_routines;
+	/* compilation error handling */
+	struct _generic_stack_t compinput_stack;
+	void (*onCompileError) (vm_t vm, const char* input, int is_buffer);
 	/* support of virtual AST walkers */
 	const char* virt_walker;
 	WalkDirection virt_walker_state;
@@ -239,6 +242,8 @@ struct _label_tab_t {
  * @{
  */
 struct _program_t {
+	/* identification */
+	const char* source;
 	/* globals */
 	vm_dyn_env_t env;
 	/* segments */

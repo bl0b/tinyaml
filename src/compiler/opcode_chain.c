@@ -243,7 +243,7 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 		break;
 	default:;
 		arg=0;
-		vm_printf("[ERROR:VM] Arg type not supported %X\n",ocn->arg_type);
+		vm_printf("[VM:ERR] Arg type not supported %X\n",ocn->arg_type);
 	};
 	/*vm_printf("\tserialized %8.8lX : %8.8lX\n",op,arg);*/
 	if(!skip_wr) {
