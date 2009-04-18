@@ -1,31 +1,61 @@
 
+func afd_check_sym(sym)
+	local sc {
+		#+$cur_fname
+		%getSymContext(+$sym) 
+		-$sc
+		+$sc $symIsLocal eq [
+			nop
+		]
+		+$sc $symIsParam eq [
+			nop
+		]
+		+$sc $symIsGlobal eq [
+			nop
+		]
+		+$sc $symIsClosure eq [
+			nop
+		]
+		+$sc $symMustEnclose eq [
+			nop
+#			push "symbol must be enclosed\\n" print 1
+		]
+		+$sc $symUnknown eq [
+			nop
+#			push "symbol is unknown\\n" print 1
+		]
+	}
+endfunc
+
 walker analyzeFuncDecl {
 
 	init asm
-		nop
+		#push "analyseFuncDecl start on " +$cur_fname push "\n" print 3
+		compileStateNext
 	end
 
 	terminate asm
-		nop
+		#push "analyseFuncDecl done on " +$cur_fname push "\n" print 3
+		compileStateNext
 	end
 
 	default asm
-		push "analyzeFuncDecl default on " astGetOp push "\n" print 3
+		#push "analyzeFuncDecl default on " astGetOp push "\n" print 3
 		compileStateNext
 	end
 
 	on script_fun_decl asm
 		#pp_curNode
 		# process param list
+		#push " at "	astGetRow	push ":"	astGetCol	push " ("	astGetOp push ")\\n" print 7
 		walkChild 0
 
-		+$cur_fname
-		call @funcDeclEnter
+		%funcDeclEnter(+$cur_fname)
 
 		# process body
 		walkChild 1
 
-		call @funcDeclLeave
+		%funcDeclLeave()
 
 		compileStateDone
 	end
@@ -61,11 +91,11 @@ walker analyzeFuncDecl {
 	end
 
 	on script_param asm
-		+$cur_fname astGetChildString 0 call @funcDeclAddParam compileStateNext
+		%funcDeclAddParam(+$cur_fname, astGetChildString 0) compileStateNext
 	end
 	on script_vararg asm
-		+$cur_fname astGetChildString 0 call @funcDeclAddVararg compileStateNext
-		+$cur_fname astGetChildString 0 call @funcDeclAddParam compileStateNext		# let the param be known
+		%funcDeclAddVararg(+$cur_fname, astGetChildString 0) compileStateNext
+		%funcDeclAddParam(+$cur_fname, astGetChildString 0) compileStateNext		# let the param be known
 	end
 
 
@@ -74,48 +104,23 @@ walker analyzeFuncDecl {
 			push 0 -$counter
 		_sl_loop:
 			+$counter astGetChildrenCount nEq [
-				#+$counter walkChild
-				+$cur_fname
-				+$counter astGetChildString
-				call @funcDeclAddLocal
+				%funcDeclAddLocal(+$cur_fname, +$counter astGetChildString)
 				+$counter inc -$counter
 				jmp @_sl_loop
 			]
 		}
 		compileStateNext
 	end
-	
+
 
 	on script_id asm
-		local sc {
-			+$cur_fname
-			astGetChildString 0
-			call @getSymContext 
-			-$sc
-			+$sc $symIsLocal eq [
-				nop
-			]
-			+$sc $symIsParam eq [
-				nop
-			]
-			+$sc $symIsGlobal eq [
-				nop
-			]
-			+$sc $symIsClosure eq [
-				nop
-			]
-			+$sc $symMustEnclose eq [
-				nop
-	#			push "symbol must be enclosed\\n" print 1
-			]
-			+$sc $symUnknown eq [
-				nop
-	#			push "symbol is unknown\\n" print 1
-			]
-		}
+		%afd_check_sym(astGetChildString 0)
 		compileStateNext
 	end
 
+	on GlobIdx asm %afd_check_sym(astGetChildString 0) end
+	on GlobSet asm %afd_check_sym(astGetChildString 0) end
+	on GlobGet asm %afd_check_sym(astGetChildString 0) end
 
 	on script_assign	asm compileStateDown end
 	on script_fun_body	asm compileStateDown end
@@ -123,6 +128,7 @@ walker analyzeFuncDecl {
 	on script_expr_list	asm compileStateDown end
 	#on script_expr_list_end	asm compileStateNext end
 	#on script_var_list_end	asm compileStateNext end
+	on AsmBloc		asm compileStateDown end
 	on script_var_list	asm compileStateDown end
 	on instruction_seq	asm compileStateDown end
 	on m_expr		asm compileStateDown end

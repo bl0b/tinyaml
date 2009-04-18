@@ -210,7 +210,7 @@ getSymContext:
 					+$_sym_ofs
 					+$backup +(FuncDecl.closure_ofs) arraySize
 				arraySet
-#				push "Symbol local '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
+				push "Symbol local '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\\n" print 5
 				+$backup +(FuncDecl.closure) +$symbol getSym dec -$_sym_ofs
 				push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
 				$symIsClosure jmp @_sc_ret ]

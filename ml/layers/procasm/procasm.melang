@@ -8,11 +8,7 @@ end
 
 
 asm
-	dynFunNew @reset_tables onCompInit
 	jmp @_skip_0
-
-reset_tables:
-	ret 0
 
 # string:something -> string:label
 gen_label:
@@ -38,13 +34,13 @@ language
 	_pafb_lp = (procasm_endfunc|_pa_op _pafb_lp).
 	procasm_endfunc ::= "endfunc".
 	_pa_op = (asm_statement).
-	procasm_call ::= "@" sym procasm_exprlist.
+	procasm_call ::= "%" sym procasm_exprlist.
 	procasm_exprlist ::= "(" _pael_lp? ")".
 	_pael_lp = ({procasm_expr ","} _pael_lp | procasm_expr).
 	procasm_expr ::= p_Opcode+.
 end
 
-plug procasm_func into p_Code
+plug procasm_func into p_ProgramTopLevel
 plug procasm_call into p_Opcode
 
 compile procasm_envfunc
@@ -79,8 +75,8 @@ end
 
 compile procasm_endfunc
 asm
-	<<	leave i(+$n_param)
-		ret 0
+	+$n_param [ << leave i(+$n_param) >> ]
+	<<	ret 0
 	(+$endlabel):
 		dynFunNew l(+$label)
 		setmem i(+$cur_fname envGet &_GSTGet call)
@@ -88,7 +84,11 @@ asm
 	compileStateNext
 end
 
-compile procasm_arglist asm astGetChildrenCount -$n_param << enter i(+$n_param) >> compileStateDown end
+compile procasm_arglist asm
+	astGetChildrenCount -$n_param
+	+$n_param [ << enter i(+$n_param) >> ]
+	compileStateDown
+end
 
 compile procasm_arg
 asm

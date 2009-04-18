@@ -311,6 +311,53 @@ void _VM_CALL vm_op_strlen(vm_t vm, word_t unused) {
 	vm_push_data(vm,DataInt,(word_t)strlen((char*)str->data));
 }
 
+/**********************************************************
+ * regGet:Int
+ * fetch some item at index [arg] in array
+ * Object -> (something)
+ */
+void _VM_CALL vm_op_regGet_Int(vm_t vm, word_t index) {
+	word_t* data = (word_t*)(vm->current_thread->registers+index);
+	assert(index<TINYAML_N_REGISTERS);
+	vm_push_data(vm, *data, *(data+1));
+}
+
+/**********************************************************
+ * regGet
+ * fetch some item at some index in array
+ * Object X Int -> (something)
+ */
+void _VM_CALL vm_op_regGet(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	vm_op_regGet_Int(vm,d->data);
+}
+
+/**********************************************************
+ * regSet:Int
+ * set the item at index [arg] in array to (something)
+ * Object X (something) -> Object
+ */
+void _VM_CALL vm_op_regSet_Int(vm_t vm, word_t index) {
+	vm_data_t olddata = vm->current_thread->registers+index;
+	vm_data_t data = _vm_pop(vm);
+	assert(index<TINYAML_N_REGISTERS);
+	if(olddata->type&DataManagedObjectFlag) { vm_obj_deref_ptr(vm,(void*)olddata->data); }
+	memcpy(vm->current_thread->registers+index, data, sizeof(struct _data_stack_entry_t));
+	if(data->type&DataManagedObjectFlag) { vm_obj_ref_ptr(vm,(void*)data->data); }
+}
+
+/**********************************************************
+ * regSet
+ * set the item at some index in array to (something)
+ * Object X (something) X Int -> Object
+ */
+void _VM_CALL vm_op_regSet(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	vm_op_regSet_Int(vm,d->data);
+}
+
 
 /*@}*/
 

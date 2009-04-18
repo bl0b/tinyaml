@@ -230,7 +230,7 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 		break;
 	case OpcodeArgEnvSym:
 		arg = (word_t) env_sym_to_index(p->env, ocn->arg);
-		if(!arg) {
+		if(arg==-1) {
 			vm_printerrf("[VM:ERR] Symbol '%s' doesn't exist in environment !\n",ocn->arg);
 		}
 		/*vm_printf("Opcode\t(%s)", ocn->arg);*/

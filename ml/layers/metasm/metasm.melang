@@ -1,3 +1,5 @@
+asm nop nop end
+
 language
 	meta_asm ::= "<<" (meta_data|meta_label|meta_opcode)+ ">>".
 	meta_data ::= "[" meta_data_piece+ "]".

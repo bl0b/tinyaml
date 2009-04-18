@@ -1,126 +1,127 @@
 
-asm
-	jmp @_skip_0
-
-reset_tables:
-	envGet &__init_symasm call
+func reset_tables()
+	#envGet &__init_symasm call
 	newSymTab -$func_dic
 	arrayNew  -$func_tab
 	+$func_tab push 0 push 0 arraySet
-	#stackNew -$local_dic_stack
+	stackNew -$local_dic_stack
 	#stackNew -$lst_backup
-	ret 0
+endfunc
 
-inc_exprs:
+func inc_exprs()
 	+$expr_list_exprs inc -$expr_list_exprs
-	ret 0
+endfunc
 
-inc_calls:
+func dump_symtab(stname, st)
+	+$stname push " :\n" print 2
+	local i {
+		push 0 -$i
+	_dst_lp:
+		+$i +$st symTabSz inf [
+			+$i push ": " +$st +$i getSymName push "\n" print 4
+			+$i inc -$i
+			jmp @_dst_lp
+		]
+	}
+endfunc
+
+func inc_calls()
 	+$expr_list_calls inc -$expr_list_calls
-	ret 0
+endfunc
 
 # string:something -> string:label
-gen_label:
+func gen_label(prefix)
 	+$lbl_counter inc -$lbl_counter
-	push "_" +$lbl_counter toS strcat strcat
-	ret 0
+	+$prefix push "_" +$lbl_counter toS strcat strcat
+endfunc
 
-newFuncDecl:
-	local fname {
-		# backup func name
-		-$fname
-		# insert symbol into tab
-		+$func_dic
-		+$fname
-		addSym
-		# add new func decl entry into tab
-		+$func_tab
-		# create structure
-		strucNew FuncDecl {
-			returns		: push 0
-			parameters	: newSymTab
-			locals		: newSymTab
-			closure		: newSymTab
-			closure_ofs	: arrayNew
-			label		: push ""
-			endlabel	: push ""
-			has_vararg	: push 0
-		}
-		+$func_dic +$fname getSym
-		# fetch index of sym
-		arraySet
-		pop
+func newFuncDecl(fname)
+	# insert symbol into tab
+	+$func_dic
+	+$fname
+	addSym
+	# add new func decl entry into tab
+	+$func_tab
+	# create structure
+	strucNew FuncDecl {
+		returns		: push 0
+		parameters	: newSymTab
+		locals		: newSymTab
+		closure		: newSymTab
+		closure_ofs	: arrayNew
+		label		: push ""
+		endlabel	: push ""
+		has_vararg	: push 0
 	}
-	ret 0
+	+$func_dic +$fname getSym
+	# fetch index of sym
+	arraySet
+	pop
+endfunc
 
-funcDeclGet:
-	local fname { -$fname
-		+$func_tab
-		+$func_dic +$fname getSym
-		arrayGet
-		#push "funcDeclGet '" +$fname push "' => " dup -3 push "\n" print 5
-	}
-	ret 0
+func funcDeclGet(fname)
+	+$func_tab
+	+$func_dic +$fname getSym
+	arrayGet
+	#push "funcDeclGet '" +$fname push "' => " dup -3 push "\n" print 5
+endfunc
 
 # string:func_name X string:param_name -> nil
-funcDeclAddParam:
-	local pname { -$pname	# pop param name
-		call @funcDeclGet +(FuncDecl.parameters)
-		+$pname
-		addSym
-	}
-	ret 0
+func funcDeclAddParam(fname, pname)
+	#push "funcDeclAddParam" +$pname push "\n" print 3
+	%funcDeclGet(+$fname) +(FuncDecl.parameters)
+	+$pname
+	addSym
+endfunc
 
 # string:func_name X string:param_name -> nil
-funcDeclAddVararg:
-	local fname {
-		dup -1 -$fname
-		call @funcDeclAddParam
-		+$fname call @funcDeclGet push 1 -(FuncDecl.has_vararg)
-	}
-	ret 0
+func funcDeclAddVararg(fname, pname)
+	#push "funcDeclAddVararg" +$pname push "\n" print 3
+	%funcDeclAddParam(+$fname, +$pname)
+	%funcDeclGet(+$fname) push 1 -(FuncDecl.has_vararg)
+endfunc
 
 # string:func_name X string:param_name -> nil
-funcDeclAddLocal:
-	local pname {
-		# pop param name
-		-$pname
-		call @funcDeclGet +(FuncDecl.locals)
-		+$pname
-		addSym
-	}
-	ret 0
+func funcDeclAddLocal(fname, pname)
+	#push "funcDeclAddLocal" +$pname push "\n" print 3
+	%funcDeclGet(+$fname) +(FuncDecl.locals)
+	+$pname
+	addSym
+endfunc
 
 # string:func_name X string:param_name -> nil
-funcDeclAddClosure:
-	local pname {
-		# pop param name
-		-$pname
-		call @funcDeclGet +(FuncDecl.closure)
-		+$pname
-		addSym
-	}
-	ret 0
+func funcDeclAddClosure(fname, pname)
+	#push "funcDeclAddClosure" +$pname push "\n" print 3
+	%funcDeclGet(+$fname) +(FuncDecl.closure)
+	+$pname
+	addSym
+endfunc
 
 # string:func_name -> nil
-funcDeclAddReturn:
-	call @funcDeclGet dup 0 +(FuncDecl.returns) inc -(FuncDecl.returns)
-	ret 0
+func funcDeclAddReturn(fname)
+	#push "funcDeclAddReturn\n" print 1
+	%funcDeclGet(+$fname) dup 0 +(FuncDecl.returns) inc -(FuncDecl.returns)
+endfunc
 
 # string:func_name -> nil
-funcDeclEnter:
+func funcDeclEnter(fname)
 	local fdecl, i, st {
-		#push "## FUNCDECL ENTER " dup -1 push "\n" print 3
-		call @funcDeclGet -$fdecl
+		#push "## FUNCDECL ENTER " +$fname push "\n" print 3
+		%funcDeclGet(+$fname) -$fdecl
 		+$local_dic_stack +$fdecl stackPush
-		#push "lst_backup " +$lst_backup push " <= " envGet &_locSymTab push "\n" print 5
-		#+$lst_backup envGet &_locSymTab stackPush
-		#newSymTab envSet &_locSymTab
 
-		#envGet &_locSymTab -$st
-		#envGet &_locSymTabNew call
-
+		envGet &_CSTNew call
 		envGet &_LSTNew call
+
+		push 1 -$i
+		+$fdecl+(FuncDecl.closure) -$st
+	_fde_foreach_closure:
+		+$i +$st symTabSz inf [
+			+$st +$i getSymName
+			envGet &_CSTAdd call
+			+$i inc -$i
+			jmp@_fde_foreach_closure
+		]
 
 		push 1 -$i
 		+$fdecl+(FuncDecl.locals) -$st
@@ -129,7 +130,7 @@ funcDeclEnter:
 			+$st +$i getSymName
 			envGet &_LSTAdd call
 			+$i inc -$i
-			jmp@_fde_foreach_param
+			jmp@_fde_foreach_local
 		]
 
 		push 1 -$i
@@ -143,11 +144,12 @@ funcDeclEnter:
 		]
 
 	}
-	ret 0
+endfunc
 
-funcDeclLeave:
-	#push "## FUNCDECL LEAVE\n" print 1
-	#+$local_dic_stack stackPop
+func funcDeclLeave()
+	#push "## FUNCDECL LEAVE => " print 1
+	+$local_dic_stack stackPop
+	#+$local_dic_stack stackSize push "\n" print 2
 	#push "POU " +$lst_backup push " " +$lst_backup stackSize push " ET\n" print 5
 	#+$lst_backup stackPeek 0
 	#push "POUET " dup -1 envGet &_locSymTab push "\n" print 4
@@ -155,229 +157,83 @@ funcDeclLeave:
 	#push "POUETPOUET\n" print 1
 	#+$lst_backup stackPop
 	envGet &_LSTPop call
-	ret 0
+	envGet &_CSTNew call
+endfunc
+
+func testSym(symbol, tab, rettype, typestr)
+	local symofs {
+		+$tab +$symbol getSym -$symofs
+		+$symofs push -1 nEq [[
+			+$rettype $symIsClosure eq [[
+				+$symofs dec -$_sym_ofs
+			][
+				+$_sym_ofs +$symofs sub +$call_local_ofs sub -$_sym_ofs
+			]]
+			#push "Symbol '" +$symbol push "' is " +$typestr push " at ofs " +$_sym_ofs push "\n" print 7
+			+$rettype
+		][
+			+$rettype $symIsClosure nEq [
+				+$_sym_ofs +$tab symTabSz dec sub
+			]
+			$symUnknown
+		]]
+	}
+endfunc
 
 # string:symbol -> int:context (cf. symIs...)
-getSymContext:
-	local symbol, locdic, symofs, counter, backup {
-	-$symbol
+func getSymContext(symbol)
+	local locdic, symofs, counter, backup {
 
-	push 0 -$_sym_ofs
+	push 0 +$call_local_ofs sub -$_sym_ofs
 
-	push "entering getSymContext... " +$local_dic_stack stackSize push "\n" print 3
+	#push "entering getSymContext... " +$local_dic_stack stackSize push "\n" print 3
 
 	+$local_dic_stack stackSize [
 
-		push "entering local context...\n" print 1
+		#push "entering local context...\n" print 1
 
 		+$local_dic_stack stackPeek 0 -$locdic
 		+$locdic -$backup
 
-		+$locdic +(FuncDecl.locals) +$symbol getSym -$symofs
-		+$symofs push -1 nEq [
-			push 0 +$symofs sub +$call_local_ofs sub -$_sym_ofs
-			push "Symbol '" +$symbol push "' is local at ofs " +$_sym_ofs push "\n" print 5
-			$symIsLocal jmp @_sc_ret ]
+		%testSym(+$symbol, +$locdic +(FuncDecl.locals), $symIsLocal, push "local")
+		dup 0 $symUnknown eq SNZ jmp @_sc_ret
+		pop
+		nop 0
 
-		+$locdic +(FuncDecl.parameters) +$symbol getSym -$symofs
-		+$symofs push -1 nEq [
-			push 0 +$locdic +(FuncDecl.locals) symTabSz dec sub +$symofs sub +$call_local_ofs sub -$_sym_ofs
-			push "Symbol '" +$symbol push "' is a parameter at ofs " +$_sym_ofs push "\n" print 5
-			$symIsParam jmp @_sc_ret ]
+		%testSym(+$symbol, +$locdic +(FuncDecl.parameters), $symIsParam, push "a parameter")
+		dup 0 $symUnknown eq SNZ jmp @_sc_ret
+		pop
+		nop 0
 
-		+$locdic +(FuncDecl.closure) +$symbol getSym -$symofs
-		+$symofs push -1 nEq [
-			+$symofs dec -$_sym_ofs
-			push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
-			$symIsClosure jmp @_sc_ret ]
+		%testSym(+$symbol, +$locdic +(FuncDecl.closure), $symIsClosure, push "in closure")
+		dup 0 $symUnknown eq SNZ jmp @_sc_ret
+		pop
 
-		push 0 -$counter
-
-		push 0 +$call_local_ofs sub
-#		+$locdic +(FuncDecl.locals) symTabSz dec
-#		+$locdic +(FuncDecl.parameters) symTabSz dec
-#		add sub
-		-$_sym_ofs
-
-		+$counter inc -$counter
-
-	_context_loop:
-		+$local_dic_stack stackSize +$counter sup [
-
-			push "entering local sub-context #" +$counter push "...\n" print 3
-			push "base _sym_ofs is " +$_sym_ofs push "\n" print 3
-
-			+$local_dic_stack +$counter stackPeek -$locdic
-
-			+$locdic +(FuncDecl.locals) +$symbol getSym -$symofs
-			+$symofs push -1 nEq [
-				+$backup +(FuncDecl.closure) +$symbol addSym
-				+$backup +(FuncDecl.closure_ofs)
-					+$_sym_ofs
-					+$symofs
-					sub -$_sym_ofs
-					+$_sym_ofs
-					+$backup +(FuncDecl.closure_ofs) arraySize
-				arraySet
-				push "Symbol local '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\n" print 5
-				+$backup +(FuncDecl.closure) +$symbol getSym dec -$_sym_ofs
-				#push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
-				$symIsClosure jmp @_sc_ret ]
-	
-			+$locdic +(FuncDecl.parameters) +$symbol getSym -$symofs
-			+$symofs push -1 nEq [
-				+$backup +(FuncDecl.closure) +$symbol addSym
-				+$backup +(FuncDecl.closure_ofs)
-					+$_sym_ofs
-					+$locdic +(FuncDecl.locals) symTabSz dec
-					sub
-					+$symofs dec
-					sub -$_sym_ofs
-					+$_sym_ofs
-					+$backup +(FuncDecl.closure_ofs) arraySize
-				arraySet
-				push "Symbol param '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\n" print 5
-				+$backup +(FuncDecl.closure) +$symbol getSym dec -$_sym_ofs
-				push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
-				$symIsClosure jmp @_sc_ret ]
-	
-			+$locdic +(FuncDecl.closure) +$symbol getSym dec -$symofs
-			+$symofs push -1 sup [
-				push "Error : can't access symbol '" +$symbol push "' in outer closure, offset " +$symofs push ".\n" print 5
-				$symMustEnclose jmp @_sc_ret ]
-
-			+$_sym_ofs
-			+$locdic +(FuncDecl.locals) symTabSz dec
-			+$locdic +(FuncDecl.parameters) symTabSz dec
-			add sub
+		+$symbol envGet &_LSTFindSym call -$symofs
+		+$symofs push 1 nEq [
+			+$symofs
+				+$locdic +(FuncDecl.locals) symTabSz dec add
+				+$locdic +(FuncDecl.parameters) symTabSz dec add
+				+$call_local_ofs add
 			-$_sym_ofs
-
-			+$counter inc -$counter
-			jmp @_context_loop
+			#push "Symbol " +$symbol push " found at offset " +$_sym_ofs push " (now in closure)\n" print 5
+			+$backup +(FuncDecl.closure) +$symbol addSym
+			+$backup +(FuncDecl.closure_ofs)
+				+$_sym_ofs
+				+$backup +(FuncDecl.closure_ofs) arraySize
+			arraySet
+			$symIsClosure
+			jmp @_sc_ret
 		]
 	]
 
-	#envGet &_globSymTab +$symbol getSym -$symofs
-	+$symbol envGet &_GSTFindSym call -$symofs
+	+$symbol envGet &_GSTGet call -$symofs
 	+$symofs push -1 nEq [
 		+$symofs -$_sym_ofs
-		push "Symbol '" +$symbol push "' is global at ofs " +$_sym_ofs push "\n" print 5
+		#push "Symbol '" +$symbol push "' is global at ofs " +$_sym_ofs push "\n" print 5
 		$symIsGlobal jmp @_sc_ret ]
 
 	$symUnknown
 _sc_ret:}
-	ret 0
-
-# string:symbol -> int:context (cf. symIs...)
-getSymContext__old__:
-	local symbol, locdic, symofs, counter, backup {
-	-$symbol
-
-	push 0 -$_sym_ofs
-
-	push "entering getSymContext... " +$local_dic_stack stackSize push "\n" print 3
-
-	+$local_dic_stack stackSize [
-
-		push "entering local context...\n" print 1
-
-		+$local_dic_stack stackPeek 0 -$locdic
-		+$locdic -$backup
-
-		+$locdic +(FuncDecl.locals) +$symbol getSym -$symofs
-		+$symofs push -1 nEq [
-			push 0 +$symofs sub +$call_local_ofs sub -$_sym_ofs
-			push "Symbol '" +$symbol push "' is local at ofs " +$_sym_ofs push "\n" print 5
-			$symIsLocal jmp @_sc_ret ]
-
-		+$locdic +(FuncDecl.parameters) +$symbol getSym -$symofs
-		+$symofs push -1 nEq [
-			push 0 +$locdic +(FuncDecl.locals) symTabSz dec sub +$symofs sub +$call_local_ofs sub -$_sym_ofs
-			push "Symbol '" +$symbol push "' is a parameter at ofs " +$_sym_ofs push "\n" print 5
-			$symIsParam jmp @_sc_ret ]
-
-		+$locdic +(FuncDecl.closure) +$symbol getSym -$symofs
-		+$symofs push -1 nEq [
-			+$symofs dec -$_sym_ofs
-			push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
-			$symIsClosure jmp @_sc_ret ]
-
-		push 0 -$counter
-
-		push 0 +$call_local_ofs sub
-#		+$locdic +(FuncDecl.locals) symTabSz dec
-#		+$locdic +(FuncDecl.parameters) symTabSz dec
-#		add sub
-		-$_sym_ofs
-
-		+$counter inc -$counter
-
-	_context_loop:
-		+$local_dic_stack stackSize +$counter sup [
-
-			push "entering local sub-context #" +$counter push "...\n" print 3
-			push "base _sym_ofs is " +$_sym_ofs push "\n" print 3
-
-			+$local_dic_stack +$counter stackPeek -$locdic
-
-			+$locdic +(FuncDecl.locals) +$symbol getSym -$symofs
-			+$symofs push -1 nEq [
-				+$backup +(FuncDecl.closure) +$symbol addSym
-				+$backup +(FuncDecl.closure_ofs)
-					+$_sym_ofs
-					+$symofs
-					sub -$_sym_ofs
-					+$_sym_ofs
-					+$backup +(FuncDecl.closure_ofs) arraySize
-				arraySet
-				push "Symbol local '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\n" print 5
-				+$backup +(FuncDecl.closure) +$symbol getSym dec -$_sym_ofs
-				#push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
-				$symIsClosure jmp @_sc_ret ]
-	
-			+$locdic +(FuncDecl.parameters) +$symbol getSym -$symofs
-			+$symofs push -1 nEq [
-				+$backup +(FuncDecl.closure) +$symbol addSym
-				+$backup +(FuncDecl.closure_ofs)
-					+$_sym_ofs
-					+$locdic +(FuncDecl.locals) symTabSz dec
-					sub
-					+$symofs dec
-					sub -$_sym_ofs
-					+$_sym_ofs
-					+$backup +(FuncDecl.closure_ofs) arraySize
-				arraySet
-				push "Symbol param '" +$symbol push "' outbound ofs is " +$_sym_ofs push "\n" print 5
-				+$backup +(FuncDecl.closure) +$symbol getSym dec -$_sym_ofs
-				push "Symbol '" +$symbol push "' is in closure at ofs " +$_sym_ofs push "\n" print 5
-				$symIsClosure jmp @_sc_ret ]
-	
-			+$locdic +(FuncDecl.closure) +$symbol getSym dec -$symofs
-			+$symofs push -1 sup [
-				push "Error : can't access symbol '" +$symbol push "' in outer closure, offset " +$symofs push ".\n" print 5
-				$symMustEnclose jmp @_sc_ret ]
-
-			+$_sym_ofs
-			+$locdic +(FuncDecl.locals) symTabSz dec
-			+$locdic +(FuncDecl.parameters) symTabSz dec
-			add sub
-			-$_sym_ofs
-
-			+$counter inc -$counter
-			jmp @_context_loop
-		]
-	]
-
-	envGet &_globSymTab +$symbol getSym -$symofs
-	+$symofs push -1 nEq [
-		+$symofs -$_sym_ofs
-		push "Symbol '" +$symbol push "' is global at ofs " +$_sym_ofs push "\n" print 5
-		$symIsGlobal jmp @_sc_ret ]
-
-	$symUnknown
-_sc_ret:}
-	ret 0
-
-_skip_0:
-end
+endfunc
 

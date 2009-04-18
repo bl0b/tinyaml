@@ -134,15 +134,19 @@ script
 		return ret
 		end
 	addTo("Array", "filter", _af)
-	function _ari(a,f,init)
-		local accum
-		accum=init
-		_afe(a, function(x) accum = f(accum, x) end)
+	function _ari(a,f,accum)
+		local i,j
+		asm +$a arraySize -$j end
+		i=0
+		while i<j do
+			accum=f(accum,a[i])
+			i=i+1
+		end
 		return accum
 	end
 	function _ar(a,f)
 		local accum,i,j
-		asm getmem -4 arraySize setmem -3 end
+		asm +$a arraySize -$j end
 		i=2
 		accum=f(a[0],a[1])
 		while i<j do
@@ -167,9 +171,8 @@ script
 	#	return ret
 	#end
 	function _tn(prio, thread)
-		local r
-		asm +$prio +$thread newThread -$r end
-		return r
+		asm +$prio +$thread newThread -$thread end
+		return thread
 	end
 	function _tj(thread)
 		asm +$thread joinThread end

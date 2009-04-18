@@ -392,7 +392,7 @@ void _VM_CALL vm_op_getSymName(vm_t vm, word_t x) {
 		ts = (text_seg_t) t->data;
 	}
 	assert(k->type==DataInt);
-	sym=text_seg_find_by_index(ts, k->data);
+	sym=(char*)text_seg_find_by_index(ts, k->data);
 	/*vm_printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
 	vm_push_data(vm,DataString, (word_t)sym);
 }

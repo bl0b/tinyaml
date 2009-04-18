@@ -63,6 +63,7 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 		} else if(cmp_param(1,"--compile","-c")) {
 			i+=1;
 			p = vm_compile_file(vm,argv[i]);
+			program_set_source(p, argv[i]);
 		} else if(cmp_param(1,"--save","-s")) {
 			i+=1;
 			w = file_writer_new(argv[i]);
@@ -74,6 +75,7 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			r = file_reader_new(argv[i]);
 			p=vm_unserialize_program(vm,r);
 			reader_close(r);
+			program_set_source(p, argv[i]);
 		} else if(cmp_param(1,"--execute","-x")) {
 			i+=1;
 			r = file_reader_new(argv[i]);
@@ -131,7 +133,7 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			sprintf(buf, "require \"%s\"", argv[i]);
 			p=vm_compile_buffer(vm, buf);
 			/*vm_run_program_fg(vm, p, 0, 50);*/
-			/*program_free(vm, p);*/
+			program_free(vm, p);
 			p=NULL;
 			/* convenience hack : default to quiet when invoked to execute files */
 			tinyaml_quiet = 1;

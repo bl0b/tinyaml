@@ -292,5 +292,8 @@ typedef void _VM_CALL (*opcode_stub_t) (vm_t, word_t t);
 #define MAKE_WC(_a,_op) (((_a)<<_WC_ARGTYPE_SHIFT)|(_op))
 
 
+/*! \brief Define the number of registers in VM threads */
+#define TINYAML_N_REGISTERS 8
+
 #endif
 

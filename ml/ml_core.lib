@@ -231,6 +231,11 @@ lib
         opcode lockMtx                  # pop int memcell
         opcode unlockMtx                # same
 
+      # accessing thread registers
+        opcode regGet:Int               # push reg value
+        opcode regGet                   # pop index, push reg value
+        opcode regSet:Int               # pop value
+        opcode regSet                   # pop index, pop value
 
       # FIXME: output and debug mechanisms
         opcode print:Int

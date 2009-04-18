@@ -10,8 +10,8 @@ script
 #	rtc_init=getEnv("rtc_init")
 #	rtc_term=getEnv("rtc_term")
 
-	function rtcDate() asm RTC_getBeat push 1 ret 0 end end
-	function rtcTime() asm RTC_getDate push 1 ret 0 end end
+	function rtcDate() local r asm RTC_getBeat -$r end return r end
+	function rtcTime() local r asm RTC_getDate -$r end return r end
 
 	function rtcSchedule(date,func)
 		asm
@@ -29,12 +29,6 @@ script
 	end
 
 
-	function genDisp(disp)
-		return function(date)
-			print("Display : ",disp,"\ at ",date,"\n")
-		end
-	end
-
 	function disp(str,date)
 		print("Display : ",str," at ",rtcDate()," (given date is ",date,")\n")
 	end
@@ -47,6 +41,13 @@ script
 	rtcSchedule(d+4.0,function(date) disp("Coucou 2",date) end)
 	rtcSchedule(d+6.0,function(date) disp("Coucou 3",date) end)
 	rtcSchedule(d+8.0,function(date) disp("Coucou 4",date) end)
+
+	function genDisp(disp)
+		return function(date)
+			print("Display : ",disp,"\ at ",date,"\\n")
+		end
+	end
+
 	#rtcSchedule(d+2.0,genDisp("Coucou 1"))
 	#rtcSchedule(d+4.0,genDisp("Coucou 2"))
 	#rtcSchedule(d+6.0,genDisp("Coucou 3"))

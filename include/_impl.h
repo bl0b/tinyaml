@@ -283,6 +283,8 @@ struct _thread_t {
 	volatile word_t remaining;
 	volatile mutex_t pending_lock;
 	struct _mutex_t join_mutex;
+	/* registers */
+	struct _data_stack_entry_t registers[TINYAML_N_REGISTERS];
 };
 /*@}*/
 

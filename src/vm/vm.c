@@ -52,6 +52,96 @@ const char* thread_state_to_str(thread_state_t ts);
 
 program_t dynFun_exec = NULL;
 
+const char* vm_find_innermost_file(vm_t vm) {
+	int ofs=0;
+	vm_data_t d;
+	do {
+		d = (vm_data_t) _gpeek(&vm->compinput_stack, 0);
+	} while((ofs=ofs+1)<vm->compinput_stack.sp&&CompInFile!=(compinput_t)d->type);
+	if(CompInFile!=(compinput_t)d->type) {
+		return "buffer";
+	}
+	return (const char*)d->data;
+}
+
+void vm_print_compilation_source(vm_t vm, int ofs) {
+	vm_data_t d = (vm_data_t) _gpeek(&vm->compinput_stack, ofs);
+	compinput_t ci = (compinput_t) d->type;
+	const char* buf = (const char*) d->data;
+	switch(ci) {
+	case CompInFile:
+		vm_printf("file %s", buf);
+		break;
+	case CompInBuffer:
+		if(strlen(buf)<=43) {
+			vm_printf("buffer << %s >>", buf);
+		} else {
+			vm_printf("buffer << %20.20s...%20.20s >>", buf, buf+strlen(buf)-20);
+		}
+		break;
+	case CompInVWalker:
+		vm_printf("walker %s", buf);
+		break;
+	default:
+		vm_printf("<UNHANDLED %i:%s>", ci, buf);
+	};
+}
+
+void vm_print_data(vm_t vm, vm_data_t d) {
+	_IFC tmp;
+	if(!d) {
+		vm_printf("[(null)]");
+		return;
+	}
+	tmp.i = d->data;
+	switch(d->type) {
+	case DataInt:
+		vm_printf("[Int %li]", tmp.i);
+		break;
+	case DataFloat:
+		vm_printf("[Float %lf]", tmp.f);
+		break;
+	case DataString:
+		vm_printf("[String \"%s\"]", (const char*) tmp.i);
+		break;
+	case DataObjStr:
+		vm_printf("[ObjStr  \"%s\"]",(const char*)tmp.i);
+		break;
+	case DataObjSymTab:
+		vm_printf("[SymTab  %p]",(void*)tmp.i);
+		break;
+	case DataObjMutex:
+		vm_printf("[Mutex  %p]",(void*)tmp.i);
+		break;
+	case DataObjThread:
+		vm_printf("[Thread  %p]",(void*)tmp.i);
+		break;
+	case DataObjArray:
+		vm_printf("[Array  %p]",(void*)tmp.i);
+		break;
+	case DataObjEnv:
+		vm_printf("[Map  %p]",(void*)tmp.i);
+		break;
+	case DataObjStack:
+		vm_printf("[Stack  %p]",(void*)tmp.i);
+		break;
+	case DataObjFun:
+		vm_printf("[Function  %p]",(void*)tmp.i);
+		break;
+	case DataObjVObj:
+		vm_printf("[V-Obj  %p]",(void*)tmp.i);
+		break;
+	case DataManagedObjectFlag:
+		vm_printf("[Undefined Object ! %p]", (opcode_stub_t*)tmp.i);
+		break;
+	case DataTypeMax:
+	default:;
+		vm_printf("[Erroneous data %X %lX]", d->type, tmp.i);
+	};
+	/*fflush(stderr);*/
+
+}
+
 void default_error_handler(vm_t vm, const char* input, int is_buffer) {
 	int ofs, sz;
 	compinput_t ci;
@@ -61,37 +151,19 @@ void default_error_handler(vm_t vm, const char* input, int is_buffer) {
 	sz = vm->compinput_stack.sp;
 	vm_printerrf("Error during compilation :\n");
 	for(ofs=-sz;ofs<=0;ofs+=1) {
-		d = (vm_data_t) _gpeek(&vm->compinput_stack, ofs);
-		ci = (compinput_t) d->type;
-		buf = (const char*) d->data;
-		vm_printerrf(" * in ");
-		switch(ci) {
-		case CompInFile:
-			vm_printerrf("file %s\n", buf);
-			break;
-		case CompInBuffer:
-			if(strlen(buf)<=43) {
-				vm_printerrf("buffer << %s >>\n", buf);
-			} else {
-				vm_printerrf("buffer << %20.20s...%20.20s >>\n", buf, buf+strlen(buf)-20);
-			}
-			break;
-		case CompInVWalker:
-			vm_printerrf("walker %s\n", buf);
-			break;
-		default:
-			vm_printerrf("<UNHANDLED %i:%s>\n", ci, buf);
-		};
+		vm_printf(" * in ");
+		vm_print_compilation_source(vm, ofs);
+		vm_printf("\n");
 	}
 	sz = vm->cn_stack.sp;
-	vm_printerrf("Node stack :\n");
+	vm_printf("Node stack :\n");
 	for(ofs=-sz;ofs<=0;ofs+=1) {
 		wa = *(wast_t*) _gpeek(&vm->cn_stack, ofs);
 		if(wa) {
-			vm_printerrf(" * %i:%i %s (%i)\n", wa_row(wa), wa_col(wa), wa_op(wa), wa_opd_count(wa));
+			vm_printf(" * %i:%i %s (%i)\n", wa_row(wa), wa_col(wa), wa_op(wa), wa_opd_count(wa));
 		}
 	}
-	vm_printerrf("at %i:%i (%s)\n", wa_row(vm->current_node), wa_col(vm->current_node), wa_op(vm->current_node));
+	vm_printf("at %i:%i (%s)\n", wa_row(vm->current_node), wa_col(vm->current_node), wa_op(vm->current_node));
 	exit(-1);
 }
 
@@ -183,12 +255,12 @@ vm_t vm_new() {
 	/* fill opcodes dictionary with basic library */
 	vm_compile_buffer(ret, ml_core_lib);
 	/* nops are hardcoded due to a limitation of tinyap */
-	vm_add_opcode(ret,"nop",OpcodeNoArg, vm_op_nop);
-	vm_add_opcode(ret,"nop",OpcodeArgString, vm_op_nop);
-	vm_add_opcode(ret,"nop",OpcodeArgLabel, vm_op_nop);
-	vm_add_opcode(ret,"nop",OpcodeArgEnvSym, vm_op_nop);
-	vm_add_opcode(ret,"nop",OpcodeArgInt, vm_op_nop);
-	vm_add_opcode(ret,"nop",OpcodeArgFloat, vm_op_nop);
+	vm_add_opcode(ret,strdup("nop"),OpcodeNoArg, vm_op_nop);
+	vm_add_opcode(ret,strdup("nop"),OpcodeArgString, vm_op_nop);
+	vm_add_opcode(ret,strdup("nop"),OpcodeArgLabel, vm_op_nop);
+	vm_add_opcode(ret,strdup("nop"),OpcodeArgEnvSym, vm_op_nop);
+	vm_add_opcode(ret,strdup("nop"),OpcodeArgInt, vm_op_nop);
+	vm_add_opcode(ret,strdup("nop"),OpcodeArgFloat, vm_op_nop);
 
 	ret->env = vm_env_new();
 	vm_obj_ref_ptr(ret,ret->env);
@@ -699,6 +771,7 @@ vm_t vm_pop_catcher(vm_t vm, word_t count) {
 
 thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	word_t*array;
+	word_t state_change_ndata;
 /*
 	if(t->IP>=t->program->code.size) {
 		t->state=ThreadDying;
@@ -712,15 +785,22 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 //*
 	if(_vm_trace) {
 /*		const char* label = program_lookup_label(t->program,t->IP);*/
-		static char ip_lbl_ofs_buf[46];
+		static char ip_lbl_ofs_buf[128];
 		word_t ofs;
 		const char*label;
 		const char* disasm = program_disassemble(vm,t->program,t->IP);
 		lookup_label_and_ofs(t->program,t->IP,&label,&ofs);
-		snprintf(ip_lbl_ofs_buf, 45, "(%p:%s+%lX)", t->program, label, ofs);
-		fprintf(stdout,"\nEXEC:%p %-60.60s %-40.40s | ",t, ip_lbl_ofs_buf, disasm);
+		snprintf(ip_lbl_ofs_buf, 127, "(%s:%s+%li", t->program->source, label, ofs);
+		
+		fprintf(stdout,"[VM:EXEC:%p:%5.5lu] %s\n", t, t->IP, ip_lbl_ofs_buf);
+		if(strlen(disasm)>80) {
+			fprintf(stdout,"[VM:EXEC]\t%-77.77s...\n", disasm);
+		} else {
+			fprintf(stdout,"[VM:EXEC]\t%-80.80s\n", disasm);
+		}
 		fflush(stdout);
 		free((char*)disasm);
+		state_change_ndata = t->data_stack.sp;
 	}
 // */
 
@@ -728,6 +808,29 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	if(*array&&!setjmp(_glob_vm_jmpbuf)) {
 		t->data_sp_backup = t->data_stack.sp;
 		((opcode_stub_t) *array) ( vm, *(array+1) );
+	}
+
+	if(_vm_trace&&(t->jmp_ofs||state_change_ndata!=t->data_stack.sp)) {
+		fputs("[VM:EXEC]\t`: ", stdout);
+		if(t->jmp_ofs) {
+			fprintf(stdout," JMP=>[%s:%li]", program_get_source(t->jmp_seg), t->jmp_ofs);
+		}
+		if(t->data_stack.sp>state_change_ndata) {
+			vm_data_t d;
+			int ofs;
+			fprintf(stdout, " Stack size %lu, pushed", t->data_stack.sp);
+			for(ofs=state_change_ndata-t->data_stack.sp+1;ofs<=0;ofs+=1) {
+				fputc(' ', stdout);
+				vm_print_data(vm, gpeek(vm_data_t , &t->data_stack, ofs));
+			}
+		} else if (t->data_stack.sp<state_change_ndata) {
+			fprintf(stdout, "Stack size %lu, pop'd %li", t->data_stack.sp, state_change_ndata-t->data_stack.sp);
+			if(t->data_stack.sp!=(word_t)-1) {
+				fprintf(stdout, ", stack top is ");
+				vm_print_data(vm, gpeek(vm_data_t, &t->data_stack, 0));
+			}
+		}
+		fputc('\n', stdout);
 	}
 
 	if(vm->current_thread) {
@@ -746,6 +849,11 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 		} else {
 			/* hop to next instruction */
 			t->IP+=2;
+		}
+		if(t->IP&0x80000000) {	/* sign bit is illegal, kill thread because of faulty jump */
+			if(t->state!=ThreadDying) {
+				thread_set_state(vm,t,ThreadDying);
+			}
 		}
 		return t->state;
 	} else {
@@ -933,20 +1041,26 @@ vm_t vm_set_engine(vm_t vm, vm_engine_t e) {
 
 void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, const char* function) {
 	if(strncmp(function,"vm_op_",6)) {
-		vm_printerrf( "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
+		vm_printf( "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
 	} else {
-		vm_printerrf( "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
+		vm_printf( "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
 		if(!strcmp(function+6, "throw") &&
 				(_glob_vm->exception.type==DataString ||
 					_glob_vm->exception.type==DataObjStr)) {
-			vm_printerrf("Exception String : %s\n", (char*) _glob_vm->exception.data);
+			vm_printf("Exception String : %s\n", (char*) _glob_vm->exception.data);
 			
 		}
+	}
+	if(_glob_vm&&_glob_vm->current_node) {
+		vm_printf("[VM:INFO] While compiling ");
+		vm_print_compilation_source(_glob_vm,0);
+		vm_printf(" ");
+		vm_printf("at %i:%i (%s)\n", wa_row(_glob_vm->current_node), wa_col(_glob_vm->current_node), wa_op(_glob_vm->current_node));
 	}
 	if(_glob_vm&&_glob_vm->current_thread) {
 		thread_t t = _glob_vm->current_thread;
 		_glob_vm->current_thread = NULL;
-		vm_printerrf("[VM:NOTICE] Killing current thread %p\n", t);
+		vm_printf("[VM:NOTICE] Killing current thread %p\n", t);
 		_glob_vm->engine->_thread_failed(_glob_vm,t);
 		vm_kill_thread(_glob_vm,t);
 		longjmp(_glob_vm_jmpbuf,1);

@@ -58,5 +58,6 @@ ml_core_gram.c: ../ml/ml_core.gram ../ml/ml_core.lib
 # The following is for profiling purpose only
 
 tinyaml_static: $(libtinyaml_la_SOURCES)
-	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) /usr/local/lib/libtinyap.a -o tinyaml_static
+	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) /usr/local/lib/libtinyap.a -o tinyaml_full_static
+	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) -ltinyap -o tinyaml_static
 

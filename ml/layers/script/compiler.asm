@@ -16,9 +16,9 @@ end
 
 compile script_try asm
 	local try_lbl, catch_lbl, end_lbl {
-		push "try" call @gen_label -$try_lbl
-		push "catch" call @gen_label -$catch_lbl
-		push "end_trycatch" call @gen_label -$end_lbl
+		%gen_label(push "try") -$try_lbl
+		%gen_label(push "catch") -$catch_lbl
+		%gen_label(push "end_trycatch") -$end_lbl
 
 		# try: instCatcher @catch
 		<< (+$try_lbl): instCatcher l(+$catch_lbl) >>
@@ -38,7 +38,7 @@ end
 
 compile catch_statement asm
 	local end_lbl {
-		push "endcatch_" astGetChildString 0 strcat call @gen_label -$end_lbl
+		%gen_label(push "endcatch_" astGetChildString 0 strcat) -$end_lbl
 		<< getException strcmp s(astGetChildString 0) SZ jmp l(+$end_lbl) >>
 		astCompileChild 1
 		<< jmp l(+$current_end_tc) (+$end_lbl): >>
@@ -63,10 +63,10 @@ compile catch_bloc asm
 end
 
 #FIXME TODO have onInit and onTerm opcodes for handling user compiler init/term routines to handle things like reset_tables
+#FIXED ?
 
 compile script_glob
 asm
-	#call @reset_tables
 	#pp_curNode
 	# size,counter
 	local size, counter {
@@ -83,7 +83,7 @@ asm
 	fill_glob_dict:
 		# addsym(node_childString(counter,dic)
 #		push "fill glob #" +$counter push "\n" print 3
-		envGet &_globSymTab +$counter astGetChildString addSym
+		+$counter astGetChildString envGet &_GSTAdd call
 		# counter += 1
 		+$counter inc -$counter
 		# } while(counter<size)
@@ -98,7 +98,7 @@ compile script_glob_fun
 asm
 	local sz {
 		#pp_curNode
-		envGet &_globSymTab astGetChildString 0 getSym push -1 nEq [
+		astGetChildString 0 envGet &_GSTGet call push -1 nEq [
 			push "Symbol " astGetChildString 0 push "\ already defined !\n" print 3
 			compileStateError
 			ret 0
@@ -108,18 +108,15 @@ asm
 
 		push 1 push 0 write_data
 		#+$glob_dic symTabSz -$sz
-		envGet &_globSymTab
-		#+$sz
-		+$cur_fname
-		addSym
-		envGet &_globSymTab +$cur_fname getSym -$sz
+		+$cur_fname envGet &_GSTAdd call
+		+$cur_fname envGet &_GSTGet -$sz
 
 		# do "cur_fname = ...fun..."
 		astCompileChild 1
 
 	#	push "Symbol '" +$cur_fname push "' has index " +$sz push "\n" print 5
 
-		<< setmem i(+$sz) >>
+		<< setmem i(+$cur_fname envGet &_GSTGet call) >>
 
 		push "" -$cur_fname
 	}
@@ -132,7 +129,7 @@ asm
 		+$call_local_ofs -$clo_backup
 		+$cur_fname -$fnambak
 		push 0 -$call_local_ofs
-		push "anon" call @gen_label -$cur_fname
+		%gen_label(push "anon") -$cur_fname
 		astCompileChild 0
 		+$fnambak -$cur_fname
 		+$clo_backup -$call_local_ofs
@@ -187,19 +184,19 @@ asm
 	#pp_curNode
 	#push "@@@   at start, $cur_fname = " +$cur_fname push "   @@@\n" print 3
 	local locsz, fun_lbl, endfun_lbl, fname_backup, supargc, argc, top, count {
-		+$cur_fname call @gen_label -$fun_lbl
-		+$cur_fname push "_end" strcat call @gen_label -$endfun_lbl
+		%gen_label(+$cur_fname) -$fun_lbl
+		%gen_label(+$cur_fname push "_end" strcat) -$endfun_lbl
 
 		#push "start label \"" +$fun_lbl push "\"\n" print 3
 		#push "end label \"" +$endfun_lbl push "\"\n" print 3
 
 		+$cur_fname
-		call @newFuncDecl
+		%newFuncDecl()
 
 		<< jmp l(+$endfun_lbl) (+$fun_lbl): >>
 
-		+$cur_fname call @funcDeclGet +$fun_lbl -(FuncDecl.label)
-		+$cur_fname call @funcDeclGet +$endfun_lbl -(FuncDecl.endlabel)
+		%funcDeclGet(+$cur_fname) +$fun_lbl -(FuncDecl.label)
+		%funcDeclGet(+$cur_fname) +$endfun_lbl -(FuncDecl.endlabel)
 
 		+$cur_fname -$fname_backup
 
@@ -207,22 +204,21 @@ asm
 
 		+$fname_backup -$cur_fname
 
-		+$cur_fname
-		call @funcDeclEnter
+		%funcDeclEnter(+$cur_fname)
 
 		# insert function header
 		#	- if no vararg : check against dynamic argc, throw badarg if nEq
 		#	- if vararg : compute supplementary argc, copy sup' args into an array, install the array as last arg
 		# first, code to fetch dynamic argc
-		+$cur_fname call @funcDeclGet +(FuncDecl.has_vararg) [[
-			+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz sub 2 -$argc
+		%funcDeclGet(+$cur_fname) +(FuncDecl.has_vararg) [[
+			%funcDeclGet(+$cur_fname) +(FuncDecl.parameters) symTabSz sub 2 -$argc
 			# check that supargc>=0
 	
 			+$cur_fname push "_vastart_loop" strcat -$fun_lbl
 			+$cur_fname push "_vastart_done" strcat -$endfun_lbl
 
 			# throw if failed
-			+$cur_fname push "_chk_argc_pass" strcat call @gen_label -$supargc
+			%gen_label(+$cur_fname push "_chk_argc_pass" strcat) -$supargc
 			<<	dup 0 push i(+$argc) supEq SZ jmp l(+$supargc)
 				push "WrongParameterCount"
 				throw
@@ -274,27 +270,27 @@ asm
 			
 
 		][
-			push "check_argc_pass" call @gen_label -$supargc
+			%gen_label(push "check_argc_pass") -$supargc
 			# throw if failed
-			<< push i( +$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec)
+			<< push i(%funcDeclGet(+$cur_fname) +(FuncDecl.parameters) symTabSz dec)
 			   eq
 			   SZ
 			   jmp l(+$supargc)
 			   push "WrongParameterCount (expected "
-			   push i( +$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec) toS strcat
+			   push i(%funcDeclGet(+$cur_fname) +(FuncDecl.parameters) symTabSz dec) toS strcat
 			   push ")" strcat
 			   throw
 			   (+$supargc):
 			>>
 		]]
-		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
-		+$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec
+		%funcDeclGet(+$cur_fname) +(FuncDecl.parameters) symTabSz dec
+		%funcDeclGet(+$cur_fname) +(FuncDecl.locals) symTabSz dec
 		add
 		-$locsz
 		+$locsz [ << enter i(+$locsz) >> ]
-		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
+		%funcDeclGet(+$cur_fname) +(FuncDecl.parameters) symTabSz dec
 		dup 0 [[
-			push 0 +$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec sub -$top
+			push 0 %funcDeclGet(+$cur_fname) +(FuncDecl.locals) symTabSz dec sub -$top
 			+$top dup -1 sub -$count
 		_prep_parm_loop:
 			#push "sur le param " +$count push " sur " +$top push "\n" print 5
@@ -324,24 +320,24 @@ asm
 		# if no return statement has been issued, default to void return (size 0)
 		<<	push 0
 			ret 0
-		(+$cur_fname call @funcDeclGet +(FuncDecl.endlabel)):
-			dynFunNew l(+$cur_fname call @funcDeclGet +(FuncDecl.label))
+		(%funcDeclGet(+$cur_fname) +(FuncDecl.endlabel)):
+			dynFunNew l(%funcDeclGet(+$cur_fname) +(FuncDecl.label))
 		>>
 
 		push 0 -$locsz
 		#push "\   @@@   NOW $cur_fname = " +$cur_fname push "   @@@\\n" print 3
-		+$cur_fname call @funcDeclGet +(FuncDecl.closure_ofs) -$fun_lbl
+		%funcDeclGet(+$cur_fname) +(FuncDecl.closure_ofs) -$fun_lbl
 	_addcls_loop:
 		+$fun_lbl arraySize +$locsz sup [
-			<<	getmem i(+$fun_lbl +$locsz arrayGet dec)
-				#push "Enclosing local value [" dup -1 push "]\n" print 3
+			<<	getmem i(+$fun_lbl +$locsz arrayGet)
+				push "Enclosing local value [" dup -1 push "]\n" print 3
 				dynFunAddClosure
 			>>
 			+$locsz inc -$locsz
 			jmp @_addcls_loop
 		]
 
-		call @funcDeclLeave
+		%funcDeclLeave()
 	}
 	compileStateNext
 end
@@ -404,8 +400,8 @@ asm
 	astCompileChild 0
 	local lbl, elbl {
 		# assume array on top of stack
-		push "expand_loop" call @gen_label -$lbl
-		push "expand_done" call @gen_label -$elbl
+		%gen_label(push "expand_loop") -$lbl
+		%gen_label(push "expand_done") -$elbl
 		<<	enter 2
 			setmem -1
 			getmem -1 arraySize setmem -2
@@ -486,15 +482,15 @@ end
 compile script_var_list
 asm
 	local i, lbl_ok, lbl_too_much {
-		push "too_much_data" call @gen_label -$lbl_too_much
-		push "ok_data" call @gen_label -$lbl_ok
-		<<	#getmem 0
+		%gen_label(push "too_much_data") -$lbl_too_much
+		%gen_label(push "ok_data") -$lbl_ok
+		<<	#regGet 0
 			sub i(astGetChildrenCount dec)
-			setmem 0
-			getmem 0
+			regSet 0
+			regGet 0
 			push 0 inf SNZ jmp l(+$lbl_ok)
 			push "Not enough data in RHS (expected "
-			push 0 getmem 0 sub toS strcat push " more)" strcat
+			push 0 regGet 0 sub toS strcat push " more)" strcat
 			throw
 			(+$lbl_ok):
 		>>
@@ -506,8 +502,8 @@ asm
 			+$i astCompileChild
 			+$i dec -$i jmp@_vl_R2L
 		]
-		<<	getmem 0
-			#push "Unwinding stack by " dup -1 push "\n" print 3
+		<<	regGet 0
+			push "Unwinding stack by " dup -1 push "\n" print 3
 			dup 0 SZ popN pop
 		>>
 		push 0 -$is_lvalue
@@ -526,8 +522,8 @@ asm
 	local locsz {
 		#push "compiling RETURN in " +$cur_fname push "\n" print 3
 		#pp_curNode
-		+$cur_fname call @funcDeclGet +(FuncDecl.parameters) symTabSz dec
-		+$cur_fname call @funcDeclGet +(FuncDecl.locals) symTabSz dec
+		%funcDeclGet(+$cur_fname) +(FuncDecl.parameters) symTabSz dec
+		%funcDeclGet(+$cur_fname) +(FuncDecl.locals) symTabSz dec
 		add
 		-$locsz
 		+$locsz [
@@ -560,7 +556,7 @@ asm
 	#enter 1	+$legal_return_size setmem -1
 	#push 0 -$legal_return_size
 	astCompileChild 0
-	<< popN >>
+	<< push "Discarding returned values.\n" print 1 popN >>
 	#getmem -1 -$legal_return_size
 	#leave 1
 	compileStateNext
@@ -575,7 +571,7 @@ asm
 	#+$legal_return_size
 	astCompileChild 0
 	local _lbl {
-		push "_check_ret_1" call@gen_label -$_lbl
+		%gen_label(push "_check_ret_1") -$_lbl
 		<<	push 1 eq SZ jmp l(+$_lbl)
 			push "Function call was expected to return exactly ONE value." throw
 			(+$_lbl):
@@ -588,38 +584,6 @@ end
 
 
 
-#		+$legal_return_size [[
-#			+$legal_return_size push 0 sup [[
-#				push "ret_fail" call @gen_label -$ret_fail
-#				push "ret_good" call @gen_label -$ret_good
-#				# discard some results if there are more
-#				# FIXME : clean up, remove {inf,eq,sub}.Int, remove botched code, rewrite everything in here.
-#				<<
-#					enter 1 setmem -1
-#					getmem -1 inf i(+$legal_return_size) SZ jmp l(+$ret_fail)
-#					getmem -1 eq i(+$legal_return_size) SNZ jmp l(+$ret_good)
-#					getmem -1 sub i(+$legal_return_size) popN
-#					jmp l(+$ret_good)
-#				(+$ret_fail):
-#					push "InvalidReturnSize (got "
-#					getmem -1 toS strcat
-#					push ", expected " strcat
-#					push i(+$legal_return_size) toS strcat
-#					push ")" strcat
-#					throw
-#				(+$ret_good):
-#				>>
-#			][
-#				# compute running size, counter is in mem -1
-#				<< getmem -1 add setmem -1 >>
-#			]]
-#			
-#		][
-#			push "Return size ZERO ; discarding any returned value\n" print 1
-#			pp_curNode
-#			<< popN >>
-#		]]
-#
 
 
 
@@ -662,8 +626,7 @@ compile script_id
 asm
 	local symctxt {
 	#	+$cur_fname
-		astGetChildString 0
-		call @getSymContext -$symctxt
+		%getSymContext(astGetChildString 0) -$symctxt
 				+$symctxt $symIsLocal eq
 				+$symctxt $symIsGlobal eq
 			or
@@ -705,6 +668,10 @@ asm
 end
 
 
+### DEBUG ONLY
+compile m_expr asm pp_curNode compileStateDown end
+compile b_expr asm pp_curNode compileStateDown end
+###
 
 
 
@@ -717,9 +684,9 @@ asm
 		#getmem 1 astGetChildString 0 getSym -$sym
 		# process righthand side
 		astCompileChild 1
-		#<< setmem 0 >>			# save number of exprs to be popped
+		#<< regSet 0 >>			# save number of exprs to be popped
 		# process lefthand side
-		push 1 -$is_lvalue
+		#push 1 -$is_lvalue
 		astCompileChild 0		
 	}
 	compileStateNext
@@ -895,10 +862,10 @@ asm
 	astGetChildrenCount push 3 eq [[
 		# if then else
 		local if_lbl, then_lbl, else_lbl, endif_lbl {
-			+$cur_fname strcat "_if" call @gen_label -$if_lbl
-			+$cur_fname strcat "_then" call @gen_label -$then_lbl
-			+$cur_fname strcat "_else" call @gen_label -$else_lbl
-			+$cur_fname strcat "_endif" call @gen_label -$endif_lbl
+			%gen_label(+$cur_fname strcat "_if") -$if_lbl
+			%gen_label(+$cur_fname strcat "_then") -$then_lbl
+			%gen_label(+$cur_fname strcat "_else") -$else_lbl
+			%gen_label(+$cur_fname strcat "_endif") -$endif_lbl
 
 			<< (+$if_lbl): >>
 			astCompileChild 0
@@ -911,9 +878,9 @@ asm
 	][
 		# if then
 		local if_lbl, then_lbl, endif_lbl {
-			+$cur_fname toS strcat "_if" call @gen_label -$if_lbl
-			+$cur_fname toS strcat "_then" call @gen_label -$then_lbl
-			+$cur_fname toS strcat "_endif" call @gen_label -$endif_lbl
+			%gen_label(+$cur_fname toS strcat "_if") -$if_lbl
+			%gen_label(+$cur_fname toS strcat "_then") -$then_lbl
+			%gen_label(+$cur_fname toS strcat "_endif") -$endif_lbl
 
 			<< (+$if_lbl): >>
 			astCompileChild 0
@@ -931,8 +898,8 @@ asm
 	#pp_curNode
 
 	local while_lbl, endwhile_lbl {
-		+$cur_fname toS strcat "_while" call @gen_label -$while_lbl
-		+$cur_fname toS strcat "_endwhile" call @gen_label -$endwhile_lbl
+		%gen_label(+$cur_fname toS strcat "_while") -$while_lbl
+		%gen_label(+$cur_fname toS strcat "_endwhile") -$endwhile_lbl
 
 		<< (+$while_lbl): >>
 		astCompileChild 0

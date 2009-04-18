@@ -20,6 +20,7 @@
 #define _HASH_H
 
 #include <stdlib.h>
+#include <stdio.h>
 
 /*! \addtogroup hashtab_t
  * @{
@@ -142,6 +143,10 @@ static __inline void hash_addelem(hashtab_t tab,hash_key key,hash_elem elem) {
 	htab_entry_t e=(htab_entry_t)malloc(sizeof(struct _htab_entry_struct));
 /* 	TRACE(&quot;  %ssuccessfully alloc'ed node\n&quot;,e?&quot;&quot;:&quot;un&quot;); */
 	if(!e) return;
+	if(!key) {
+		fprintf(stderr, "Trying to add elem into hashtab with null key.\n");
+		abort();
+	}
 	e->next=tab->table[i];
 	e->key=key;
 	e->e=elem;
@@ -152,7 +157,11 @@ static __inline void hash_addelem(hashtab_t tab,hash_key key,hash_elem elem) {
 
 /*! \brief TODO */
 static __inline htab_entry_t hash_find_e(hashtab_t tab,hash_key key) {
-	int i=tab->hash(key);
+	int i;
+	if(!key) {
+		return NULL;
+	}
+	i=tab->hash(key);
 	htab_entry_t s=tab->table[i];
 /* 	TRACE(&quot;      HASH_FINDELEM [%X]`%s' hashed as %u [%X]\n&quot;,key,key,i,s); */
 	if(s) while(tab->keycmp(s->key,key)&&(s=s->next));

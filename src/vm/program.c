@@ -56,6 +56,15 @@ word_t clean_data_seg[20] = {
 	(word_t)vm_op_ret_Int,	1,		/* , */
 };
 
+void program_set_source(program_t p, const char* s) {
+	free((char*)p->source);
+	p->source = strdup(s);
+}
+
+const char* program_get_source(program_t p) {
+	return p->source;
+}
+
 
 
 const char* find_file(const char*fname) {
@@ -90,9 +99,9 @@ void program_add_require(program_t prg, const char*fname) {
 	char buffy[256] = "";
 	char* found_fname;
 	program_t p;
-	p = (program_t) hash_find(&_glob_vm->required,fname);
+	p = (program_t) hash_find(&_glob_vm->required,(hash_key)fname);
 	if(!p) {
-		found_fname = find_file(fname);
+		found_fname = (char*)find_file(fname);
 		if(!found_fname) {
 			vm_printerrf("[VM:ERR] : compiler couldn't find file %s\n",fname);
 			return;
@@ -123,8 +132,9 @@ void program_add_require(program_t prg, const char*fname) {
 			reader_close(r);
 		}
 		if(p) {
+			program_set_source(p, fname);
 			vm_run_program_fg(_glob_vm,p,0,50);
-			/*vm_printf("[VM:INFO] Required file executed.\n");*/
+			vm_printf("[VM:INFO] Required file executed.\n");
 			hash_addelem(&_glob_vm->required,strdup(fname),p);
 		} else {
 			vm_printerrf("[VM:ERR] Nothing to execute while requiring %s\n",fname);
@@ -167,6 +177,7 @@ void program_add_loadlib(program_t prg, const char*libname) {
 program_t program_new() {
 	program_t ret = (program_t)malloc(sizeof(struct _program_t));
 	/*init_hashtab(&ret->labels, (hash_func) hash_str, (compare_func) strcmp);*/
+	ret->source=strdup("(unset)");
 	ret->env=NULL;
 	text_seg_init(&ret->labels.labels);
 	dynarray_init(&ret->labels.offsets);
@@ -207,6 +218,7 @@ void program_free(vm_t vm, program_t p) {
 	dynarray_deinit(&p->labels.offsets,NULL);
 	dynarray_deinit(&p->gram_nodes_indexes,NULL);
 	dynarray_deinit(&p->data,NULL);
+	free((char*)p->source);
 	free(p);
 }
 
@@ -214,13 +226,13 @@ void program_free(vm_t vm, program_t p) {
 word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg, vm_dyn_env_t smallenv) {
 	switch(arg_type) {
 	case OpcodeArgEnvSym:
-		/*vm_printerrf("[VM:INFO] Serializing EnvSym #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));*/
+		vm_printerrf("[VM:INFO] Serializing EnvSym #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));
 		arg = text_seg_text_to_index(&smallenv->symbols, text_seg_find_by_index(&p->env->symbols, arg));
 		if(!arg) {
 			vm_printerrf("[VM:ERR] Serializing EnvSym : Couldn't resolve environment symbol  #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));
 			vm_fatal("Aborted.");
-		/*} else {*/
-			/*vm_printerrf("[VM:INFO] Serializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&p->env->symbols, arg), arg);*/
+		} else {
+			vm_printerrf("[VM:INFO] Serializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&p->env->symbols, arg), arg);
 		}
 		break;
 	case OpcodeArgString:
@@ -240,7 +252,7 @@ word_t opcode_arg_unserialize(program_t p, opcode_arg_t arg_type, word_t arg, vm
 		if(!arg) {
 			vm_printerrf("[VM:ERR] Unserializing EnvSym : Couldn't resolve environment symbol  #%i '%s'\n", arg, text_seg_find_by_index(&smallenv->symbols, arg));
 			vm_fatal("Aborted.");
-		/*} else {*/
+		} else {
 			/*vm_printerrf("[VM:INFO] Unserializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&smallenv->symbols, arg), arg);*/
 		}
 		break;
@@ -353,14 +365,14 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	text_seg_unserialize(&p->loadlibs,r,"LIB");
 
 	for(i=1;i<dynarray_size(&p->loadlibs.by_index);i+=1) {
-		/*vm_printerrf("[VM:INFO] Program requires library '%s'\n", text_seg_find_by_index(&p->loadlibs,i));*/
+		vm_printerrf("[VM:INFO] Program requires library '%s'\n", text_seg_find_by_index(&p->loadlibs,i));
 		program_add_loadlib(p, text_seg_find_by_index(&p->loadlibs,i));
 	}
 
 	text_seg_unserialize(&p->requires,r,"REQ");
 
 	for(i=1;i<dynarray_size(&p->requires.by_index);i+=1) {
-		/*vm_printerrf("[VM:INFO] Program requires file '%s'\n", text_seg_find_by_index(&p->requires,i));*/
+		vm_printerrf("[VM:INFO] Program requires file '%s'\n", text_seg_find_by_index(&p->requires,i));
 		program_add_require(p, text_seg_find_by_index(&p->requires,i));
 	}
 
@@ -455,8 +467,8 @@ const char* program_ofs_to_label(program_t p, word_t ip) {
 
 
 void program_fetch(program_t p, word_t ip, word_t* op, word_t* arg) {
-/*	vm_printf("fetch at @%p:%8.8lX : %8.8lX %8.8lX\n",p,ip,dynarray_get(&p->code,ip),dynarray_get(&p->code,ip+1));
-*/	*arg = dynarray_get(&p->code,ip+1);
+/*	vm_printf("fetch at @%p:%8.8lX : %8.8lX %8.8lX\n",p,ip,dynarray_get(&p->code,ip),dynarray_get(&p->code,ip+1)); */
+	*arg = dynarray_get(&p->code,ip+1);
 	*op = dynarray_get(&p->code,ip);
 }
 
@@ -500,7 +512,7 @@ const char* lookup_label_by_offset(struct _label_tab_t* ts, word_t IP) {
 	word_t mid,val,found=0;
 
 	/* because of thread IP increment after jump */
-	IP += 2;
+	/*IP += 2;*/
 
 	do {
 		mid = (lower+upper)>>1;
@@ -581,6 +593,7 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 			break;
 		case OpcodeArgEnvSym:
 			tmp = env_index_to_sym(vm->env,arg);
+			printf("OpcodeArgEnvSym #%li : %s\n", arg, tmp);
 			argstr=(char*)malloc(strlen(tmp)+2);
 			sprintf(argstr,"&%s",tmp);
 			/*argstr=strdup("[opcode :: TODO]");*/
@@ -593,7 +606,7 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 
 	if(argstr) {
 		buffy = (char*) malloc(22+strlen(argstr));
-		sprintf(buffy,"%-20.20s %s",op,argstr);
+		sprintf(buffy,"%s  %s",op,argstr);
 		free(argstr);
 	} else {
 		buffy = strdup(op);

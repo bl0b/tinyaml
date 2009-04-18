@@ -1,4 +1,5 @@
-require "symasm.wc"
+require "procasm.wc"
+include "header.asm"
 include "grammar"
 include "globals"
 include "structs"
@@ -12,7 +13,7 @@ asm
 
 __init:
 	push "ON INIT ! P0UET !\n" print 1
-	call @reset_tables
+	%reset_tables()
 	ret 0
 
 __term:
@@ -25,5 +26,6 @@ _skip_init_term:
 	call
 	dynFunNew @__term
 	onCompTerm
+	ret 0
 end
 

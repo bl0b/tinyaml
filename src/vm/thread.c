@@ -28,8 +28,8 @@
 
 thread_t thread_new(word_t prio, program_t p, word_t ip) {
 	thread_t ret = (thread_t)malloc(sizeof(struct _thread_t));
-	/*vm_printf("NEW THREAD %p\n",ret);*/
-	/*vm_printf("\tPROGRAM %p\n",ret->program);*/
+	vm_printf("NEW THREAD %p\n",ret);
+	vm_printf("\tPROGRAM %p (%s)\n",ret->program, program_get_source(ret->program));
 	assert(DEPRECATED__MUST_NOT_USE);
 	thread_init(ret,prio,p,ip);
 	/* FIXME : deprecated */
@@ -54,6 +54,7 @@ void thread_init(thread_t ret, word_t prio, program_t p, word_t ip) {
 	ret->sched_data.next=NULL;
 	ret->sched_data.prev=NULL;
 	ret->sched_data.value=(word_t)ret;
+	memset(ret->registers, 0, sizeof(struct _data_stack_entry_t)*TINYAML_N_REGISTERS);
 }
 
 

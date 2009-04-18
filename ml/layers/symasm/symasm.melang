@@ -23,6 +23,8 @@ data
 end
 
 asm
+	nop
+	nop
 	dynFunNew @__init_symasm dup 0 push "__init_symasm" envAdd 	# I: none, O: none
 	dup 0 onCompInit
 	call
@@ -81,13 +83,47 @@ LSTGetSize:
 	getmem 5 getmem 6 stackPeek symTabSz
 	ret 0
 
+STDump:
+	enter 3
+		setmem -3			# symtab
+		push 1 setmem -1		# counter
+		getmem -3 symTabSz setmem -2	# size
+
+		push "SymTab " getmem -3 push " contents : (" getmem -2 dec push " elements)\n" print 5
+
+	_stdump_lp:
+		getmem -1 getmem -2 supEq SZ jmp@_stdump_done
+		push "#" getmem -1 push " : " print 3
+		getmem -3 getmem -1 getSymName print 1
+		push "\n" print 1
+		getmem -1 inc setmem -1
+		jmp@_stdump_lp
+	_stdump_done:
+	leave 3
+	ret 0
+
+LSTDumpAll:
+	enter 2
+	push 0 setmem -1		# counter
+	getmem 5 stackSize setmem -2	# limit
+_lda_lp:
+	getmem -1 getmem -2 inf SNZ jmp@_lda_done
+	push "#" getmem -1 push " " print 3
+	getmem 5 getmem -1 stackPeek call @STDump
+	getmem -1 inc setmem -1 jmp@_lda_lp
+_lda_done:
+	leave 2
+	ret 0
+
 LSTFindSym:
 	enter 4
-		setmem -3				# sym
-		push 0 setmem -4			# base
-		push 0 setmem -1			# counter
-		push 0 getmem 5 stackSize add setmem -2	# limit
+		setmem -3			# sym
+		push 0 setmem -4		# base
+		push 0 setmem -1		# counter
+		getmem 5 stackSize setmem -2	# limit
 	_lstfs_lp:
+		#push "Searching for symbol '" getmem -3 push "' in locals symtab #" getmem -1 push "\\n" print 5
+		#getmem 5 getmem -1 stackPeek call @STDump
 		getmem 5 getmem -1 stackPeek getmem -3 getSym
 		dup 0 push -1 nEq SZ jmp @_lstfs_ret		# if not -1, return
 		pop
@@ -95,6 +131,7 @@ LSTFindSym:
 		getmem -1 inc setmem -1
 		getmem -1 getmem -2 nEq SZ jmp @_lstfs_lp		# while counter<stacksize
 		push 1							# return error
+		leave 4
 		ret 0
 	_lstfs_ret:
 		getmem -4 add push 0 swap 1 sub
@@ -102,10 +139,12 @@ LSTFindSym:
 	ret 0
 
 locSymTabNew:
-	#push "new locSymTab\\n" print 1
+	#push "new locSymTab Before\\n" print 1
+	#call @LSTDumpAll
 	newSymTab setmem 4
 	call @LSTPush
-	#push "_locSymTab" envAdd
+	#push "new locSymTab After\\n" print 1
+	#call @LSTDumpAll
 	ret 0
 
 getLocSym:
@@ -149,7 +188,7 @@ CSTGet:
 	retval 1
 
 CSTAdd:
-	getmem 7 swap -1
+	getmem 7 swap 1
 	addSym
 	ret 0
 
@@ -171,7 +210,7 @@ getGlobSym:
 addGlobSym:
 	enter 1
 		setmem -1
-		push "addGlobSym " getmem -1 push "\\n" print 3
+		#push "addGlobSym " getmem -1 push "\\n" print 3
 		getmem 2
 		getmem -1
 	addSym
@@ -188,7 +227,7 @@ getStruc:
 	retval 1
 
 # string:something -> string:label
-gen_label:
+_sa_gen_lbl:
 	getmem 3 inc setmem 3
 	push "_" getmem 3 toS strcat strcat
 	ret 0
@@ -266,7 +305,7 @@ end
 
 compile IfNZ asm
 	enter 1
-	push "endif" call @gen_label setmem -1
+	push "endif" call @_sa_gen_lbl setmem -1
 # SNZ jmp _end
 # ...
 # _end:
@@ -281,8 +320,8 @@ end
 compile IfElseNZ asm
 	enter 2
 	#pp_curNode
-	push "else" call @gen_label setmem -1
-	push "endif" call @gen_label setmem -2
+	push "else" call @_sa_gen_lbl setmem -1
+	push "endif" call @_sa_gen_lbl setmem -2
 	<< SNZ jmp l(getmem -1) >>
 	#astGetRow push ":" astGetCol push " " getmem -2 push "\\n" print 6
 	astCompileChild 0
@@ -496,36 +535,33 @@ end
 
 compile GlobGet asm
 	astGetChildString 0
-	#call @getLocSym
-	dup 0
 	call @LSTFindSym
 	dup 0 dec SZ jmp @_write1 # getLocSym returns 1 on failure, because getSym returns -1
 	pop
-	#astGetChildString 0
-	dup 0
+
+	astGetChildString 0
 	call @CSTGet
 	dup 0 inc SZ jmp @_write0
 	pop
-	#astGetChildString 0
-	#dup 0
+	
+	astGetChildString 0
 	call @getGlobSym
 	dup 0 inc SNZ jmp @globUnknown
 _write1:
 	write_ocInt "getmem"
-	pop
 	compileStateNext
 	ret 0
 _write0:
 	write_ocInt "getClosure"
-	pop
 	compileStateNext
 end
 
 
 compile GlobSet asm
 	astGetChildString 0
-	call @getLocSym
+	call @LSTFindSym
 	dup 0 dec SZ jmp @_write2
+
 	astGetChildString 0
 	call @getGlobSym
 	dup 0 inc SNZ jmp @globUnknown
@@ -551,7 +587,7 @@ asm
 	ret 0
 globUnknown:
 	pop
-	push "Unknown symbol '" astGetChildString 0 push "' At " astGetRow push ":" astGetCol
+	push "[SymAsm] Unknown symbol '" astGetChildString 0 push "' At " astGetRow push ":" astGetCol
 	push "\n"
 	print 7
 	compileStateError

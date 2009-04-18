@@ -1,7 +1,10 @@
 
 walker exprListType {
-	init asm push 0 -$expr_list_calls push 0 -$expr_list_exprs end
-	terminate asm nop end
+	init asm
+		push 0 -$expr_list_calls push 0 -$expr_list_exprs
+		compileStateNext
+	end
+	terminate asm compileStateNext end
 	default asm push "exprListType::default on " astGetOp push "\n" print 3 compileStateError end
 
 	# entry point
@@ -13,9 +16,9 @@ walker exprListType {
 	on script_call_ret_any asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
 	on script_call_ret_0 asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
 	on script_call_ret_1 asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
-	on script_var asm call @inc_exprs compileStateNext end
-	on script_anon_array asm call @inc_exprs compileStateNext end
-	on script_anon_map asm call @inc_exprs compileStateNext end
+	on script_var asm %inc_exprs() compileStateNext end
+	on script_anon_array asm %inc_exprs() compileStateNext end
+	on script_anon_map asm %inc_exprs() compileStateNext end
 	on script_expr_list_end asm compileStateNext end
 
 	# expr is a call
@@ -23,23 +26,23 @@ walker exprListType {
 	on script_expand asm +$expr_list_calls inc -$expr_list_calls compileStateNext end
 
 	# expr is an atom
-	on script_anon_fun asm call @inc_exprs compileStateNext end
+	on script_anon_fun asm %inc_exprs() compileStateNext end
 
-	on script_int asm call @inc_exprs compileStateNext end
-	on script_float asm call @inc_exprs compileStateNext end
-	on script_string asm call @inc_exprs compileStateNext end
+	on script_int asm %inc_exprs() compileStateNext end
+	on script_float asm %inc_exprs() compileStateNext end
+	on script_string asm %inc_exprs() compileStateNext end
 
 	# expr is arithmetic or boolean operation
-	on m_minus asm call @inc_exprs compileStateNext end
-	on m_div asm call @inc_exprs compileStateNext end
-	on m_mul asm call @inc_exprs compileStateNext end
-	on m_add asm call @inc_exprs compileStateNext end
-	on m_sub asm call @inc_exprs compileStateNext end
+	on m_minus asm %inc_exprs() compileStateNext end
+	on m_div asm %inc_exprs() compileStateNext end
+	on m_mul asm %inc_exprs() compileStateNext end
+	on m_add asm %inc_exprs() compileStateNext end
+	on m_sub asm %inc_exprs() compileStateNext end
 
-	on b_not asm call @inc_exprs compileStateNext end
-	on b_and asm call @inc_exprs compileStateNext end
-	on b_or  asm call @inc_exprs compileStateNext end
-	on comp  asm call @inc_exprs compileStateNext end
+	on b_not asm %inc_exprs() compileStateNext end
+	on b_and asm %inc_exprs() compileStateNext end
+	on b_or  asm %inc_exprs() compileStateNext end
+	on comp  asm %inc_exprs() compileStateNext end
 }
 
 

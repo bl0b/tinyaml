@@ -45,15 +45,18 @@ const char* state2str(WalkDirection wd) {
 
 void* try_walk(wast_t node, const char* pname, vm_t vm) {
 	void* ret;
-	gpush(&vm->cn_stack,&vm->current_node);
-	vm->current_node = node;
-/*	vm_printerrf("start walking...\n");*/
+	wast_t backup_node = vm->current_node;
+	/*gpush(&vm->cn_stack,&vm->current_node);*/
+	/*vm->current_node = node;*/
+	/*vm_printerrf("start walking (vwalker=%s)...\n", vm->virt_walker);*/
 	ret = tinyap_walk(node, pname, vm);
-	vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);
-/*	vm_printerrf("done walking... (state=%s)\n", state2str(vm->compile_state));*/
+	/*vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);*/
+	/*vm_printerrf("done walking... (vwalker=%s, state=%s)\n", vm->virt_walker, state2str(vm->compile_state));*/
 	if(vm->compile_state==Error) {
 		vm->onCompileError(vm, "<not implemented>", 0);
+		ret = NULL;
 	}
+	vm->current_node = backup_node;
 	return ret;
 }
 
@@ -239,13 +242,29 @@ WalkDirection ape_compiler_AsmBloc(wast_t node, vm_t vm) {
 	return update_vm_state(vm, Down);
 }
 
+static int line_number_bias=0;
+
+const char* vm_find_innermost_file(vm_t vm);
+
+void add_debug_label(wast_t node, vm_t vm) {
+	static char linebuf[4096];
+	static int prev_line=-1;
+	if(prev_line!=wa_row(node)) {
+		prev_line=wa_row(node);
+		sprintf(linebuf, ".%s_L%i", vm_find_innermost_file(vm), wa_row(node)+line_number_bias);
+		opcode_chain_add_label(vm->result, linebuf, wa_row(node), wa_col(node));
+	}
+}
+
 WalkDirection ape_compiler_DeclLabel(wast_t node, vm_t vm) {
 	opcode_chain_add_label(vm->result,wa_op(wa_opd(node,0)), wa_row(node), wa_col(node));
+	add_debug_label(node, vm);
 	return update_vm_state(vm, Next);
 }
 
 WalkDirection ocao(wast_t node, vm_t vm, opcode_arg_t t) {
 	const char*op = wa_op(wa_opd(node,0));
+	add_debug_label(node, vm);
 	if(t==OpcodeNoArg) {
 /*		vm_printf("ocao::opcode without arg\t\t%s\n",op);*/
 		opcode_chain_add_opcode(vm->result,t,op,NULL, wa_row(node), wa_col(node));
@@ -567,6 +586,7 @@ WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 		/*"%s\n"*/
 		/*"===================================\n with grammar \n%s\n", strlen(buffy), buffy, debug); fflush(stdout);*/
 	/*free((char*)debug);*/
+	line_number_bias += wa_row(node);
 	
 	tinyap_set_source_buffer(vm->parser,buffy,strlen(buffy));
 	tinyap_parse(vm->parser);
@@ -580,6 +600,7 @@ WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 		vm_printf("parser output : %p\n",tinyap_get_output(vm->parser));
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
+	line_number_bias -= wa_row(node);
 	return update_vm_state(vm, Done);
 }
 

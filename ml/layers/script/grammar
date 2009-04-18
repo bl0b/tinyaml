@@ -1,3 +1,4 @@
+asm push "DEBUG DEBUG DEBUG\n" print 1 end
 
 language
 
@@ -28,8 +29,8 @@ language
  catch_statement ::= sym ":" instruction_bloc.
  script_throw ::= "throw" sym.
 
- script_while ::= "while" b_expr "do" sb_end.
- script_if ::= "if" b_expr "then" ( sb_else sb_end | sb_end ).
+ script_while ::= "while" (b_expr|m_expr|script_call_ret_1|script_var) "do" sb_end.
+ script_if ::= "if" (b_expr|m_expr|script_call_ret_1|script_var) "then" ( sb_else sb_end | sb_end ).
 
  sb_end ::= script_instruction* "end".
  sb_else ::= script_instruction* "else".
@@ -40,8 +41,8 @@ language
  script_call_ret_any ::= script_call.
 
  script_print ::= "print" "(" script_expr_list ")".
- p_ScriptExpr ::= ( script_anon_array | script_anon_map | script_string | script_anon_fun | b_expr | m_expr | script_call_ret_any | script_var ).
- p_ScriptExpr1 ::= ( script_anon_array | script_anon_map | script_string | script_anon_fun | b_expr | m_expr | script_call_ret_1 | script_var ).
+ p_ScriptExpr = ( script_anon_array | script_anon_map | script_string | script_anon_fun | b_expr | m_expr | script_call_ret_any | script_var ).
+ p_ScriptExpr1 = ( script_anon_array | script_anon_map | script_string | script_anon_fun | b_expr | m_expr | script_call_ret_1 | script_var ).
 
  script_anon_array ::= "[" script_anon_array_item_list? script_anon_array_end.
  script_anon_array_item_list = ( script_anon_array_item_list "," script_anon_array_item | script_anon_array_item ).
@@ -55,14 +56,14 @@ language
  script_return ::= "return" script_expr_list.
  #script_expr_list ::= _epsilon (p_ScriptExpr ",")* p_ScriptExpr script_expr_list_end.
  script_expr_list ::= script_el_loop? script_expr_list_end.
- script_el_atom = (p_ScriptExpr|script_call_ret_any|script_var|script_expand).
+ script_el_atom = (p_ScriptExpr|script_expand).
  script_el_loop = script_el_atom ("," script_el_loop)*.
 # (script_el_loop "," (p_ScriptExpr|script_call_ret_any) | (p_ScriptExpr|script_call_ret_any) ).
  script_expr_list_end ::= _epsilon.
 
  script_assign ::= script_var_list "=" script_expr_list.
 
- script_expand ::= "*" script_el_atom.
+ script_expand ::= "*" p_ScriptExpr.
 
  script_int ::= int.
  script_float ::= float.
@@ -77,7 +78,7 @@ language
  script_array_access ::= "[" (m_expr|script_call_ret_1|script_var) "]".
  script_struc_access ::= "." sym.
 
- m_expr = expr4.
+ m_expr = (expr4|number).
  b_expr = bexpr4.
 
 m_minus ::= "-" number.
@@ -92,24 +93,26 @@ b_or ::= ( b_or /\<or\>/ bexpr22 | bexpr22 /\<or\>/ bexpr22 ).
 
 comp ::= bexpr33 /(<|>|=|!=|>=|<=)/ bexpr33.
 
-expr0	= ( m_minus | number ).
-expr00	= ( m_minus | number | script_call_ret_1 | script_var ).
+m_expr_plug = ( number | script_call_ret_1 | script_var ).
+
+expr0	= m_minus.
+expr00	= ( m_minus | m_expr_plug ).
 expr1	= ( m_div | expr0 ).
-expr11	= ( m_div | expr0 | script_call_ret_1 | script_var ).
+expr11	= ( m_div | expr0 | m_expr_plug ).
 expr2	= ( m_mul | expr1 ).
-expr22	= ( m_mul | expr1 | script_call_ret_1 | script_var ).
+expr22	= ( m_mul | expr1 | m_expr_plug ).
 expr3	= ( m_sub | expr2 ).
-expr33	= ( m_sub | expr2 | script_call_ret_1 | script_var ).
+expr33	= ( m_sub | expr2 | m_expr_plug ).
 expr4	= ( m_add | expr3 ).
 
 bexpr1	= ( b_not | m_expr ).
-bexpr11	= ( b_not | m_expr | script_call_ret_1 | script_var ).
+bexpr11	= ( b_not | m_expr | m_expr_plug ).
 bexpr2	= ( b_and | bexpr1 ).
-bexpr22	= ( b_and | bexpr1 | script_call_ret_1 | script_var ).
+bexpr22	= ( b_and | bexpr1 | m_expr_plug ).
 bexpr3	= ( b_or | bexpr2 ).
-bexpr33	= ( b_or | bexpr2 | script_call_ret_1 | script_var ).
+bexpr33	= ( b_or | bexpr2 | m_expr_plug ).
 
-bexpr4 = ( comp | bexpr3 | script_call_ret_1 | script_var ).
+bexpr4 = ( comp | bexpr3 ).
 
 end
 

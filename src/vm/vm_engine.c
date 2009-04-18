@@ -28,6 +28,7 @@ void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* o
 		*ofs = ip;
 		return;
 	}
+	ip+=2;
 	while(i<(l->offsets.size-1) && ip>=l->offsets.data[i+1]) { i+=1; }
 	if(i>=l->offsets.size) {
 		*ofs = ip;
@@ -104,9 +105,9 @@ static void call_stack_renderer(struct _call_stack_entry_t* cse) {
 	const char*label;
 	lookup_label_and_ofs(cse->cs,cse->ip,&label,&ofs);
 	if(label) {
-		vm_printerrf("%p:%s+%lu",cse->cs, label, ofs);
+		vm_printerrf("%s:%s+%lu", program_get_source(cse->cs), label, ofs);
 	} else {
-		vm_printerrf("%p:%lu",cse->cs,cse->ip);
+		vm_printerrf("%s:%lu", program_get_source(cse->cs), cse->ip);
 	}
 }
 
@@ -132,9 +133,9 @@ void _VM_CALL thread_failed(vm_t vm, thread_t t) {
 	lookup_label_and_ofs(t->program,t->IP,&label,&ofs);
 	vm_printerrf( "Thread :\t%p\n",t);
 	if(label) {
-		vm_printerrf("CS:IP : \t%p:%lXh (%s+%lXh) # %s\n", t->program, t->IP, label, ofs, disasm);
+		vm_printerrf("CS:IP : \t%s:%lXh (%s+%lXh) # %s\n", program_get_source(t->program), t->IP, label, ofs, disasm);
 	} else {
-		vm_printerrf("CS:IP : \t%p:%lXh # %s\n",t->program,t->IP, disasm);
+		vm_printerrf("CS:IP : \t%s:%lXh # %s\n", program_get_source(t->program), t->IP, disasm);
 	}
 	free((char*)disasm);
 	vm_printerrf("\nCall stack :\t[%lu]\n", gstack_size(&t->call_stack));
