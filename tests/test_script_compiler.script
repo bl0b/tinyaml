@@ -1,0 +1,47 @@
+#!/usr/share/tinyaml/script_compiler.wc
+
+script
+	global A, B, C
+
+	A,B,C=1,2,3
+
+	function toto(str, a) print(str, ":", a, "\n") end
+
+	function test_asm1(x)
+		print("test_asm1(",x)
+		asm +$x mul 2 -$x end
+		print(") = ", x, "\n")
+	end
+
+	function test_asm2(x)
+		local y
+		print("test_asm2(",x)
+		asm +$x mul 2 -$y end
+		print(") = ", y, "\n")
+	end
+
+	function gen_test(a,b)
+		return function(c) print("a=",a," et b*c=",b*c,"\n") end
+	end
+
+	toto("A", A)
+	test_asm1(23)
+	test_asm2(23)
+	C = gen_test(23, 5)
+	C(9)
+
+	function test_thread()
+		local i
+		print("Starting thread ", &Thread.PID(), "...\n")
+		i=0
+		while i<100 do
+			print("thread ", &Thread.PID(), " : ", i, "\n")
+			i=i+1
+		end
+	end
+
+	&Thread.new(50, function() test_thread() end)
+	&Thread.new(50, function() test_thread() end)
+	A=0
+	while A<10000 do A=A+1 end
+end

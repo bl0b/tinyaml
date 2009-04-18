@@ -503,7 +503,7 @@ asm
 			+$i dec -$i jmp@_vl_R2L
 		]
 		<<	regGet 0
-			push "Unwinding stack by " dup -1 push "\n" print 3
+			#push "Unwinding stack by " dup -1 push "\n" print 3
 			dup 0 SZ popN pop
 		>>
 		push 0 -$is_lvalue
@@ -556,7 +556,10 @@ asm
 	#enter 1	+$legal_return_size setmem -1
 	#push 0 -$legal_return_size
 	astCompileChild 0
-	<< push "Discarding returned values.\n" print 1 popN >>
+	<< 
+		#push "Discarding returned values.\n" print 1
+		popN
+	>>
 	#getmem -1 -$legal_return_size
 	#leave 1
 	compileStateNext

@@ -167,9 +167,9 @@ func testSym(symbol, tab, rettype, typestr)
 			+$rettype $symIsClosure eq [[
 				+$symofs dec -$_sym_ofs
 			][
-				+$_sym_ofs +$symofs sub +$call_local_ofs sub -$_sym_ofs
+				+$_sym_ofs +$symofs sub -$_sym_ofs
 			]]
-			#push "Symbol '" +$symbol push "' is " +$typestr push " at ofs " +$_sym_ofs push "\n" print 7
+			push "Symbol '" +$symbol push "' is " +$typestr push " at ofs " +$_sym_ofs push " (call_local_ofs=" +$call_local_ofs push ")\n" print 9
 			+$rettype
 		][
 			+$rettype $symIsClosure nEq [
@@ -214,7 +214,7 @@ func getSymContext(symbol)
 			+$symofs
 				+$locdic +(FuncDecl.locals) symTabSz dec add
 				+$locdic +(FuncDecl.parameters) symTabSz dec add
-				+$call_local_ofs add
+				+$call_local_ofs sub
 			-$_sym_ofs
 			#push "Symbol " +$symbol push " found at offset " +$_sym_ofs push " (now in closure)\n" print 5
 			+$backup +(FuncDecl.closure) +$symbol addSym
