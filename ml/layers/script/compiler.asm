@@ -330,7 +330,6 @@ asm
 	_addcls_loop:
 		+$fun_lbl arraySize +$locsz sup [
 			<<	getmem i(+$fun_lbl +$locsz arrayGet)
-				push "Enclosing local value [" dup -1 push "]\n" print 3
 				dynFunAddClosure
 			>>
 			+$locsz inc -$locsz

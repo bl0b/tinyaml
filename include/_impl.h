@@ -136,6 +136,8 @@ struct _call_stack_entry_t {
 	program_t cs;
 	word_t ip;
 	word_t has_closure;	/* FIXME : this should be a set of flags, not just one flag */
+	vm_dyn_func_t df_callee;
+
 	/* FIXME again : has_closure is used to store call_stack.sp in catch stack */
 };
 /*@}*/

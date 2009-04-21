@@ -1,0 +1,29 @@
+loadlib MessageQueue
+require "script.wc"
+
+script
+	function mqnew()
+		asm msgQueueNew push 1 ret 0 end
+	end
+
+	function mqwrite(mq, data)
+		asm +$mq +$data msgQueueWrite end
+	end
+
+	function mqrdnew(mq)
+		asm +$mq msgQueueReaderNew -$mq end
+		return mq
+	end
+
+	function mqrd(mqr)
+		asm +$mqr msgQueueRead -$mqr end
+		return mqr
+	end
+
+	&exportGroup("MQ")
+
+	&addToExportGroup("MQ", "NewQueue", mqnew)
+	&addToExportGroup("MQ", "NewReader", mqrdnew)
+	&addToExportGroup("MQ", "Write", mqwrite)
+	&addToExportGroup("MQ", "Read", mqrd)
+end

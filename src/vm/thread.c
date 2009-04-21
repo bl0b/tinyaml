@@ -77,7 +77,7 @@ void thread_deinit(vm_t vm, thread_t t) {
 	/*assert(t->locals_stack.sp==(word_t)-1);*/
 	gstack_deinit(&t->locals_stack,NULL);
 	gstack_deinit(&t->data_stack,NULL);
-	gstack_deinit(&t->call_stack,NULL);
+	gstack_deinit(&t->call_stack,NULL);	/* FIXME : deref df_callee's */
 	gstack_deinit(&t->catch_stack,NULL);
 }
 

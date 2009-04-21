@@ -896,7 +896,7 @@ void _VM_CALL dbg_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
 		word_t s_sz;
 		t->jmp_ofs=0;
 		t->jmp_seg=p;
-		vm_push_caller(e->vm,t->program,t->IP,0);
+		vm_push_caller(e->vm, t->program, t->IP, 0, NULL);
 		s_sz = t->call_stack.sp-1;
 		t->program=p;
 		t->IP=ip;

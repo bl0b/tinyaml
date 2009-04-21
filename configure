@@ -12232,7 +12232,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile ml/layers/Makefile ml/layers/metasm/Makefile ml/layers/symasm/Makefile ml/layers/procasm/Makefile ml/layers/script/Makefile"
+ac_config_files="$ac_config_files Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile ml/layers/Makefile ml/layers/metasm/Makefile ml/layers/symasm/Makefile ml/layers/procasm/Makefile ml/layers/script/Makefile ml/layers/extensions/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -13080,6 +13080,7 @@ do
     "ml/layers/symasm/Makefile") CONFIG_FILES="$CONFIG_FILES ml/layers/symasm/Makefile" ;;
     "ml/layers/procasm/Makefile") CONFIG_FILES="$CONFIG_FILES ml/layers/procasm/Makefile" ;;
     "ml/layers/script/Makefile") CONFIG_FILES="$CONFIG_FILES ml/layers/script/Makefile" ;;
+    "ml/layers/extensions/Makefile") CONFIG_FILES="$CONFIG_FILES ml/layers/extensions/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

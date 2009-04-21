@@ -218,7 +218,7 @@ vm_t vm_kill_thread(vm_t,thread_t);
 /*! \brief push data onto current thread's data stack*/
 vm_t vm_push_data(vm_t,vm_data_type_t, word_t);
 /*! \brief push a caller onto current thread's call stack */
-vm_t vm_push_caller(vm_t, program_t, word_t ip, word_t has_closure);
+vm_t vm_push_caller(vm_t, program_t, word_t ip, word_t has_closure, vm_dyn_func_t df_callee);
 /*! \brief push a catcher onto current thread's catch stack */
 vm_t vm_push_catcher(vm_t, program_t, word_t);
 /*! \brief peek data at top of current thread's data stack */

@@ -162,6 +162,7 @@ endfunc
 
 func testSym(symbol, tab, rettype, typestr)
 	local symofs {
+		push "Base=" +$_sym_ofs push "\n" print 3
 		+$tab +$symbol getSym -$symofs
 		+$symofs push -1 nEq [[
 			+$rettype $symIsClosure eq [[
@@ -173,7 +174,7 @@ func testSym(symbol, tab, rettype, typestr)
 			+$rettype
 		][
 			+$rettype $symIsClosure nEq [
-				+$_sym_ofs +$tab symTabSz dec sub
+				+$_sym_ofs +$tab symTabSz dec sub -$_sym_ofs
 			]
 			$symUnknown
 		]]
@@ -184,13 +185,13 @@ endfunc
 func getSymContext(symbol)
 	local locdic, symofs, counter, backup {
 
-	push 0 +$call_local_ofs sub -$_sym_ofs
-
 	#push "entering getSymContext... " +$local_dic_stack stackSize push "\n" print 3
 
 	+$local_dic_stack stackSize [
 
 		#push "entering local context...\n" print 1
+
+		push 0 +$call_local_ofs sub -$_sym_ofs
 
 		+$local_dic_stack stackPeek 0 -$locdic
 		+$locdic -$backup

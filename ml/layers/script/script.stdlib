@@ -30,6 +30,8 @@ script
 	end
 
 	export("export",export)
+	export("exportGroup",exportGroup)
+	export("addToExportGroup",addTo)
 
 	exportGroup("String")
 

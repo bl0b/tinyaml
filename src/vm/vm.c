@@ -625,12 +625,16 @@ vm_t vm_push_data(vm_t vm, vm_data_type_t type, word_t value) {
 	return vm;
 }
 
-vm_t vm_push_caller(vm_t vm, program_t seg, word_t ofs, word_t has_closure) {
+vm_t vm_push_caller(vm_t vm, program_t seg, word_t ofs, word_t has_closure, vm_dyn_func_t df_callee) {
 	struct _call_stack_entry_t e;
 	generic_stack_t stack = &vm->current_thread->call_stack;
 	e.cs = seg;
 	e.ip = ofs;
 	e.has_closure = has_closure;
+	e.df_callee = df_callee;
+	if(df_callee) {
+		vm_obj_ref_ptr(vm,df_callee);
+	}
 	gpush( stack, &e );
 	return vm;
 }
@@ -750,6 +754,9 @@ vm_t vm_pop_caller(vm_t vm, word_t count) {
 		cse = _gpop(stack);
 		if(cse->has_closure) {
 			_gpop(&vm->current_thread->closures_stack);
+		}
+		if(cse->df_callee) {
+			vm_obj_deref_ptr(vm, cse->df_callee);
 		}
 		count-=1;
 	}

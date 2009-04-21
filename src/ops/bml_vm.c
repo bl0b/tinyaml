@@ -263,11 +263,11 @@ void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
 	vm_dyn_func_t fun = (vm_dyn_func_t) d->data;
 	assert(d->type&DataManagedObjectFlag);
 	if(fun->closure) { 
-		vm_push_caller(vm, t->program, t->IP, 1);
+		vm_push_caller(vm, t->program, t->IP, 1, fun);
 		gpush(&t->closures_stack,&fun->closure);
 		/*vm_printf("pushed closure %p\n",fun->closure);*/
 	} else {
-		vm_push_caller(vm, t->program, t->IP, 0);
+		vm_push_caller(vm, t->program, t->IP, 0, fun);
 	}
 	t->jmp_seg=fun->cs;
 	t->jmp_ofs=fun->ip;
@@ -295,7 +295,7 @@ void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused) {
 	assert(d->type==DataObjArray||d->type==DataObjVObj);
 	da = (dynarray_t) d->data;
 	/* perform call */
-	vm_push_caller(vm,t->program, t->IP, 1);
+	vm_push_caller(vm,t->program, t->IP, 1, fun);
 	gpush(&t->closures_stack,&da);
 	t->jmp_seg=fun->cs;
 	t->jmp_ofs=fun->ip;
@@ -312,7 +312,7 @@ void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused) {
  */
 void _VM_CALL vm_op_call_Label(vm_t vm, word_t data) {
 	thread_t t=vm->current_thread;
-	vm_push_caller(vm, t->program, t->IP, 0);
+	vm_push_caller(vm, t->program, t->IP, 0, NULL);
 	t->jmp_ofs=t->IP+data;
 }
 
@@ -321,7 +321,7 @@ void _VM_CALL vm_op_call_Label(vm_t vm, word_t data) {
 	/*vm_data_type_t a;*/
 	/*word_t b;*/
 	/*vm_peek_data(vm,0,&a,&b);*/
-	/*vm_push_caller(vm, t->program, t->IP, 0);*/
+	/*vm_push_caller(vm, t->program, t->IP, 0, NULL);*/
 	/*t->jmp_seg=(program_t)b;*/
 	/* FIXME : can resolve_label() set up correct data value ? */
 	/*t->jmp_ofs=data;*/
@@ -631,7 +631,7 @@ void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
 	index = f->closure->size;
 	dynarray_set(f->closure,index+1,data);
 	dynarray_set(f->closure,index,dc->type);
-	/*vm_printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);*/
+	vm_printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);
 }
 
 /*@}*/

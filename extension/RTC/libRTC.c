@@ -195,7 +195,7 @@ void _VM_CALL vm_op__RTC_nextTask(vm_t vm, word_t unused) {
 	_IFC conv;
 	if(fifo_rd(&df,&conv.f)) {
 		vm_push_data(vm,DataFloat,conv.i);
-		vm_push_data(vm,DataInt,1);
+		/*vm_push_data(vm,DataInt,1);*/
 		vm_push_data(vm,DataObjFun,df);
 		vm_obj_deref_ptr(vm,df);
 	} else {

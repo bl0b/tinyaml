@@ -30,18 +30,39 @@ script
 	C = gen_test(23, 5)
 	C(9)
 
-	function test_thread()
-		local i
-		print("Starting thread ", &Thread.PID(), "...\n")
+	#function test_thread(prio, args...)
+	#	#local i, j
+	#	print("Starting thread with prio=", prio, "...\n")
+	#	args[0]=0
+	#	while args[0]<10 do
+	#		print(&Thread.PID(), "[", prio, "]  ", args[0], "\n")
+	#		args[0]=args[0]+1
+	#		args[1]=0
+	#		while args[1]<100 do args[1]=args[1]+1 end
+	#	end
+	#end
+
+	function test_thread(prio, args...)
+		local i, j
+		print("Starting thread with prio=", prio, "...\n")
 		i=0
-		while i<100 do
-			print("thread ", &Thread.PID(), " : ", i, "\n")
+		while i<10 do
+			print(&Thread.PID(), "[", prio, "]  ", i, "\n")
 			i=i+1
+			j=0
+			while j<100 do j=j+1 end
 		end
 	end
 
-	&Thread.new(50, function() test_thread() end)
-	&Thread.new(50, function() test_thread() end)
+	function int(z) asm +$z toI -$z end return z end
+
+	C=0
+	while C<200 do
+		B=int(C/20)*10
+		&Thread.new(B, function() test_thread(B, 0, 0) end)
+		C=C+1
+	end
 	A=0
-	while A<10000 do A=A+1 end
+	while A<20 do A=A+1 print("___ ", A, "\n") end
+	print("FIN\n")
 end
