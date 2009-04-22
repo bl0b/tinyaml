@@ -149,6 +149,7 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 		if(t->_sync) {
 			vm->engine->_fg_thread_done_cb(vm->engine);
 		}
+		vm_obj_deref_ptr(vm, t);
 		break;
 	case ThreadReady:
 		dlist_insert_sorted(&vm->ready_threads,&t->sched_data,comp_prio);

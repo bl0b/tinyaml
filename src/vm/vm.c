@@ -255,12 +255,12 @@ vm_t vm_new() {
 	/* fill opcodes dictionary with basic library */
 	vm_compile_buffer(ret, ml_core_lib);
 	/* nops are hardcoded due to a limitation of tinyap */
-	vm_add_opcode(ret,strdup("nop"),OpcodeNoArg, vm_op_nop);
-	vm_add_opcode(ret,strdup("nop"),OpcodeArgString, vm_op_nop);
-	vm_add_opcode(ret,strdup("nop"),OpcodeArgLabel, vm_op_nop);
-	vm_add_opcode(ret,strdup("nop"),OpcodeArgEnvSym, vm_op_nop);
-	vm_add_opcode(ret,strdup("nop"),OpcodeArgInt, vm_op_nop);
-	vm_add_opcode(ret,strdup("nop"),OpcodeArgFloat, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeNoArg, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgString, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgLabel, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgEnvSym, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgInt, vm_op_nop);
+	vm_add_opcode(ret,"nop",OpcodeArgFloat, vm_op_nop);
 
 	ret->env = vm_env_new();
 	vm_obj_ref_ptr(ret,ret->env);
@@ -291,6 +291,13 @@ void vm_del(vm_t ret) {
 
 	ret->current_thread=NULL;
 
+	#define onCompDel(_x) if(_x) vm_obj_deref_ptr(ret, _x)
+	dlist_forward(&ret->init_routines, vm_dyn_func_t, onCompDel);
+	dlist_flush(&ret->init_routines);
+	dlist_forward(&ret->term_routines, vm_dyn_func_t, onCompDel);
+	dlist_flush(&ret->term_routines);
+	#undef onCompDel
+
 	#define prg_free(_x) program_free(ret,_x)
 	/*slist_forward(&ret->all_programs,program_t,program_dump_stats);*/
 	slist_forward(&ret->all_programs,program_t,prg_free);
@@ -305,7 +312,7 @@ void vm_del(vm_t ret) {
 
 	dynarray_deinit(&ret->compile_vectors.by_index,NULL);
 	clean_hashtab(&ret->compile_vectors.by_text,htab_free_dict);
-	clean_hashtab(&ret->loadlibs, NULL);
+	clean_hashtab(&ret->loadlibs, htab_free_dict);
 	clean_hashtab(&ret->required, NULL);
 
 	tinyap_delete(ret->parser);
@@ -334,6 +341,7 @@ void vm_del(vm_t ret) {
 	dlist_flush(&ret->gc_pending);
 
 	gstack_deinit(&ret->cn_stack,NULL);
+	gstack_deinit(&ret->compinput_stack,NULL);
 	ret->engine->_vm_unlock(ret->engine);
 	free(ret);
 	_glob_vm = NULL;
@@ -357,7 +365,7 @@ vm_t vm_set_lib_file(vm_t vm, const char*fname) {
 	snprintf(buffer,1024,"%s/libtinyaml_%s.so",TINYAML_EXT_DIR,fname);
 	vm->dl_handle = dlopen(buffer, RTLD_LAZY);
 	if(!vm->dl_handle) {
-		vm_printerrf("[VM:WARN] Couldn't open library \"%s\"\n: %s\n",buffer, dlerror());
+		vm_printerrf("[VM:ERR] Couldn't open library \"%s\"\n: %s\n",buffer, dlerror());
 	}
 	return vm;
 }
@@ -463,7 +471,7 @@ program_t vm_compile_buffer(vm_t vm, const char* buffer) {
 		vm->engine->_client_unlock(vm->engine);
 		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
 	} else {
-		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+		vm_printerrf("Parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 		vm->onCompileError(vm, "<not implemented>", 0);
 	}
 	vm_compinput_pop(vm);
@@ -519,6 +527,8 @@ thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {
 	}
 	vm->engine->_client_lock(vm->engine);
 	t = vm_thread_new(vm,prio,p,ip);
+
+	vm_obj_ref_ptr(vm, t);
 
 	vm_add_thread_helper(vm, t, fg);
 
@@ -708,7 +718,6 @@ vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o) {
 	dlist_node_t dn;
 	assert(o->ref_count==0);
 	/* also assert that obj is not yet collected */
-	/*vm_printf("vm collect %p\n",o);*/
 	dn = vm->gc_pending.head;
 	while(dn&&(void*)dn->value!=o) { dn = dn->next; }
 	if(dn) {
@@ -1012,9 +1021,10 @@ void _VM_CALL vm_schedule_cycle(vm_t vm) {
 		if(vm->gc_pending.tail) {
 			dlist_node_t dn;
 			dn = vm->gc_pending.tail;
-			if(((vm_obj_t)dn->value)->ref_count!=0) {
-				vm_printerrf("dn->magic==%X\n", ((vm_obj_t)dn->value)->magic);
-			}
+			/*if(((vm_obj_t)dn->value)->ref_count!=0) {*/
+				/*vm_printerrf("dn->magic==%X\n", ((vm_obj_t)dn->value)->magic);*/
+			/*}*/
+			/*vm_printf("[VM:INFO] collecting %p : %X\n",dn->value, ((vm_obj_t)dn->value)->magic);*/
 			assert(((vm_obj_t)dn->value)->ref_count==0);
 			vm->gc_pending.tail=dn->prev;
 			if(dn->prev) {

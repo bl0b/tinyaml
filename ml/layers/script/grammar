@@ -1,5 +1,3 @@
-asm push "DEBUG DEBUG DEBUG\n" print 1 end
-
 language
 
  Script ::= "script" script_glob p_ScriptStatement+ "end".

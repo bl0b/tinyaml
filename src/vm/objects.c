@@ -73,7 +73,7 @@ thread_t vm_thread_new(vm_t vm,word_t prio, program_t p, word_t ip) {
 			DataObjThread);
 	/*vm_printf("new Thread\n");*/
 	thread_init(ret,prio,p,ip);
-	/*vm_obj_ref_ptr(vm,ret);*/
+	vm_obj_ref_ptr(vm,ret);
 	return ret;
 }
 

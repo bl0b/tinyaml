@@ -99,7 +99,7 @@ asm
 	local sz {
 		#pp_curNode
 		astGetChildString 0 envGet &_GSTGet call push -1 nEq [
-			push "Symbol " astGetChildString 0 push "\ already defined !\n" print 3
+			push "Error : Symbol " astGetChildString 0 push "\ already defined !\n" print 3
 			compileStateError
 			ret 0
 		]

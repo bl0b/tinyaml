@@ -12,12 +12,12 @@ asm
 	jmp @_skip_init_term
 
 __init:
-	push "ON INIT ! P0UET !\n" print 1
+	#push "ON INIT ! P0UET !\\n" print 1
 	%reset_tables()
 	ret 0
 
 __term:
-	push "ON TERM ! POUET !\n" print 1
+	#push "ON TERM ! POUET !\\n" print 1
 	ret 0
 
 _skip_init_term:

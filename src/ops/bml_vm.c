@@ -621,6 +621,7 @@ void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
 	assert(_is_a_ptr(f,DataObjFun));
 	if(dc->type&DataManagedObjectFlag) {
 		data = (word_t) vm_obj_clone_obj(vm,PTR_TO_OBJ(dc->data));
+		vm_obj_ref_ptr(vm, (void*)data);
 	} else {
 		data = dc->data;
 	}

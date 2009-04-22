@@ -133,7 +133,7 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			sprintf(buf, "require \"%s\"", argv[i]);
 			p=vm_compile_buffer(vm, buf);
 			/*vm_run_program_fg(vm, p, 0, 50);*/
-			program_free(vm, p);
+			/*program_free(vm, p);*/
 			p=NULL;
 			/* convenience hack : default to quiet when invoked to execute files */
 			tinyaml_quiet = 1;

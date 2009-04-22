@@ -11,16 +11,12 @@ require "script_compiler.wc"
 
 script
 	function export(sym,val)
-		print("exporting '",sym,"'=",val,"\\n")
-		#asm getmem -2 getmem -1 envAdd end
 		asm +$val +$sym envAdd end
 	end
 	function addTo(name,field,value)
-		print("adding '",field,"'=",value," to group '",name,"'\n")
 		asm getmem -3 getmem -1 envGet getmem -2 mapSet push 0 end
 	end
 	function exportGroup(name)
-#		print "exporting Group '",name,"\\n"
 		asm mapNew getmem -1 envAdd end
 	end
 	function strcmp(a,b)
@@ -67,8 +63,6 @@ script
 				end
 			end
 		end)
-	addTo("Compiler","toto",
-		function(x) print("Toto ",x,"\n") end)
 	addTo("Compiler","opcodeNoArg",
 		function(oc) asm getmem -1 write_oc end end)
 	addTo("Compiler","opcodeInt",

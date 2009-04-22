@@ -162,7 +162,6 @@ endfunc
 
 func testSym(symbol, tab, rettype, typestr)
 	local symofs {
-		push "Base=" +$_sym_ofs push "\n" print 3
 		+$tab +$symbol getSym -$symofs
 		+$symofs push -1 nEq [[
 			+$rettype $symIsClosure eq [[
@@ -170,7 +169,7 @@ func testSym(symbol, tab, rettype, typestr)
 			][
 				+$_sym_ofs +$symofs sub -$_sym_ofs
 			]]
-			push "Symbol '" +$symbol push "' is " +$typestr push " at ofs " +$_sym_ofs push " (call_local_ofs=" +$call_local_ofs push ")\n" print 9
+			#push "Symbol '" +$symbol push "' is " +$typestr push " at ofs " +$_sym_ofs push " (call_local_ofs=" +$call_local_ofs push ")\n" print 9
 			+$rettype
 		][
 			+$rettype $symIsClosure nEq [

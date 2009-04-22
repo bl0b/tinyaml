@@ -187,10 +187,11 @@ void _VM_CALL e_run(vm_engine_t e, program_t p, word_t ip, word_t prio) {
 			t->jmp_ofs=jmp_ofs;
 		}
 	} else {
-		vm_add_thread(e->vm,p,ip,prio,0);
+		thread_t t = vm_add_thread(e->vm,p,ip,prio,0);
 		while(e->vm->threads_count) {
 			vm_schedule_cycle(e->vm);
 		}
+		vm_obj_deref_ptr(e->vm, t);
 	}
 }
 

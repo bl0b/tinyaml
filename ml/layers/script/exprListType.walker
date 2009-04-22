@@ -5,7 +5,10 @@ walker exprListType {
 		compileStateNext
 	end
 	terminate asm compileStateNext end
-	default asm push "exprListType::default on " astGetOp push "\n" print 3 compileStateError end
+	default asm
+		push "exprListType::default on " astGetOp push "\n" print 3
+		compileStateError
+	end
 
 	# entry point
 	on script_expr_list asm compileStateDown end

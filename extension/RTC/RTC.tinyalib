@@ -56,7 +56,8 @@ asm
         ret 0
 
       _term:
-        getmem 1 killThread
+        getmem 1 push 0 setmem 1	# unreference thread before killing it
+	killThread
         RTC_term
         ret 0
 

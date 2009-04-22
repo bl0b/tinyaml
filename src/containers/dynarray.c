@@ -84,10 +84,10 @@ void dynarray_set(dynarray_t d, dynarray_index_t index, dynarray_value_t v) {
 	if(d->reserved <= index) {
 		word_t new_size = DYNARRAY_QUANTIZE(index);
 		dynarray_reserve(d,new_size);
-		if(d->size&&index>d->size) {
+		/*if(d->size&&index>d->size+1) {
 			memset( d->data + d->size*sizeof(dynarray_value_t), 0,
-				(index - d->size)*sizeof(dynarray_value_t));
-		}
+				(index - d->size - 1)*sizeof(dynarray_value_t));
+		}*/
 	}
 	if(d->size<=index) {
 		d->size = index+1;

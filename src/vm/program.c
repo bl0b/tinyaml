@@ -30,31 +30,6 @@
 #include <string.h>
 #include <stdio.h>
 
-void _VM_CALL vm_op_push_Int(vm_t,word_t);
-void _VM_CALL vm_op_dup_Int(vm_t,word_t);
-void _VM_CALL vm_op_ret_Int(vm_t,word_t);
-void _VM_CALL vm_op_setmem(vm_t,word_t);
-void _VM_CALL vm_op_SZ(vm_t,word_t);
-void _VM_CALL vm_op_dec(vm_t,word_t);
-void _VM_CALL vm_op_jmp_Label(vm_t,word_t);
-vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio);
-
-
-
-
-word_t clean_data_seg[20] = {
-	(word_t)vm_op_push_Int,	0,		/* counter, */
-/* label: */
-	(word_t)vm_op_push_Int,	0,		/* counter, 0 */
-	(word_t)vm_op_dup_Int,	(word_t)-1,	/* counter, 0, counter */
-	(word_t)vm_op_dec,	0,		/* counter, 0, counter-1 */
-	(word_t)vm_op_setmem,	0,		/* counter, */
-	(word_t)vm_op_dec,	0,		/* counter-1, */
-	(word_t)vm_op_dup_Int,	0,		/* counter-1, counter-1, */
-	(word_t)vm_op_SZ,	0,		/* counter-1, */
-	(word_t)vm_op_jmp_Label,(word_t)-14,	/* counter-1, */
-	(word_t)vm_op_ret_Int,	1,		/* , */
-};
 
 void program_set_source(program_t p, const char* s) {
 	free((char*)p->source);
@@ -109,6 +84,7 @@ void program_add_require(program_t prg, const char*fname) {
 		f = fopen(found_fname, "r");
 		if(!f) {
 			vm_printerrf("[VM:ERR] : compiler couldn't open file %s\n",fname);
+			free(found_fname);
 			return;
 		}
 		fread(buffy,strlen(TINYAML_SHEBANG),1,f);
@@ -134,7 +110,7 @@ void program_add_require(program_t prg, const char*fname) {
 		if(p) {
 			program_set_source(p, fname);
 			vm_run_program_fg(_glob_vm,p,0,50);
-			vm_printf("[VM:INFO] Required file executed.\n");
+			/*vm_printf("[VM:INFO] Required file executed.\n");*/
 			hash_addelem(&_glob_vm->required,strdup(fname),p);
 		} else {
 			vm_printerrf("[VM:ERR] Nothing to execute while requiring %s\n",fname);
@@ -199,12 +175,6 @@ void program_free(vm_t vm, program_t p) {
 	text_seg_deinit(&p->strings);
 	dynarray_deinit(&p->code,NULL);
 	if(p->data.size) {
-		/*p->code.size=18;*/
-		/*p->code.reserved=0;*/
-		/*p->code.data=clean_data_seg;*/
-		/*clean_data_seg[1]=p->data.size>>1;*/
-		/*vm_printf("cleaning %lu data items\n",clean_data_seg[1]);*/
-		/*vm_run_program_fg(vm,p,0,99);*/
 		int i;
 		/*vm_printf("dereff'ing data segment (%lu items)\n",p->data.size>>1);*/
 		for(i=0;i<p->data.size;i+=2) {
@@ -215,6 +185,8 @@ void program_free(vm_t vm, program_t p) {
 		}
 	}
 	text_seg_deinit(&p->labels.labels);
+	text_seg_deinit(&p->loadlibs);
+	text_seg_deinit(&p->requires);
 	dynarray_deinit(&p->labels.offsets,NULL);
 	dynarray_deinit(&p->gram_nodes_indexes,NULL);
 	dynarray_deinit(&p->data,NULL);
@@ -226,13 +198,13 @@ void program_free(vm_t vm, program_t p) {
 word_t opcode_arg_serialize(program_t p, opcode_arg_t arg_type, word_t arg, vm_dyn_env_t smallenv) {
 	switch(arg_type) {
 	case OpcodeArgEnvSym:
-		vm_printerrf("[VM:INFO] Serializing EnvSym #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));
+		/*vm_printerrf("[VM:INFO] Serializing EnvSym #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));*/
 		arg = text_seg_text_to_index(&smallenv->symbols, text_seg_find_by_index(&p->env->symbols, arg));
 		if(!arg) {
 			vm_printerrf("[VM:ERR] Serializing EnvSym : Couldn't resolve environment symbol  #%i '%s'\n", arg, text_seg_find_by_index(&p->env->symbols, arg));
 			vm_fatal("Aborted.");
 		} else {
-			vm_printerrf("[VM:INFO] Serializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&p->env->symbols, arg), arg);
+			/*vm_printerrf("[VM:INFO] Serializing EnvSym : environment symbol '%s' resolved to #%i\n", text_seg_find_by_index(&p->env->symbols, arg), arg);*/
 		}
 		break;
 	case OpcodeArgString:
@@ -365,14 +337,14 @@ program_t program_unserialize(vm_t vm, reader_t r) {
 	text_seg_unserialize(&p->loadlibs,r,"LIB");
 
 	for(i=1;i<dynarray_size(&p->loadlibs.by_index);i+=1) {
-		vm_printerrf("[VM:INFO] Program requires library '%s'\n", text_seg_find_by_index(&p->loadlibs,i));
+		/*vm_printerrf("[VM:INFO] Program requires library '%s'\n", text_seg_find_by_index(&p->loadlibs,i));*/
 		program_add_loadlib(p, text_seg_find_by_index(&p->loadlibs,i));
 	}
 
 	text_seg_unserialize(&p->requires,r,"REQ");
 
 	for(i=1;i<dynarray_size(&p->requires.by_index);i+=1) {
-		vm_printerrf("[VM:INFO] Program requires file '%s'\n", text_seg_find_by_index(&p->requires,i));
+		/*vm_printerrf("[VM:INFO] Program requires file '%s'\n", text_seg_find_by_index(&p->requires,i));*/
 		program_add_require(p, text_seg_find_by_index(&p->requires,i));
 	}
 
@@ -436,7 +408,7 @@ void program_add_label(program_t p, word_t ip, const char* label) {
 	if(index>=dynarray_size(&p->labels.offsets)) {
 		dynarray_set(&p->labels.offsets,index,ip);
 	} else {
-		vm_printerrf("error : label %s is already defined.\n",label);
+		vm_printerrf("[VM:ERR] label %s is already defined.\n",label);
 	}
 }
 
@@ -444,7 +416,7 @@ void program_add_label(program_t p, word_t ip, const char* label) {
 word_t program_label_to_ofs(program_t p, const char* label) {
 	word_t index = text_seg_text_to_index(&p->labels.labels,label);
 	if(index==0) {
-		vm_printerrf("warning : label unknown '%s'.\n",label);
+		vm_printerrf("[VM:ERR] label is unknown '%s'.\n",label);
 		return 0;
 	} else {
 		return p->labels.offsets.data[index];
@@ -593,10 +565,9 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP) {
 			break;
 		case OpcodeArgEnvSym:
 			tmp = env_index_to_sym(vm->env,arg);
-			printf("OpcodeArgEnvSym #%li : %s\n", arg, tmp);
+			/*printf("OpcodeArgEnvSym #%li : %s\n", arg, tmp);*/
 			argstr=(char*)malloc(strlen(tmp)+2);
 			sprintf(argstr,"&%s",tmp);
-			/*argstr=strdup("[opcode :: TODO]");*/
 			break;
 		case OpcodeNoArg:
 		default:
