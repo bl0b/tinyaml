@@ -169,7 +169,7 @@ tinyap_CFLAGS = @tinyap_CFLAGS@
 tinyap_LIBS = @tinyap_LIBS@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = RTC MessageQueue
+SUBDIRS = IO RTC MessageQueue
 all: all-recursive
 
 .SUFFIXES:

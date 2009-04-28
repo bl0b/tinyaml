@@ -54,6 +54,10 @@ void _VM_CALL vm_op_push_Int(vm_t vm, word_t data) {
 	vm_push_data(vm, DataInt, data);
 }
 
+void _VM_CALL vm_op_push_Char(vm_t vm, word_t data) {
+	vm_push_data(vm, DataChar, data);
+}
+
 void _VM_CALL vm_op_push_Float(vm_t vm, word_t data) {
 	vm_push_data(vm, DataFloat, data);
 }
@@ -122,6 +126,25 @@ void _VM_CALL vm_op_leave_Int(vm_t vm, word_t size) {
 	gstack_shrink(&t->locals_stack,size);
 }
 
+void _VM_CALL vm_op_chr_Int(vm_t vm, word_t chr) {
+	vm_push_data(vm, DataChar, chr);
+}
+
+void _VM_CALL vm_op_ord_Char(vm_t vm, word_t chr) {
+	vm_push_data(vm, DataInt, chr);
+}
+
+void _VM_CALL vm_op_chr(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	vm_push_data(vm, DataChar, d->data);
+}
+
+void _VM_CALL vm_op_ord(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataChar);
+	vm_push_data(vm, DataInt, d->data);
+}
 
 
 /*@}*/
@@ -145,15 +168,19 @@ void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
 		case DataInt:
 			vm_printf("%li", tmp.i);
 			break;
+		case DataChar:
+			vm_printf("%c", (unsigned char)tmp.i);
+			break;
 		case DataFloat:
 			vm_printf("%lf", tmp.f);
 			break;
 		case DataString:
+		case DataObjStr:
 			vm_printf("%s", (const char*) tmp.i);
 			break;
-		case DataObjStr:
-			vm_printf("[ObjStr  \"%s\"]",(const char*)tmp.i);
-			break;
+		/*case DataObjStr:*/
+			/*vm_printf("[ObjStr  \"%s\"]",(const char*)tmp.i);*/
+			/*break;*/
 		case DataObjSymTab:
 			vm_printf("[SymTab  %p]",(void*)tmp.i);
 			break;

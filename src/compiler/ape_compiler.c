@@ -289,6 +289,10 @@ WalkDirection ape_compiler_Opcode_Int(wast_t node, vm_t vm) {
 	return update_vm_state(vm, ocao(node,vm,OpcodeArgInt));
 }
 
+WalkDirection ape_compiler_Opcode_Char(wast_t node, vm_t vm) {
+	return update_vm_state(vm, ocao(node,vm,OpcodeArgChar));
+}
+
 WalkDirection ape_compiler_Opcode_Float(wast_t node, vm_t vm) {
 	return update_vm_state(vm, ocao(node,vm,OpcodeArgFloat));
 }
@@ -377,6 +381,18 @@ WalkDirection ape_compiler_DeclOpcode_Int(wast_t node, vm_t vm) {
 		vm_printerrf("warning : loading NULL opcode : %s:Int\n",name);
 	}
 	opcode_dict_add(vm_get_dict(vm), OpcodeArgInt, name, os);
+	return update_vm_state(vm, Next);
+}
+
+WalkDirection ape_compiler_DeclOpcode_Char(wast_t node, vm_t vm) {
+	opcode_stub_t os;
+	const char* name = wa_op(wa_opd(node,0));
+	/*plug_opcode(vm->parser, "Int", name);*/
+	os = opcode_stub_resolve(OpcodeArgChar,name,vm->dl_handle);
+	if(!os) {
+		vm_printerrf("warning : loading NULL opcode : %s:Char\n",name);
+	}
+	opcode_dict_add(vm_get_dict(vm), OpcodeArgChar, name, os);
 	return update_vm_state(vm, Next);
 }
 

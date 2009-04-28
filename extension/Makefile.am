@@ -1,1 +1,1 @@
-SUBDIRS = RTC MessageQueue
+SUBDIRS = IO RTC MessageQueue

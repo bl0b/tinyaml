@@ -12232,7 +12232,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile ml/layers/Makefile ml/layers/metasm/Makefile ml/layers/symasm/Makefile ml/layers/procasm/Makefile ml/layers/script/Makefile ml/layers/extensions/Makefile"
+ac_config_files="$ac_config_files Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/IO/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile ml/layers/Makefile ml/layers/metasm/Makefile ml/layers/symasm/Makefile ml/layers/procasm/Makefile ml/layers/script/Makefile ml/layers/extensions/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -13073,6 +13073,7 @@ do
     "include/Makefile") CONFIG_FILES="$CONFIG_FILES include/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "extension/Makefile") CONFIG_FILES="$CONFIG_FILES extension/Makefile" ;;
+    "extension/IO/Makefile") CONFIG_FILES="$CONFIG_FILES extension/IO/Makefile" ;;
     "extension/RTC/Makefile") CONFIG_FILES="$CONFIG_FILES extension/RTC/Makefile" ;;
     "extension/MessageQueue/Makefile") CONFIG_FILES="$CONFIG_FILES extension/MessageQueue/Makefile" ;;
     "ml/layers/Makefile") CONFIG_FILES="$CONFIG_FILES ml/layers/Makefile" ;;

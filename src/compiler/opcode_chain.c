@@ -193,6 +193,7 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	word_t arg;
 	union { word_t i; float f; } conv;
 	int skip_wr=0;
+	unsigned char c;
 	/*char*str;*/
 	/*vm_printf("got opcode %s.",ocn->name);*/
 	switch(ocn->arg_type) {
@@ -203,6 +204,11 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	case OpcodeArgInt:
 		/*vm_printf("Int   \t(%s)",ocn->arg);*/
 		arg=(word_t)atoi(ocn->arg);
+		break;
+	case OpcodeArgChar:
+		/*vm_printf("Char  \t(%s)",ocn->arg);*/
+		sscanf(ocn->arg, "%c", &c);
+		arg=c;
 		break;
 	case OpcodeArgFloat:
 		/*vm_printf("Float \t(%s)", ocn->arg);*/
@@ -248,7 +254,9 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	/*vm_printf("\tserialized %8.8lX : %8.8lX\n",op,arg);*/
 	if(!skip_wr) {
 		if(!op) {
-			vm_printerrf("[COMP:ERR] : at %i:%i : illegal opcode %s:%i\n",ocn->row,ocn->col,ocn->name,ocn->arg_type);
+			char errbuf[512];
+			sprintf(errbuf, "[COMP:ERR] : at %i:%i : illegal opcode %s:%i\n",ocn->row,ocn->col,ocn->name,ocn->arg_type);
+			vm_fatal(errbuf);
 			op=(word_t)vm_op_nop;
 		}
 		program_write_code(p,op,arg);

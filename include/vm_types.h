@@ -130,6 +130,7 @@ typedef struct _text_seg_t* text_seg_t;
 typedef enum {
 	OpcodeNoArg=0,		/*!< No argument */
 	OpcodeArgInt,		/*!< 32-bit signed integer */
+	OpcodeArgChar,		/*!< 32-bit signed integer */
 	OpcodeArgFloat,		/*!< 32-bit floating point */
 	OpcodeArgPtr,		/*!< \deprecated unused. */
 	OpcodeArgLabel,		/*!< Label */
@@ -203,7 +204,8 @@ typedef struct _opcode_dict_t* opcode_dict_t;
 typedef enum {
 	DataNone=0,
 	DataInt=1,			/*!< 32-bit integer */
-	DataFloat=2,			/*!< 32-bit floating point */
+	DataChar=OpcodeArgChar,		/*!< 8-bit char (internally represented as 32-bit integer) */
+	DataFloat=OpcodeArgFloat,	/*!< 32-bit floating point */
 	DataString=OpcodeArgString,	/*!< static string */
 
 	DataManagedObjectFlag=0x100,	/*!< Managed object types have this bit set */

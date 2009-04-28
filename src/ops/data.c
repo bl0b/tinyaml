@@ -139,6 +139,7 @@ void _VM_CALL vm_op_toI(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	switch(d->type) {
 	case DataInt:
+	case DataChar:
 		vm_push_data(vm,DataInt,d->data);
 		break;
 	case DataFloat:
@@ -150,7 +151,7 @@ void _VM_CALL vm_op_toI(vm_t vm, word_t unused) {
 		vm_push_data(vm,DataInt,atoi((const char*)d->data));
 		break;
 	default:
-		vm_printf("[VM:WRN] can't convert to int.\n");
+		vm_printerrf("[VM:WRN] can't convert to int.\n");
 		vm_push_data(vm,DataInt,0);
 	};
 }
@@ -171,6 +172,7 @@ void _VM_CALL vm_op_toF(vm_t vm, word_t unused) {
 		vm_push_data(vm,DataFloat,conv.i);
 		break;
 	default:
+		vm_printerrf("[VM:WRN] can't convert to float.\n");
 		vm_push_data(vm,DataFloat,0);
 	};
 }
@@ -263,7 +265,7 @@ void _VM_CALL vm_op_charAt_Int(vm_t vm, word_t ofs) {
 	vm_data_t d = _vm_pop(vm);
 	const char* s = (const char*)d->data;
 	assert(d->type==DataString||d->type==DataObjStr);
-	vm_push_data(vm,DataInt,(word_t)s[ofs]);
+	vm_push_data(vm,DataChar,(word_t)s[ofs]);
 }
 
 
@@ -279,7 +281,7 @@ void _VM_CALL vm_op_setCharAt_Int(vm_t vm, word_t ofs) {
 	vm_data_t d = _vm_pop(vm);
 	char* s = (char*)d->data;
 	assert(d->type==DataString||d->type==DataObjStr);
-	assert(c->type==DataInt);
+	assert(c->type==DataChar);
 	s[ofs] = (char)c->data;
 }
 

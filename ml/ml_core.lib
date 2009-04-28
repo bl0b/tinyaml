@@ -1,14 +1,21 @@
 lib
       # stack management
         opcode push:Int
+        opcode push:Char
         opcode push:Float
         opcode push:String
-       #opcode push:Opcode
+
         opcode pop
         opcode popN
         opcode pop:Int          # pop n values
         opcode dup:Int          # duplicate n-th value on top of stack
         opcode swap:Int         # swap top and top-offset on data stack
+
+      # char/int conversions
+        opcode chr:Int          # push char
+        opcode chr              # pop int, push char
+        opcode ord:Char         # push int
+        opcode ord              # pop char, push int
 
       # objects
         opcode clone

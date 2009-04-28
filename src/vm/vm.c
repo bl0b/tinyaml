@@ -131,6 +131,9 @@ void vm_print_data(vm_t vm, vm_data_t d) {
 	case DataObjVObj:
 		vm_printf("[V-Obj  %p]",(void*)tmp.i);
 		break;
+	case DataObjUser:
+		vm_printf("[UserObj  %p : %X]",(void*)tmp.i, *(word_t*)tmp.i);
+		break;
 	case DataManagedObjectFlag:
 		vm_printf("[Undefined Object ! %p]", (opcode_stub_t*)tmp.i);
 		break;

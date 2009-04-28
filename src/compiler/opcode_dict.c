@@ -197,6 +197,7 @@ opcode_stub_t opcode_stub_resolve(opcode_arg_t arg_type, const char* name, void*
 	stub_name = (char*)malloc(strlen(name)+20);
 	switch(arg_type) {
 	case OpcodeArgInt:	arg_name="_Int";	break;
+	case OpcodeArgChar:	arg_name="_Char";	break;
 	case OpcodeArgFloat:	arg_name="_Float";	break;
 	case OpcodeArgLabel:	arg_name="_Label";	break;
 	case OpcodeArgString:	arg_name="_String";	break;
