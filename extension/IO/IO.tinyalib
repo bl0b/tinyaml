@@ -1,0 +1,102 @@
+require "procasm.wc"
+      lib
+	file "IO"
+
+	opcode __IO__init
+
+	opcode fopen:String	# pop string (filepath), push file
+	opcode fopen		# pop string (mode), pop string (filepath), push file
+	opcode udpopen		# pop int (port), pop int (IP), push file
+	opcode tcpopen		# pop int (port), pop int (IP), push file
+	opcode isOpen		# pop file, push int
+	opcode atEOF		# pop file, push int
+	opcode tell		# pop file, push int (ofs)
+	opcode seek:Char	# pop int (ofs), pop file
+				# seek to ofs from :
+				#	S : start
+				#	E : end
+				#	C : current position
+				# buffers and files are seekable
+				# sockets and pipes are not seekable
+	opcode bufferNew	# pop int (size), pop string (mode), push file
+	opcode toBuffer		# pop file, push file
+	opcode string2ip	# pop string (name), push array[int] (ip)
+	opcode ip2string	# pop string (name), push array[int] (ip)
+	opcode popen		# pop string (mode), pop string (command), push file
+	opcode close		# pop file
+
+	opcode _fpack:Char	# pop value, peek file
+	opcode _fpack		# pop format (ONE char), pop value, peek file
+				# defined format characters (corresponding value types between brackets) :
+				#	S : text string			[String]
+				#	I : text int (dec)		[Int]
+				#	X : text int (hex)		[Int]
+				#	F : text float			[Float]
+				#	C : single character		[Char]
+				#	s : bin string (0-terminated)	[String]
+				#	i : bin int (32bit)		[Int]
+				#	f : bin float (32bit)		[Float]
+				#	b : bin byte (8bit)		[Int]
+				# NOTA : push "foobar" _fpack "S" is equivalent to push "foobar" fprint 1
+	opcode _funpack:Char	# peek file, push value
+	opcode _funpack		# pop format, peek file, push value
+
+	opcode fprint		# pop count, pop file, pop values...
+
+	opcode fsize		# pop string (filepath), push int (size)
+
+	opcode ftype		# pop string (filepath), push string (filetype)
+	opcode readlink		# pop string (linkpath), push string (dest filepath)
+	opcode symlink		# pop string (linkpath), pop string (dest filepath)
+
+	opcode rename		# pop string (dest filepath), pop string (src filepath)
+	opcode unlink		# pop string (filepath)
+
+	opcode fsource		# pop file, push string (filepath or IP:port)
+
+	opcode mkdir		# pop string (dirpath)
+	opcode getcwd		# push string (cwd)
+	opcode chdir		# pop string (dirpath), change cwd
+	opcode listdir:String	# push array of strings
+	opcode listdir		# pop string, push array of strings
+
+	opcode stdout		# push stdout file
+	opcode stderr		# push stderr file
+	opcode stdin		# push stdin file
+      end
+
+data
+	0	# stdin
+	0	# stdout
+	0	# stderr
+end
+
+## void callback(file, ip, port)
+#export func _TCPServer(ip, port, client_callback)
+#	+$ip +$port tcpserv
+#	dynFunNew @_tcpserv_th swap 1 dynFunAddClosure threadNew
+#end
+#
+#_tcpserv_th:
+#	local file, p, i {
+#		_tcps_lp:
+#			_accept -$file -$p -$i
+#			%make_tcps_cb(+$client_callback, +$file, +$i, +$p) push 50 threadNew pop
+#			jmp@_tcps_lp
+#	}
+#	ret 0
+#
+#func make_tcps_cb(client_callback, file, ip, port)
+#	dynFunNew @_tcps_tch
+#	+$client_callback dynFunAddClosure
+#	+$file dynFunAddClosure
+#	+$ip dynFunAddClosure
+#	+$port dynFunAddClosure
+#end
+
+asm
+	__IO__init
+	setmem 2
+	setmem 1
+	setmem 0
+end
