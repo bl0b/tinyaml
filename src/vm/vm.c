@@ -316,7 +316,7 @@ void vm_del(vm_t ret) {
 	dynarray_deinit(&ret->compile_vectors.by_index,NULL);
 	clean_hashtab(&ret->compile_vectors.by_text,htab_free_dict);
 	clean_hashtab(&ret->loadlibs, htab_free_dict);
-	clean_hashtab(&ret->required, NULL);
+	clean_hashtab(&ret->required, htab_free_dict);
 
 	tinyap_delete(ret->parser);
 	opcode_dict_deinit(&ret->opcodes);

@@ -17,6 +17,40 @@ int _VM_CALL _fill_bufNL(FILE*f, char*buf) {
 }
 
 
+void* udpserver_routine(file_t f) {
+	return NULL;
+}
+
+void* tcpserver_routine(file_t f) {
+	struct sockaddr_in client;
+	socklen_t size;
+	pthread_mutex_lock(&f->mutex);
+	f->flags|=FISRUNNING;
+	pthread_cond_signal(&f->cond);
+	pthread_mutex_unlock(&f->mutex);
+	/*vm_printf("[VM:DEBUG] Starting I/O thread for %s...\n", f->source);*/
+	while(f->flags&FISOPEN) {
+		/*vm_printf("i/o wait...\n");*/
+		pthread_mutex_lock(&f->mutex);
+		while((f->flags&FISOPEN)&&!(f->flags&(FCMDREAD|FCMDWRITE))) {
+			pthread_cond_wait(&f->cond, &f->mutex);
+		}
+		pthread_mutex_unlock(&f->mutex);
+		/*vm_printf("In file routine (file %s)... CMD=%X\n", f->source, f->flags&(~FSTATEMASK));*/
+		size=sizeof(struct sockaddr_in);
+		f->data = (word_t)accept(f->descr.fd, &client, &size);
+		f->extra.client.addr=ntohl(client.sin_addr.s_addr);
+		f->extra.client.port=ntohs(client.sin_port);
+		blocker_resume(_glob_vm, f->blocker);
+	}
+	vm_printf("[VM:DEBUG] Exiting I/O thread for %s... (flags=%X)\n", f->source, f->flags);
+	pthread_mutex_lock(&f->mutex);
+	f->flags&=~FISRUNNING;
+	pthread_cond_signal(&f->cond);
+	pthread_mutex_unlock(&f->mutex);
+	return NULL;
+}
+
 void* file_routine(file_t f) {
 	pthread_mutex_lock(&f->mutex);
 	f->flags|=FISRUNNING;
@@ -50,7 +84,7 @@ void* file_routine(file_t f) {
 			blocker_resume(_glob_vm, f->blocker);
 		}
 	}
-	/*vm_printf("[VM:DEBUG] Exiting I/O thread for %s... (flags=%X)\n", f->source, f->flags);*/
+	vm_printf("[VM:DEBUG] Exiting I/O thread for %s... (flags=%X)\n", f->source, f->flags);
 	pthread_mutex_lock(&f->mutex);
 	f->flags&=~FISRUNNING;
 	pthread_cond_signal(&f->cond);
@@ -60,6 +94,7 @@ void* file_routine(file_t f) {
 
 void file_update_state(file_t f, int flags) {
 	word_t oflags=f->flags;
+	int ret;
 	/* update flags */
 	f->flags = flags;
 	/* open, close, start/stop thread... */
@@ -72,8 +107,10 @@ void file_update_state(file_t f, int flags) {
 		/*vm_printf("SIGNALING THREAD : FILE IS CLOSED.\n");*/
 		pthread_mutex_lock(&f->mutex);
 		pthread_cond_signal(&f->cond);
+		while(f->flags&FISRUNNING) {
+			pthread_cond_wait(&f->cond, &f->mutex);
+		}
 		pthread_mutex_unlock(&f->mutex);
-		/*pthread_join(f->thread);*/
 		if(!(oflags&FISSYSTEM)) {
 			switch(_file_type(f)) {
 			case FISFILE:
@@ -82,11 +119,12 @@ void file_update_state(file_t f, int flags) {
 				fclose(f->descr.f);
 				break;
 			case FISPROCESS:
+				/*vm_printerrf("[VM:DBG] closing pipe.\n");*/
 				pclose(f->descr.f);
 				break;
 			case FISTCPSERVER:
-				break;
 			case FISUDPSERVER:
+				close(f->descr.fd);
 				break;
 			default:;
 				vm_printerrf("[VM:ERR] Undefined file type flags (%X)\n", _file_type(f));
@@ -120,7 +158,14 @@ void file_update_state(file_t f, int flags) {
 		}
 		/*file_disable_thread(f);*/
 		pthread_mutex_lock(&f->mutex);
-		if(pthread_create(&f->thread, &attr, (void*(*)(void*))file_routine, f)) {
+		if(file_is_tcpserver(f)) {
+			ret = pthread_create(&f->thread, &attr, (void*(*)(void*))tcpserver_routine, f);
+		} else if(file_is_udpserver(f)) {
+			ret = pthread_create(&f->thread, &attr, (void*(*)(void*))udpserver_routine, f);
+		} else {
+			ret = pthread_create(&f->thread, &attr, (void*(*)(void*))file_routine, f);
+		}
+		if(ret) {
 			perror("Error creating thread");
 			return;
 		}
@@ -136,8 +181,9 @@ void file_update_state(file_t f, int flags) {
 }
 
 void file_deinit(vm_t vm, file_t f) {
-	free(f->source);
 	file_update_state(f, f->flags&FISSYSTEM);
+	free(f->source);
+	blocker_free(f->blocker);
 }
 
 file_t file_clone(vm_t vm, file_t f) {

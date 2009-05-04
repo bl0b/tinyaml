@@ -129,13 +129,17 @@ void program_add_loadlib(program_t prg, const char*libname) {
 	static char libpath[PATH_MAX];
 	opcode_chain_t backup;
 	program_t p;
+	word_t reent_backup;
 	snprintf(libpath,PATH_MAX,TINYAML_EXT_DIR "/%s.tinyalib",libname);
 	p = (program_t) hash_find(&_glob_vm->loadlibs,libpath);
 	if(!p) {
 		backup=_glob_vm->result;
 		_glob_vm->result=NULL;
+		reent_backup=_glob_vm->compile_reent;
+		_glob_vm->compile_reent = 0;
 		p = vm_compile_file(_glob_vm, libpath);
 		_glob_vm->result = backup;
+		_glob_vm->compile_reent = reent_backup;
 		hash_addelem(&_glob_vm->loadlibs,strdup(libpath),p);
 		if(p) {
 			vm_run_program_fg(_glob_vm,p,0,50);
@@ -484,7 +488,7 @@ const char* lookup_label_by_offset(struct _label_tab_t* ts, word_t IP) {
 	word_t mid,val,found=0;
 
 	/* because of thread IP increment after jump */
-	/*IP += 2;*/
+	IP += 2;
 
 	do {
 		mid = (lower+upper)>>1;

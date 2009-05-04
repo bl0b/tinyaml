@@ -30,6 +30,7 @@ static inline char* _read_s(FILE*f, int _VM_CALL(*_filler)(FILE*, char*)) {
 	char* buf, * ret;
 	int len, i, N;
 	dynarray_t buffers;
+	_buf[0]=0;
 	if(BUFSZ==_filler(f, _buf)) {
 		buffers = dynarray_new();
 		/*dynarray_set(buffers, 0, (word_t)_buf);*/
@@ -37,6 +38,7 @@ static inline char* _read_s(FILE*f, int _VM_CALL(*_filler)(FILE*, char*)) {
 		do {
 			N+=1;
 			buf = (char*)malloc(BUFSZ);
+			buf[0]=0;
 			dynarray_set(buffers, N, (word_t)buf);
 			len=_filler(f, buf);
 		} while(len==BUFSZ);

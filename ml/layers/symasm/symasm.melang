@@ -20,6 +20,12 @@ data
 	0	# 5 : stack of local frames (symtabs)
 	0	# 6 : relative offset to peek symtab at from local frames stack
 	0	# 7 : symtab of current closure symbols
+	0	# 8 : backup for $0
+	0	# 9 : backup for $1
+	0	# 10: backup for $2
+	0	# 11: backup for $3
+	0	# 12: backup for $4
+	0	# 13: backup for $5
 end
 
 asm
@@ -27,6 +33,7 @@ asm
 	nop
 	dynFunNew @__init_symasm dup 0 push "__init_symasm" envAdd 	# I: none, O: none
 	dup 0 onCompInit
+	dynFunNew @__term_symasm onCompTerm
 	call
 	dynFunNew @globSymTabNew push "_GSTNew" envAdd			# I: none, O: none
 	dynFunNew @getGlobSym push "_GSTGet" envAdd			# I: none, O: none
@@ -47,6 +54,12 @@ asm
 	jmp @_skip_0
 
 __init_symasm:
+	getmem 0 setmem 8
+	getmem 1 setmem 9
+	getmem 2 setmem 10
+	getmem 3 setmem 11
+	getmem 4 setmem 12
+	getmem 5 setmem 13
 	newSymTab setmem 0
 	arrayNew setmem 1
 	stackNew setmem 5
@@ -54,6 +67,15 @@ __init_symasm:
 	call @globSymTabNew
 	call @closureSymTabNew
 	call @locSymTabNew
+	ret 0
+
+__term_symasm:
+	getmem 13 setmem 5
+	getmem 12 setmem 4
+	getmem 11 setmem 3
+	getmem 10 setmem 2
+	getmem 9  setmem 1
+	getmem 8  setmem 0
 	ret 0
 
 #

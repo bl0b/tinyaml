@@ -3,12 +3,58 @@
 void _VM_CALL vm_op_isOpen(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	file_t f = (file_t)d->data;
+	assert(d->type==DataObjUser&&f->magic==0x6106F11E);
 	vm_push_data(vm, DataObjUser, !!(f->flags&FISOPEN));
+}
+
+void _VM_CALL vm_op_atEOF(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	file_t f = (file_t)d->data;
+	assert(d->type==DataObjUser&&f->magic==0x6106F11E);
+	vm_push_data(vm, DataObjUser, !!feof(f->descr.f));
+}
+
+void _VM_CALL vm_op_flush(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	file_t f = (file_t)d->data;
+	assert(d->type==DataObjUser&&f->magic==0x6106F11E);
+	fflush(f->descr.f);
 }
 
 void _VM_CALL vm_op_bufferNew(vm_t vm, word_t unused) {
 	
 }
+
+void _VM_CALL vm_op_seek_Char(vm_t vm, word_t whence) {
+	int w;
+	vm_data_t d = _vm_pop(vm);
+	vm_data_t df = _vm_pop(vm);
+	file_t f = (file_t)df->data;
+	assert(d->type==DataInt);
+	assert(df->type==DataObjUser&&f->magic==0x6106F110);
+	if(!(f->flags&FISSEEKABLE)) {
+		vm_fatal("File object is not seekable.");
+	}
+	switch((char)whence) {
+	case 'S': w=SEEK_SET; break;
+	case 'E': w=SEEK_END; break;
+	case 'C': w=SEEK_CUR; break;
+	default:;
+		vm_fatal("Bad seek origin");
+	};
+	fseek(f->descr.f, (int)d->data, w);
+}
+
+void _VM_CALL vm_op_tell(vm_t vm, word_t whence) {
+	vm_data_t df = _vm_pop(vm);
+	file_t f = (file_t)df->data;
+	assert(df->type==DataObjUser&&f->magic==0x6106F110);
+	if(!(f->flags&FISSEEKABLE)) {
+		vm_fatal("File object is not seekable.");
+	}
+	vm_push_data(vm, DataInt, ftell(f->descr.f));
+}
+
 
 void _VM_CALL vm_op_fopen_String(vm_t vm, const char* mode) {
 	vm_data_t d = _vm_pop(vm);
@@ -17,7 +63,7 @@ void _VM_CALL vm_op_fopen_String(vm_t vm, const char* mode) {
 	file_t f;
 	FILE*F;
 	int flags=0;
-	word_t fflags=FISOPEN;
+	word_t fflags=FISOPEN|FISSEEKABLE;
 	assert(d->type==DataString||d->type==DataObjStr);
 	assert(mode[0]!=0);
 	switch(mode[0]) {
@@ -73,6 +119,15 @@ void _VM_CALL vm_op_fopen(vm_t vm, word_t unused) {
 	vm_op_fopen_String(vm, (const char*)d->data);
 }
 
+static inline void addr2str(char* buf, struct sockaddr_in* sa) {
+	sprintf(buf, "%u.%u.%u.%u:%u",
+		((unsigned char*)&sa->sin_addr.s_addr)[0],
+		((unsigned char*)&sa->sin_addr.s_addr)[1],
+		((unsigned char*)&sa->sin_addr.s_addr)[2],
+		((unsigned char*)&sa->sin_addr.s_addr)[3],
+		ntohs(sa->sin_port));
+}
+
 static inline file_t sock_init(vm_t vm, int type) {
 	struct sockaddr_in sa;
 	unsigned long int ip;
@@ -99,12 +154,7 @@ static inline file_t sock_init(vm_t vm, int type) {
 	if(connect(sock, (struct sockaddr*)&sa, sizeof(struct sockaddr_in))==-1) {
 		vm_fatal("Couldn't connect socket.");
 	}
-	sprintf(buf, "%u.%u.%u.%u:%u",
-		((unsigned char*)&sa.sin_addr.s_addr)[0],
-		((unsigned char*)&sa.sin_addr.s_addr)[1],
-		((unsigned char*)&sa.sin_addr.s_addr)[2],
-		((unsigned char*)&sa.sin_addr.s_addr)[3],
-		ntohs(sa.sin_port));
+	addr2str(buf, &sa);
 	F = fdopen(sock, "r+");
 	return file_new(vm, buf, F, FISSOCKET|FISOPEN|FWRITABLE|FREADABLE);
 }
@@ -120,11 +170,9 @@ void _VM_CALL vm_op_tcpopen(vm_t vm, word_t unused) {
 }
 
 void _VM_CALL vm_op_string2ip(vm_t vm, word_t unused) {
-	struct hostent* he;
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataString||d->type==DataObjStr);
-	he = gethostbyname((const char*)d->data);
-	vm_push_data(vm, DataInt, ntohl(*(word_t*)he->h_addr));
+	vm_push_data(vm, DataInt, ntohl(*(word_t*)gethostbyname((const char*)d->data)->h_addr));
 }
 
 void _VM_CALL vm_op_ip2string(vm_t vm, word_t unused) {
@@ -135,16 +183,31 @@ void _VM_CALL vm_op_ip2string(vm_t vm, word_t unused) {
 	vm_push_data(vm, DataObjStr, (word_t)vm_string_new(inet_ntoa(ip)));
 }
 
+void _VM_CALL vm_op_popen_String(vm_t vm, const char* mode) {
+	word_t flags=FISOPEN|FISPROCESS;
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	if(strcmp(mode, "r")&&strcmp(mode, "w")) {
+		vm_fatal("Can only popen with 'w' or 'r' modes.");
+	}
+	flags|= (mode[0]=='r'?FREADABLE:FWRITABLE);
+	vm_push_data(vm, DataObjUser, 
+		(word_t)file_new(vm, (const char*)d->data,
+				popen((const char*)d->data, mode),
+				flags));
+}
+
 void _VM_CALL vm_op_popen(vm_t vm, word_t unused) {
-	vm_printerrf("[VM:ERR] popen is not implemented yet.\n");
-	vm_push_data(vm, 0, 0);
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	vm_op_popen_String(vm, (const char*)d->data);
 }
 
 void _VM_CALL vm_op_close(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	file_t f = (file_t)d->data;
 	assert(d->type==DataObjUser&&f->magic==0x6106F11E);
-	if((f->flags&FISOPEN)!=0 && (f->flags&FISSYSTEM)==0) {
+	if(f->flags&FISOPEN) {
 		/*vm_printf("CLOSING I/O STREAM %s.\n", f->source);*/
 		file_update_state(f, f->flags&~(FISOPEN|FCMDMASK));
 		pthread_mutex_lock(&f->mutex);
@@ -418,5 +481,65 @@ void _VM_CALL vm_op___IO__init(vm_t vm, word_t unused) {
 	vm_op_stderr(vm, 0);
 }
 
+
+void _VM_CALL vm_op___tcpserver(vm_t vm, word_t unused) {
+	struct sockaddr_in sa;
+	unsigned long int ip;
+	int sock;
+	int backlog;
+	FILE*F;
+	unsigned short port;
+	vm_data_t d;
+	char buf[22];
+	/* create socket */
+	if((sock = socket(PF_INET, SOCK_STREAM, 0))==-1) {
+		vm_fatal("Couldn't open socket.");
+	}
+	/* set backlog */
+	d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	backlog = (int)d->data;
+	/* set port */
+	d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	sa.sin_port = htons((unsigned short)d->data);
+	/* set IP */
+	d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	sa.sin_addr.s_addr = htonl(d->data);
+	/* set family */
+	sa.sin_family = AF_INET;
+	bind(sock, (struct sockaddr*)&sa, sizeof(struct sockaddr_in));
+	listen(sock, backlog);
+	addr2str(buf, &sa);
+	F = fdopen(sock, "r+");
+	vm_push_data(vm, DataObjUser, (word_t)file_new(vm, buf, F, FISSOCKET|FISOPEN|FWRITABLE|FREADABLE));
+}
+
+void _VM_CALL vm_op___accept(vm_t vm, word_t unused) {
+	vm_data_type_t dt;
+	file_t server;
+	char buf[22];
+	vm_peek_data(vm, 0, &dt, (word_t*)&server);
+	assert(dt==DataObjUser&&server->magic==0x6106F11E&&file_is_tcpserver(server));
+	if(server->flags&FCMDDONE) {
+		file_cmd_reset(server);
+		if(server->data!=-1) {
+			vm_push_data(vm, DataInt, (word_t)server->extra.client.addr);
+			vm_push_data(vm, DataInt, (word_t)server->extra.client.port);
+			sprintf(buf, "%u.%u.%u.%u:%u",
+				((unsigned char*)server->extra.client.addr)[0],
+				((unsigned char*)server->extra.client.addr)[1],
+				((unsigned char*)server->extra.client.addr)[2],
+				((unsigned char*)server->extra.client.addr)[3],
+				server->extra.client.port);
+			vm_push_data(vm, DataObjUser, (word_t)file_new(vm, buf, fdopen(server->data, "r+"), FISSOCKET|FISOPEN|FREADABLE|FWRITABLE));
+		}
+	} else if(server->flags&FCMDREAD) {
+		blocker_suspend(vm, server->blocker, vm->current_thread);
+	} else {
+		cmd_unpack(vm, server, (char)0);
+	}
+}
 
 

@@ -104,8 +104,6 @@ _skip:
 	+$i +$f _fpack 'S'
 	+$f close
 
-_skip_long_read_tests:
-
 	push "Hello, err world.\n" stderr fprint
 	push "TEST err\n" stderr fprint
 	push "Hello, out world.\n" stdout fprint
@@ -114,5 +112,23 @@ _skip_long_read_tests:
 	push 0 -$i
 	push 10 newThread @thread_2
 	push 10 newThread @thread_1
+
+_skip_long_read_tests:
+
+	nop
+
+	# test popen
+
+	push "grep lo" popen "w" -$f
+	push "Hello, world." +$f _fpack 'S'
+	push '\n' +$f fprint
+	push "filtered out\n" +$f _fpack 'S'
+	push "filtered out\n" +$f _fpack 'S'
+	push "Plop !\n" +$f _fpack 'S'
+	+$f flush
+	+$f close
+	push 0 -$f
+
+	%__IO__term()
 end
 

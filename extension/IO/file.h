@@ -17,6 +17,7 @@
 #include "object.h"
 
 typedef struct _file_t* file_t;
+typedef struct _server_t* server_t;
 
 #define FISSYSTEM	(2<<0)
 #define FREADABLE	(2<<1)
@@ -76,20 +77,17 @@ struct _file_t {
 	pthread_cond_t cond;
 	word_t data;
 	char data_fmt;
-	/*char fifo[FIFOSZ];*/
-	/*dynarray_t fifo;*/
-	/*int rd, wr;*/
-	/*size_t (*_rd)(file_t, const unsigned char*, size_t);*/
-	/*size_t (*_wr)(file_t, const unsigned char*, size_t);*/
-	/*void (*_close)(file_t);*/
+	union {
+		struct {
+			unsigned int addr;
+			unsigned int port;
+		} client;
+		struct {
+			char* buffer_data;
+			size_t buffer_size;
+		} buffer;
+	} extra;
 };
-
-/*struct _server_t {*/
-	/*word_t magic;*/
-	/*int fd;*/
-	/*int max_clients;*/
-	/*dyn_fun_t session_func;*/
-/*};*/
 
 extern volatile file_t f_out, f_in, f_err;
 
@@ -107,15 +105,12 @@ extern volatile file_t f_out, f_in, f_err;
 
 void file_update_state(file_t f, int flags);
 
-file_t buffer_new(vm_t vm, int flags);
-
 void file_deinit(vm_t vm, file_t f);
-
 file_t file_clone(vm_t vm, file_t f);
-
 file_t file_new(vm_t vm, const char* source, FILE*f, int flags);
 
 void cmd_pack(vm_t vm, file_t f, char fmt, word_t data);
 
 void cmd_unpack(vm_t vm, file_t f, char fmt);
+
 

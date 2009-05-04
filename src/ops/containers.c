@@ -293,7 +293,7 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 	/* slow but safe */
 	index = text_seg_text_to_index(&env->symbols,text_seg_find_by_text(&env->symbols,(const char*)dk->data));
 
-	/*vm_printf("vm_op_envAdd %lu:%s (env size %i) ",index,(const char*)env->symbols.by_index.data[index], dynarray_size(&env->data));*/
+	vm_printf("vm_op_envAdd %lu:%s (env size %i) ",index,(const char*)env->symbols.by_index.data[index], dynarray_size(&env->data));
 
 	if(dc->type&DataManagedObjectFlag) {
 		/*data = (word_t) OBJ_TO_PTR(vm_obj_clone_obj(vm,PTR_TO_OBJ(dc->data)));*/
@@ -318,7 +318,7 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 	dynarray_set(&env->data, index, dc->type);
 	/*vm_printf("vm_op_envAdd pouet 5\n");*/
 
-	/*vm_printf("%i:%X\n", env->data.data[index],env->data.data[index+1]);*/
+	vm_printf("%i:%X\n", env->data.data[index],env->data.data[index+1]);
 	/*dynarray_set(&env->data,index,dc->type);*/
 	/*dynarray_set(&env->data,index+1,data);*/
 }

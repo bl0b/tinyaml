@@ -1,4 +1,5 @@
 require "procasm.wc"
+
       lib
 	file "IO"
 
@@ -18,10 +19,12 @@ require "procasm.wc"
 				#	C : current position
 				# buffers and files are seekable
 				# sockets and pipes are not seekable
+	opcode flush		# pop file
 	opcode bufferNew	# pop int (size), pop string (mode), push file
 	opcode toBuffer		# pop file, push file
 	opcode string2ip	# pop string (name), push array[int] (ip)
 	opcode ip2string	# pop string (name), push array[int] (ip)
+	opcode popen:String	# pop string (command), push file
 	opcode popen		# pop string (mode), pop string (command), push file
 	opcode close		# pop file
 
@@ -63,40 +66,62 @@ require "procasm.wc"
 	opcode stdout		# push stdout file
 	opcode stderr		# push stderr file
 	opcode stdin		# push stdin file
+
+	# server code
+	opcode __tcpserver
+	opcode __accept
       end
 
-data
-	0	# stdin
-	0	# stdout
-	0	# stderr
+glob
+	_stdin=0	# stdin
+	_stdout=0	# stdout
+	_stderr=0	# stderr
 end
 
-## void callback(file, ip, port)
-#export func _TCPServer(ip, port, client_callback)
-#	+$ip +$port tcpserv
-#	dynFunNew @_tcpserv_th swap 1 dynFunAddClosure threadNew
-#end
-#
-#_tcpserv_th:
-#	local file, p, i {
-#		_tcps_lp:
-#			_accept -$file -$p -$i
-#			%make_tcps_cb(+$client_callback, +$file, +$i, +$p) push 50 threadNew pop
-#			jmp@_tcps_lp
-#	}
-#	ret 0
-#
-#func make_tcps_cb(client_callback, file, ip, port)
-#	dynFunNew @_tcps_tch
-#	+$client_callback dynFunAddClosure
-#	+$file dynFunAddClosure
-#	+$ip dynFunAddClosure
-#	+$port dynFunAddClosure
-#end
+func make_tcps_cb(client_callback, file, ip, port)
+	dynFunNew @_tcps_tch
+	+$client_callback dynFunAddClosure
+	+$file dynFunAddClosure
+	+$ip dynFunAddClosure
+	+$port dynFunAddClosure
+endfunc
+
+# void callback(file, ip, port)
+export func _TCPServer(ip, port, client_callback, q_len)
+	+$ip +$port +$q_len __tcpserver dup 0 dynFunNew @_tcpserv_th swap 1 dynFunAddClosure +$client_callback dynFunAddClosure newThread pop endfunc
+
+export func __IO__term()
+	+$_stderr close
+	+$_stdout close
+	+$_stdin close
+	push 0 -$_stderr
+	push 0 -$_stdout
+	push 0 -$_stdin
+endfunc
 
 asm
 	__IO__init
-	setmem 2
-	setmem 1
-	setmem 0
+	-$_stderr
+	-$_stdout
+	-$_stdin
+	ret 0
+
+# TCP server thread
+_tcpserv_th:
+	local file, p, i {
+		getClosure 0
+	_tcps_lp:
+		__accept -$file -$p -$i
+		dup 0 isOpen [
+			%make_tcps_cb(getClosure 1, +$file, +$i, +$p) push 50 newThread pop
+			jmp@_tcps_lp
+		]
+	}
+	ret 0
+
+# TCP server client session thread
+_tcps_tch:
+	getClosure 1 getClosure 2 getClosure 3 getClosure 0 call
+	ret 0
 end
+

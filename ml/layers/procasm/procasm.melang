@@ -46,7 +46,9 @@ plug procasm_call into p_Opcode
 compile procasm_envfunc
 asm
 	astCompileChild 0
-	<< push s(+$cur_fname) envAdd >>
+	<<	getmem i(+$cur_fname envGet &_GSTGet call)
+		push s(+$cur_fname) envAdd
+	>>
 	compileStateDown
 end
 
@@ -56,7 +58,14 @@ compile procasm_func_body asm compileStateDown end
 compile procasm_call
 asm
 	astCompileChild 1	# have all args and argc pushed
-	<< getmem i(astGetChildString 0 envGet &_GSTGet call) call >>
+	local i {
+		astGetChildString 0 envGet &_GSTGet call -$i
+		+$i push -1 eq [[
+			<< envGet e(astGetChildString 0) call >>
+		][
+			<< getmem i(+$i) call >>
+		]]
+	}
 	compileStateNext
 end
 
