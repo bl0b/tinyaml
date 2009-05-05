@@ -38,12 +38,18 @@ void* tcpserver_routine(file_t f) {
 		pthread_mutex_unlock(&f->mutex);
 		/*vm_printf("In file routine (file %s)... CMD=%X\n", f->source, f->flags&(~FSTATEMASK));*/
 		size=sizeof(struct sockaddr_in);
+		file_cmd_done(f);
 		f->data = (word_t)accept(f->descr.fd, &client, &size);
 		f->extra.client.addr=ntohl(client.sin_addr.s_addr);
 		f->extra.client.port=ntohs(client.sin_port);
 		blocker_resume(_glob_vm, f->blocker);
 	}
-	vm_printf("[VM:DEBUG] Exiting I/O thread for %s... (flags=%X)\n", f->source, f->flags);
+	vm_printf("[VM:DEBUG] Exiting I/O thread for TCP server %s... (flags=%X)\n", f->source, f->flags);
+	if(f->flags&FCMDREAD) {
+		f->data=(word_t)-1;
+		file_cmd_done(f);
+		blocker_resume(_glob_vm, f->blocker);
+	}
 	pthread_mutex_lock(&f->mutex);
 	f->flags&=~FISRUNNING;
 	pthread_cond_signal(&f->cond);
@@ -102,15 +108,9 @@ void file_update_state(file_t f, int flags) {
 		/* close fd */
 		/* stop thread */
 		/*file_disable_thread(f);*/
-		oflags &= ~(FISOPEN|FCMDMASK);
+		/*oflags &= ~(FISOPEN|FCMDMASK);*/
 		/*file_enable_thread(f);*/
 		/*vm_printf("SIGNALING THREAD : FILE IS CLOSED.\n");*/
-		pthread_mutex_lock(&f->mutex);
-		pthread_cond_signal(&f->cond);
-		while(f->flags&FISRUNNING) {
-			pthread_cond_wait(&f->cond, &f->mutex);
-		}
-		pthread_mutex_unlock(&f->mutex);
 		if(!(oflags&FISSYSTEM)) {
 			switch(_file_type(f)) {
 			case FISFILE:
@@ -131,6 +131,13 @@ void file_update_state(file_t f, int flags) {
 			};
 			f->descr.fd=-1;
 		}
+		pthread_mutex_lock(&f->mutex);
+		pthread_cond_signal(&f->cond);
+		while(f->flags&FISRUNNING) {
+			pthread_cond_wait(&f->cond, &f->mutex);
+		}
+		pthread_mutex_unlock(&f->mutex);
+		vm_printerrf("[VM:DBG] Done closing file.\n");
 	} else if((flags&FISOPEN) && !(oflags&FISOPEN)) { /* opening file */
 		/* start thread */
 		pthread_attr_t attr;

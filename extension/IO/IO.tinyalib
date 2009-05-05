@@ -80,6 +80,11 @@ end
 
 func make_tcps_cb(client_callback, file, ip, port)
 	dynFunNew @_tcps_tch
+	push "Make client session thread " +$client_callback
+	push " file " +$file 
+	push " IP " +$ip
+	push " port " +$port
+	push '\n' print 9
 	+$client_callback dynFunAddClosure
 	+$file dynFunAddClosure
 	+$ip dynFunAddClosure
@@ -88,7 +93,13 @@ endfunc
 
 # void callback(file, ip, port)
 export func _TCPServer(ip, port, client_callback, q_len)
-	+$ip +$port +$q_len __tcpserver dup 0 dynFunNew @_tcpserv_th swap 1 dynFunAddClosure +$client_callback dynFunAddClosure newThread pop endfunc
+	+$ip +$port +$q_len __tcpserver
+	dynFunNew @_tcpserv_th
+	dup -1 dynFunAddClosure
+	+$client_callback dynFunAddClosure
+	push 50 swap 1 newThread
+	pop
+endfunc
 
 export func __IO__term()
 	+$_stderr close
@@ -112,8 +123,8 @@ _tcpserv_th:
 		getClosure 0
 	_tcps_lp:
 		__accept -$file -$p -$i
-		dup 0 isOpen [
-			%make_tcps_cb(getClosure 1, +$file, +$i, +$p) push 50 newThread pop
+		+$file push -1 nEq [
+			push 50 %make_tcps_cb(getClosure 1, +$file, +$i, +$p) newThread pop
 			jmp@_tcps_lp
 		]
 	}

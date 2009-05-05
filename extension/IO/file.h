@@ -19,16 +19,16 @@
 typedef struct _file_t* file_t;
 typedef struct _server_t* server_t;
 
-#define FISSYSTEM	(2<<0)
-#define FREADABLE	(2<<1)
-#define FWRITABLE	(2<<2)
-#define FISSEEKABLE	(2<<3)
-#define FISOPEN		(2<<4)
-#define FISRUNNING	(2<<5)
+#define FISSYSTEM	(1<<0)
+#define FREADABLE	(1<<1)
+#define FWRITABLE	(1<<2)
+#define FISSEEKABLE	(1<<3)
+#define FISOPEN		(1<<4)
+#define FISRUNNING	(1<<5)
 
-#define _FTYPE1		(2<<6)
-#define _FTYPE2		(2<<7)
-#define _FTYPE3		(2<<8)
+#define _FTYPE1		(1<<6)
+#define _FTYPE2		(1<<7)
+#define _FTYPE3		(1<<8)
 #define FTYPEMASK	(_FTYPE1|_FTYPE2|_FTYPE3)
 
 #define FISFILE		(0)
@@ -47,11 +47,11 @@ typedef struct _server_t* server_t;
 #define file_is_tcpserver(_f) (_file_type(_f)==FISTCPSERVER)
 #define file_is_udpserver(_f) (_file_type(_f)==FISUDPSERVER)
 
-#define FSTATEMASK	((2<<10)-1)
+#define FSTATEMASK	((1<<10)-1)
 
-#define FCMDREAD	(2<<10)
-#define FCMDWRITE	(2<<11)
-#define FCMDDONE	(2<<12)
+#define FCMDREAD	(1<<10)
+#define FCMDWRITE	(1<<11)
+#define FCMDDONE	(1<<12)
 #define FCMDMASK	(FCMDREAD|FCMDWRITE|FCMDDONE)
 
 /*#define _rd(_f, _b, _s) (_f->flags&FISSOCKET ? recv(_f->fd, _b, _s, 0) : read(_f->fd, _b, _s))*/

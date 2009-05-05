@@ -512,8 +512,7 @@ void _VM_CALL vm_op___tcpserver(vm_t vm, word_t unused) {
 	bind(sock, (struct sockaddr*)&sa, sizeof(struct sockaddr_in));
 	listen(sock, backlog);
 	addr2str(buf, &sa);
-	F = fdopen(sock, "r+");
-	vm_push_data(vm, DataObjUser, (word_t)file_new(vm, buf, F, FISSOCKET|FISOPEN|FWRITABLE|FREADABLE));
+	vm_push_data(vm, DataObjUser, (word_t)file_new(vm, buf, (FILE*)sock, FISOPEN|FREADABLE|FISTCPSERVER));
 }
 
 void _VM_CALL vm_op___accept(vm_t vm, word_t unused) {
@@ -521,19 +520,27 @@ void _VM_CALL vm_op___accept(vm_t vm, word_t unused) {
 	file_t server;
 	char buf[22];
 	vm_peek_data(vm, 0, &dt, (word_t*)&server);
-	assert(dt==DataObjUser&&server->magic==0x6106F11E&&file_is_tcpserver(server));
+	assert(dt==DataObjUser);
+	assert(server->magic==0x6106F11E);
+	/*vm_printerrf("server type flags %X (vs. %X)\n", _file_type(server), FISTCPSERVER);*/
+	assert(file_is_tcpserver(server));
 	if(server->flags&FCMDDONE) {
 		file_cmd_reset(server);
 		if(server->data!=-1) {
+			vm_printerrf("[TCPSRV] New client ! fd=%li\n", server->data);
 			vm_push_data(vm, DataInt, (word_t)server->extra.client.addr);
 			vm_push_data(vm, DataInt, (word_t)server->extra.client.port);
 			sprintf(buf, "%u.%u.%u.%u:%u",
-				((unsigned char*)server->extra.client.addr)[0],
-				((unsigned char*)server->extra.client.addr)[1],
-				((unsigned char*)server->extra.client.addr)[2],
-				((unsigned char*)server->extra.client.addr)[3],
+				((unsigned char*)&server->extra.client.addr)[0],
+				((unsigned char*)&server->extra.client.addr)[1],
+				((unsigned char*)&server->extra.client.addr)[2],
+				((unsigned char*)&server->extra.client.addr)[3],
 				server->extra.client.port);
 			vm_push_data(vm, DataObjUser, (word_t)file_new(vm, buf, fdopen(server->data, "r+"), FISSOCKET|FISOPEN|FREADABLE|FWRITABLE));
+		} else {
+			vm_push_data(vm, DataInt, (word_t)-1);
+			vm_push_data(vm, DataInt, (word_t)-1);
+			vm_push_data(vm, DataInt, (word_t)-1);
 		}
 	} else if(server->flags&FCMDREAD) {
 		blocker_suspend(vm, server->blocker, vm->current_thread);
