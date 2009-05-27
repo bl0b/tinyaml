@@ -103,9 +103,9 @@ OTOOL64 =
 PACKAGE = tinyaml
 PACKAGE_BUGREPORT = damien.leroux@gmail.com
 PACKAGE_NAME = tinyaml
-PACKAGE_STRING = tinyaml 0.3
+PACKAGE_STRING = tinyaml 0.4
 PACKAGE_TARNAME = tinyaml
-PACKAGE_VERSION = 0.3
+PACKAGE_VERSION = 0.4
 PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 RANLIB = ranlib
@@ -113,7 +113,7 @@ SED = /bin/sed
 SET_MAKE = 
 SHELL = /bin/bash
 STRIP = strip
-VERSION = 0.3
+VERSION = 0.4
 abs_builddir = /home/damien/bl0b_dev/tinyaml/ml/layers/extensions
 abs_srcdir = /home/damien/bl0b_dev/tinyaml/ml/layers/extensions
 abs_top_builddir = /home/damien/bl0b_dev/tinyaml
@@ -169,6 +169,7 @@ top_builddir = ../../..
 top_srcdir = ../../..
 layerdir = $(pkgdatadir)
 layer_DATA = MessageQueue.script RTC.script
+EXTRA_DIST = MessageQueue.script RTC.script
 all: all-am
 
 .SUFFIXES:

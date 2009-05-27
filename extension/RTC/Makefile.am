@@ -1,5 +1,5 @@
 rtcdir=$(pkglibdir)
-EXTRA_DIST = list.h  mutex.h  priority_queue.h  rtc_alloc.h  timer.h
+EXTRA_DIST = list.h  mutex.h  priority_queue.h  rtc_alloc.h  timer.h RTC.tinyalib
 
 rtc_LTLIBRARIES = libtinyaml_RTC.la
 rtc_DATA = RTC.tinyalib

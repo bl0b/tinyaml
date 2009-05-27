@@ -21,9 +21,9 @@ void _VM_CALL vm_op_flush(vm_t vm, word_t unused) {
 	fflush(f->descr.f);
 }
 
-void _VM_CALL vm_op_bufferNew(vm_t vm, word_t unused) {
-	
-}
+/*void _VM_CALL vm_op_bufferNew(vm_t vm, word_t unused) {*/
+	/**/
+/*}*/
 
 void _VM_CALL vm_op_seek_Char(vm_t vm, word_t whence) {
 	int w;

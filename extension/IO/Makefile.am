@@ -1,5 +1,5 @@
 iodir=$(pkglibdir)
-#EXTRA_DIST = list.h  mutex.h  priority_queue.h  rtc_alloc.h  timer.h
+EXTRA_DIST = file.h file_rd.h file_wr.h IO.tinyalib
 
 io_LTLIBRARIES = libtinyaml_IO.la
 io_DATA = IO.tinyalib

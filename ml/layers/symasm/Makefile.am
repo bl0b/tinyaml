@@ -1,6 +1,7 @@
 include ../all.makefile
 layerdir=$(pkgdatadir)
 layer_DATA=symasm.wc
+EXTRA_DIST=symasm.melang
 
 layer_prereq = ../metasm/metasm.wc
 

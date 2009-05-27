@@ -20,8 +20,8 @@ require "procasm.wc"
 				# buffers and files are seekable
 				# sockets and pipes are not seekable
 	opcode flush		# pop file
-	opcode bufferNew	# pop int (size), pop string (mode), push file
-	opcode toBuffer		# pop file, push file
+	#opcode bufferNew		# pop int (size), pop string (mode), push file
+	#opcode toBuffer		# pop file, push file
 	opcode string2ip	# pop string (name), push array[int] (ip)
 	opcode ip2string	# pop string (name), push array[int] (ip)
 	opcode popen:String	# pop string (command), push file

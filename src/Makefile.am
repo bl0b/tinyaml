@@ -1,8 +1,9 @@
 
-bin_PROGRAMS = tinyaml tinyaml_dbg tinyaml_static
+#bin_PROGRAMS = tinyaml tinyaml_dbg tinyaml_static
+bin_PROGRAMS = tinyaml tinyaml_dbg
 lib_LTLIBRARIES = libtinyaml.la
 
-libtinyaml_la_CFLAGS = $(tinyap_CFLAGS) -I ../include -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\""
+libtinyaml_la_CFLAGS = $(tinyap_CFLAGS) -I ../include -I ../../include -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\""
 libtinyaml_la_LIBADD = $(tinyap_LIBS) -lm
 #libtinyaml_la_LIBADD = -ldl /usr/local/lib/libtinyap.a -lm -lpthread
 
@@ -55,9 +56,10 @@ ml_core_gram.c: ../ml/ml_core.gram ../ml/ml_core.lib
 	echo ";" >> $@
 	rm -f .$@.tmp
 
-# The following is for profiling purpose only
+# The following is for profiling purpose only (and to perform the pre-install language layers compilations)
 
 tinyaml_static: $(libtinyaml_la_SOURCES)
 	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) /usr/local/lib/libtinyap.a -o tinyaml_full_static
 	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) -ltinyap -o tinyaml_static
 
+all: tinyaml_static
