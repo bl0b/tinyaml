@@ -1,5 +1,6 @@
 SUBDIRS = src include extension ml tests
 ACLOCAL_AMFLAGS=-I m4
+EXTRA_DIST=tinyaml.pc.in tinyaml.ld.conf gen_pc.pl thread_states.dot
 
 thread_states.png: thread_states.dot
 	dot -Tpng -LO $< -o $@
