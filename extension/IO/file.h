@@ -11,6 +11,7 @@
 /*#include <stdio.h>*/
 #include <unistd.h>
 #include <string.h>
+#include <dirent.h>
 #include "vm.h"
 #include "thread.h"
 #include "_impl.h"
@@ -37,6 +38,7 @@ typedef struct _server_t* server_t;
 #define FISSOCKET	(_FTYPE1|_FTYPE2)
 #define FISTCPSERVER	(_FTYPE3)
 #define FISUDPSERVER	(_FTYPE3|_FTYPE1)
+#define FISDIR		(_FTYPE3|_FTYPE2)
 
 #define _file_type(_f) ((_f)->flags&FTYPEMASK)
 
@@ -44,6 +46,7 @@ typedef struct _server_t* server_t;
 #define file_is_process(_f) (_file_type(_f)==FISPROCESS)
 #define file_is_socket(_f) (_file_type(_f)==FISSOCKET)
 #define file_is_buffer(_f) (_file_type(_f)==FISBUFFER)
+#define file_is_dir(_f) (_file_type(_f)==FISDIR)
 #define file_is_tcpserver(_f) (_file_type(_f)==FISTCPSERVER)
 #define file_is_udpserver(_f) (_file_type(_f)==FISUDPSERVER)
 
@@ -67,6 +70,7 @@ struct _file_t {
 	union {
 		int fd;		/* still used for listening socket */
 		FILE* f;
+		DIR* d;
 	} descr;
 	int flags;
 	char* source;
@@ -108,6 +112,8 @@ void file_update_state(file_t f, int flags);
 void file_deinit(vm_t vm, file_t f);
 file_t file_clone(vm_t vm, file_t f);
 file_t file_new(vm_t vm, const char* source, FILE*f, int flags);
+
+file_t buffer_new(vm_t vm, const char* source, FILE*f, int flags);
 
 void cmd_pack(vm_t vm, file_t f, char fmt, word_t data);
 

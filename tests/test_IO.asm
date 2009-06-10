@@ -129,6 +129,19 @@ _skip_long_read_tests:
 	+$f close
 	push 0 -$f
 
+
+	push "." opendir -$f
+	+$f readdir -$i
+_lp_readdir:
+	+$i strlen [
+		push "dir entry : " +$i push "\n" print 3
+		+$f readdir -$i
+		jmp@_lp_readdir
+	]
+
+	+$f close
+
+
 	%__IO__term()
 end
 

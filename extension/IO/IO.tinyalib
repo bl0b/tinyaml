@@ -60,8 +60,9 @@ require "procasm.wc"
 	opcode mkdir		# pop string (dirpath)
 	opcode getcwd		# push string (cwd)
 	opcode chdir		# pop string (dirpath), change cwd
-	opcode listdir:String	# push array of strings
-	opcode listdir		# pop string, push array of strings
+
+	opcode opendir		# pop string (dirpath), push file (dir)
+	opcode readdir		# push next entry name or empty string if at end of directory
 
 	opcode stdout		# push stdout file
 	opcode stderr		# push stderr file

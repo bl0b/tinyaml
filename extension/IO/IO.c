@@ -3,15 +3,19 @@
 void _VM_CALL vm_op_isOpen(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	file_t f = (file_t)d->data;
-	assert(d->type==DataObjUser&&f->magic==0x6106F11E);
+	assert(d->type==DataObjUser&&(f->magic==0x6106F11E||f->magic==0x6106D123));
 	vm_push_data(vm, DataObjUser, !!(f->flags&FISOPEN));
 }
 
 void _VM_CALL vm_op_atEOF(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	file_t f = (file_t)d->data;
-	assert(d->type==DataObjUser&&f->magic==0x6106F11E);
-	vm_push_data(vm, DataObjUser, !!feof(f->descr.f));
+	assert(d->type==DataObjUser&&(f->magic==0x6106F11E||f->magic==0x6106D123));
+	if(f->magic==0x6106F11E) {
+		vm_push_data(vm, DataInt, !!feof(f->descr.f));
+	} else {
+		vm_push_data(vm, DataInt, !!f->data);
+	}
 }
 
 void _VM_CALL vm_op_flush(vm_t vm, word_t unused) {
@@ -54,6 +58,49 @@ void _VM_CALL vm_op_tell(vm_t vm, word_t whence) {
 	}
 	vm_push_data(vm, DataInt, ftell(f->descr.f));
 }
+
+
+
+void _VM_CALL vm_op_opendir(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	const char* path = (const char*)d->data;
+	file_t f;
+
+	assert(d->type==DataString||d->type==DataObjStr);
+
+	vm_push_data(vm, DataObjUser, dir_new(vm, path));
+}
+
+
+
+
+void _VM_CALL vm_op_readdir(vm_t vm, word_t unused) {
+	vm_data_type_t dt;
+	file_t f;
+	word_t x;
+	vm_peek_data(vm, 0, &dt, (word_t*)&f);
+	assert(dt==DataObjUser && f->magic==0x6106D123);
+
+	if(f->flags&FCMDDONE) {
+		/*vm_printf("DONE READING\n");*/
+		pthread_mutex_lock(&f->mutex);
+		file_cmd_reset(f);
+		vm_pop_data(vm,1);
+		if(f->data!=0) {
+			vm_push_data(vm, DataObjStr, f->data);
+		} else {
+			vm_push_data(vm, DataString, (word_t)"");
+		}
+		pthread_mutex_unlock(&f->mutex);
+	} else if(!(f->flags&FCMDMASK)) {
+		/*vm_printf("READING...\n");*/
+		cmd_unpack(vm, f, 0);
+	} else {
+		blocker_suspend(vm, f->blocker, vm->current_thread);
+	}
+}
+
+
 
 
 void _VM_CALL vm_op_fopen_String(vm_t vm, const char* mode) {
@@ -206,7 +253,7 @@ void _VM_CALL vm_op_popen(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_close(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	file_t f = (file_t)d->data;
-	assert(d->type==DataObjUser&&f->magic==0x6106F11E);
+	assert(d->type==DataObjUser&&(f->magic==0x6106F11E||f->magic==0x6106D123));
 	if(f->flags&FISOPEN) {
 		/*vm_printf("CLOSING I/O STREAM %s.\n", f->source);*/
 		file_update_state(f, f->flags&~(FISOPEN|FCMDMASK));
@@ -432,7 +479,7 @@ void _VM_CALL vm_op_unlink(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_fsource(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	file_t f = (file_t)d->data;
-	assert(d->type==DataObjUser&&f->magic==0x6106F11E);
+	assert(d->type==DataObjUser&&(f->magic==0x6106F11E||f->magic==0x6106D123));
 	vm_push_data(vm, DataObjStr, (word_t)vm_string_new(f->source));
 }
 

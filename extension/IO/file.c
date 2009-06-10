@@ -98,6 +98,39 @@ void* file_routine(file_t f) {
 	return NULL;
 }
 
+void* dir_routine(file_t f) {
+	pthread_mutex_lock(&f->mutex);
+	f->flags|=FISRUNNING;
+	pthread_cond_signal(&f->cond);
+	pthread_mutex_unlock(&f->mutex);
+	/*vm_printf("[VM:DEBUG] Starting I/O thread for DIR %s...\n", f->source);*/
+	while(f->flags&FISOPEN) {
+		/*vm_printf("i/o wait...\n");*/
+		pthread_mutex_lock(&f->mutex);
+		while((f->flags&FISOPEN)&&!(f->flags&(FCMDREAD|FCMDWRITE))) {
+			pthread_cond_wait(&f->cond, &f->mutex);
+		}
+		pthread_mutex_unlock(&f->mutex);
+		/*vm_printf("In file routine (DIR %s)... CMD=%X\n", f->source, f->flags&(~FSTATEMASK));*/
+		if(f->flags&FCMDREAD) {
+			struct dirent* de = readdir(f->descr.d);
+			if(!de) {
+				f->data = 0;
+			} else {
+				f->data = (word_t)vm_string_new(de->d_name);
+			}
+			file_cmd_done(f);
+			blocker_resume(_glob_vm, f->blocker);
+		}
+	}
+	vm_printf("[VM:DEBUG] Exiting I/O thread for DIR %s... (flags=%X)\n", f->source, f->flags);
+	pthread_mutex_lock(&f->mutex);
+	f->flags&=~FISRUNNING;
+	pthread_cond_signal(&f->cond);
+	pthread_mutex_unlock(&f->mutex);
+	return NULL;
+}
+
 void file_update_state(file_t f, int flags) {
 	word_t oflags=f->flags;
 	int ret;
@@ -122,6 +155,8 @@ void file_update_state(file_t f, int flags) {
 				/*vm_printerrf("[VM:DBG] closing pipe.\n");*/
 				pclose(f->descr.f);
 				break;
+			case FISDIR:
+				closedir(f->descr.d);
 			case FISTCPSERVER:
 			case FISUDPSERVER:
 				close(f->descr.fd);
@@ -169,6 +204,8 @@ void file_update_state(file_t f, int flags) {
 			ret = pthread_create(&f->thread, &attr, (void*(*)(void*))tcpserver_routine, f);
 		} else if(file_is_udpserver(f)) {
 			ret = pthread_create(&f->thread, &attr, (void*(*)(void*))udpserver_routine, f);
+		} else if(file_is_dir(f)) {
+			ret = pthread_create(&f->thread, &attr, (void*(*)(void*))dir_routine, f);
 		} else {
 			ret = pthread_create(&f->thread, &attr, (void*(*)(void*))file_routine, f);
 		}
@@ -210,6 +247,21 @@ file_t file_new(vm_t vm, const char* source, FILE*f, int flags) {
 	ret->flags=0;
 	ret->source = strdup(source?source:"(unset)");
 	file_update_state(ret, flags);
+	return ret;
+}
+
+file_t dir_new(vm_t vm, const char* source) {
+	file_t ret = (file_t) vm_obj_new(sizeof(struct _file_t),
+			(void (*)(vm_t,void*)) file_deinit,
+			(void*(*)(vm_t,void*)) file_clone,
+			DataObjUser);
+	ret->magic = 0x6106D123;
+	ret->descr.d = opendir(source);
+	ret->owner = vm->current_thread;
+	ret->flags=0;
+	ret->data=(word_t)-1;
+	ret->source = strdup(source?source:"(unset)");
+	file_update_state(ret, FISDIR|FISOPEN);
 	return ret;
 }
 
