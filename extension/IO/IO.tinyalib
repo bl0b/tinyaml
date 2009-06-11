@@ -79,6 +79,8 @@ glob
 	_stderr=0	# stderr
 end
 
+
+
 func make_tcps_cb(client_callback, file, ip, port)
 	dynFunNew @_tcps_tch
 	push "Make client session thread " +$client_callback
@@ -117,6 +119,8 @@ asm
 	-$_stdout
 	-$_stdin
 	ret 0
+
+
 
 # TCP server thread
 _tcpserv_th:

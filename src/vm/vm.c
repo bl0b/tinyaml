@@ -520,6 +520,7 @@ thread_t vm_add_thread_helper(vm_t vm, thread_t t, int fg) {
 
 	/*dlist_insert_sorted(&vm->ready_threads,dn,comp_prio);*/
 	thread_set_state(vm,t,ThreadReady);
+	return t;
 }
 
 thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {

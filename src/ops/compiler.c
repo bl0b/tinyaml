@@ -29,6 +29,12 @@
 
 ast_node_t ast_unserialize(const char*);
 
+
+void vm_compinput_push_walker(vm_t vm, const char*wname);
+void vm_compinput_pop(vm_t vm);
+void vm_compinput_push_buffer(vm_t vm, const char*buffer);
+
+
 void* try_walk(wast_t node, const char* pname, vm_t vm);
 
 /*! \addtogroup vcop_comp

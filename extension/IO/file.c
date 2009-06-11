@@ -157,6 +157,7 @@ void file_update_state(file_t f, int flags) {
 				break;
 			case FISDIR:
 				closedir(f->descr.d);
+				break;
 			case FISTCPSERVER:
 			case FISUDPSERVER:
 				close(f->descr.fd);

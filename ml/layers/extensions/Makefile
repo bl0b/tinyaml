@@ -65,7 +65,7 @@ AUTOMAKE = ${SHELL} /home/damien/bl0b_dev/tinyaml/missing --run automake-1.10
 AWK = gawk
 CC = colorgcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -ggdb
+CFLAGS = -O3 -Wall
 CPP = colorgcc -E
 CPPFLAGS = 
 CYGPATH_W = echo

@@ -72,7 +72,7 @@ static inline void* vm_obj_new(word_t struc_size, void(*_free)(vm_t,void*), void
  * \note you should let the VM do its job and never call this routine
  */
 static inline void vm_obj_free_obj(vm_t vm, vm_obj_t o) {
-	if(!_is_obj_obj(o)) {
+	if(!o||!_is_obj_obj(o)) {
 		vm_printerrf("[VM:ERR] trying to free something not a managed object (%p).\n",o);
 		return;
 	}
