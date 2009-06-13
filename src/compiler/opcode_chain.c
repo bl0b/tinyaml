@@ -266,7 +266,11 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 
 word_t str2data(program_t p, vm_data_type_t dt, const char*data) {
 	union { word_t i; float f; } conv;
+	char buf[4];
 	switch((vm_data_type_t)dt) {
+	case DataChar:
+		snprintf(buf, 4, "%s", data);		/* account for \* sequences */
+		return (word_t)((unsigned char)buf[0]);
 	case DataInt:
 		return (word_t)atoi(data);
 	case DataFloat:

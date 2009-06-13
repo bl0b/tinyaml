@@ -107,10 +107,11 @@ p_Data = ( DataBloc ).
 
 DataBloc ::= "data" data+ "end".
 
-data = ( DataInt | DataFloat | DataString ).
+data = ( DataFloat | DataInt | DataChar | DataString ).
 DataInt ::= int ( "rep" int | _epsilon ).
 DataFloat ::= float ( "rep" int | _epsilon ).
 DataString ::= string.
+DataChar ::= char.
 
 
 

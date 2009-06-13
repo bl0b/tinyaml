@@ -1,4 +1,4 @@
-SUBDIRS = src include extension ml tests
+SUBDIRS = src include extension ml tests Tutorial
 ACLOCAL_AMFLAGS=-I m4
 EXTRA_DIST=tinyaml.pc.in tinyaml.ld.conf gen_pc.pl thread_states.dot
 

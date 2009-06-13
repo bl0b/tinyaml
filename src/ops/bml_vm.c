@@ -659,7 +659,7 @@ void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
 	index = f->closure->size;
 	dynarray_set(f->closure,index+1,data);
 	dynarray_set(f->closure,index,dc->type);
-	vm_printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);
+	/*vm_printf("dynFunAddClosure(%li) : %li,%8.8lX\n",index>>1,f->closure->data[index],f->closure->data[index+1]);*/
 }
 
 /*@}*/

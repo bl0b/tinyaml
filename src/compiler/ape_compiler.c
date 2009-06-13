@@ -476,6 +476,11 @@ WalkDirection ape_compiler_DataString(wast_t node, vm_t vm) {
 	return update_vm_state(vm, Next);
 }
 
+WalkDirection ape_compiler_DataChar(wast_t node, vm_t vm) {
+	opcode_chain_add_data(vm->result,DataChar,wa_op(wa_opd(node,0)),NULL, wa_row(node), wa_col(node));
+	return update_vm_state(vm, Next);
+}
+
 
 void delete_node(ast_node_t);
 
