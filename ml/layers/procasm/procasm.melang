@@ -90,6 +90,7 @@ asm
 		dynFunNew l(+$label)
 		setmem i(+$cur_fname envGet &_GSTGet call)
 	>>
+	envGet &_LSTPop call
 	compileStateNext
 end
 
