@@ -233,6 +233,10 @@ func getSymContext(symbol)
 		#push "Symbol '" +$symbol push "' is global at ofs " +$_sym_ofs push "\n" print 5
 		$symIsGlobal jmp @_sc_ret ]
 
+	+$symbol envLookup -$symofs
+	+$symofs push -1 nEq [
+		$symIsEnv jmp @_sc_ret ]
+
 	$symUnknown
 _sc_ret:}
 endfunc

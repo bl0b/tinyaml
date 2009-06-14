@@ -651,11 +651,20 @@ asm
 				]]
 				compileStateNext
 			][
-				push "At " astGetRow push ":" astGetCol push "\\t: " print 5
-				push "Error with symbol context for sym '" astGetChildString 0 push "' : " print 3
-				+$symctxt $symMustEnclose eq [ push "can't handle recursive closures yet\n" print 1]
-				+$symctxt $symUnknown eq [ push "symbol is unknown.\n" print 1]
-				compileStateError
+				+$symctxt $symIsEnv eq [[
+					+$is_lvalue [[
+						<< envSet e(astGetChildString 0) >>
+					][
+						<< envGet e(astGetChildString 0) >>
+					]]
+					compileStateNext
+				][
+					push "At " astGetRow push ":" astGetCol push "\t: " print 5
+					push "Error with symbol context for sym '" astGetChildString 0 push "' : " print 3
+					+$symctxt $symMustEnclose eq [ push "can't handle recursive closures yet\n" print 1]
+					+$symctxt $symUnknown eq [ push "symbol is unknown.\n" print 1]
+					compileStateError
+				]]
 			]]
 		]]
 	}

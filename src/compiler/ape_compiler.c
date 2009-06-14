@@ -134,30 +134,12 @@ void _VM_CALL vm_op_call(vm_t, word_t);
 void _VM_CALL vm_op_ret_Int(vm_t, word_t);
 
 void exec_routine(word_t df_ptr) {
-	/*struct _program_t x;*/
-	/*memset(&x,0,sizeof(struct _program_t));*/
-	/*x.env = _glob_vm->env;*/
-	/*x.data.size = 2;*/
-	/*x.data.data = (word_t[]) { DataObjFun, df_ptr };*/
-	/*x.labels.labels.by_index.size=1;*/
-	/*x.labels.labels.by_index.data=(word_t[]) { 0 };*/
-	/*x.labels.offsets.size=1;*/
-	/*x.labels.offsets.data=0;*/
-	/*x.code.size = 6;*/
-	/*x.code.data = (word_t[]){*/
-		/*(word_t)vm_op_getmem_Int, 0,*/
-		/*(word_t)vm_op_call, 0,*/
-		/*(word_t)vm_op_ret_Int, 0*/
-	/*};*/
-
-	/*printf("[VM:DEBUG] About to exec dynFun @%x\n", df_ptr);*/
-
-	/*vm_run_program_fg(_glob_vm,&x,0,50);*/
+	/*word_t cycles;*/
 	vm_dyn_func_t fun = (vm_dyn_func_t) df_ptr;
-
-	printf("[VM:DEBUG] About to exec dynFun @%p\n", (void*)df_ptr);
-
+	/*printf("[VM:DEBUG] About to exec dynFun @%p\n", (void*)df_ptr);*/
+	/*cycles = _glob_vm->cycles;*/
 	vm_run_program_fg(_glob_vm,fun->cs,fun->ip,50);
+	/*printf("[VM:DEBUG] dynFun @%p ran in %u cycles\n", (void*)df_ptr, _glob_vm->cycles-cycles);*/
 }
 
 
@@ -242,7 +224,7 @@ WalkDirection ape_compiler_AsmBloc(wast_t node, vm_t vm) {
 	return update_vm_state(vm, Down);
 }
 
-static int line_number_bias=0;
+volatile int line_number_bias=0;
 
 const char* vm_find_innermost_file(vm_t vm);
 
@@ -599,6 +581,7 @@ WalkDirection ape_compiler_LoadLib(wast_t node, vm_t vm) {
 
 WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 	char* buffy = strdup(wa_op(wa_opd(node,0)));
+	int lnb_backup = line_number_bias;
 
 	/*const char* debug = tinyap_serialize_to_string(tinyap_get_grammar_ast(vm->parser));*/
 
@@ -607,7 +590,9 @@ WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 		/*"%s\n"*/
 		/*"===================================\n with grammar \n%s\n", strlen(buffy), buffy, debug); fflush(stdout);*/
 	/*free((char*)debug);*/
-	line_number_bias += wa_row(node);
+	/*vm_printf("[COMP:DEBUG] PostPoned buffer at %i:%i\n", wa_row(node), wa_col(node));*/
+	line_number_bias += wa_row(node)-1;	/* skip current line :) */
+	/*vm_printf("[COMP:DEBUG] line_number_bias=%i\n", line_number_bias);*/
 	
 	tinyap_set_source_buffer(vm->parser,buffy,strlen(buffy));
 	tinyap_parse(vm->parser);
@@ -621,7 +606,7 @@ WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 		vm_printf("parser output : %p\n",tinyap_get_output(vm->parser));
 		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
 	}
-	line_number_bias -= wa_row(node);
+	line_number_bias = lnb_backup;
 	return update_vm_state(vm, Done);
 }
 

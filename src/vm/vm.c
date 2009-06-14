@@ -145,6 +145,9 @@ void vm_print_data(vm_t vm, vm_data_t d) {
 
 }
 
+
+extern volatile int line_number_bias;
+
 void default_error_handler(vm_t vm, const char* input, int is_buffer) {
 	int ofs, sz;
 	compinput_t ci;
@@ -163,10 +166,10 @@ void default_error_handler(vm_t vm, const char* input, int is_buffer) {
 	for(ofs=-sz;ofs<=0;ofs+=1) {
 		wa = *(wast_t*) _gpeek(&vm->cn_stack, ofs);
 		if(wa) {
-			vm_printf(" * %i:%i %s (%i)\n", wa_row(wa), wa_col(wa), wa_op(wa), wa_opd_count(wa));
+			vm_printf(" * %i:%i %s (%i)\n", wa_row(wa)+line_number_bias, wa_col(wa), wa_op(wa), wa_opd_count(wa));
 		}
 	}
-	vm_printf("at %i:%i (%s)\n", wa_row(vm->current_node), wa_col(vm->current_node), wa_op(vm->current_node));
+	vm_printf("at %i:%i (%s)\n", wa_row(vm->current_node)+line_number_bias, wa_col(vm->current_node), wa_op(vm->current_node));
 	exit(-1);
 }
 

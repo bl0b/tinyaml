@@ -57,7 +57,8 @@ glob
 	symIsGlobal = 103		#
 	symIsClosure = 104		#
 	symMustEnclose = 105		#
-	symUnknown = 106		#
+	symIsEnv = 106			#
+	symUnknown = 107		#
 
 	call_size         = 0
 	expr_size         = 0

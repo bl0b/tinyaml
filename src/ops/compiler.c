@@ -37,6 +37,10 @@ void vm_compinput_push_buffer(vm_t vm, const char*buffer);
 
 void* try_walk(wast_t node, const char* pname, vm_t vm);
 
+
+
+extern volatile int line_number_bias;
+
 /*! \addtogroup vcop_comp
  * @{
  */
@@ -241,7 +245,7 @@ void _VM_CALL vm_op_astGetOp(vm_t vm, word_t x) {
 }
 
 void _VM_CALL vm_op_astGetRow(vm_t vm, word_t x) {
-	vm_push_data(vm,DataInt,(word_t)wa_row(vm->current_node));
+	vm_push_data(vm,DataInt,(word_t)wa_row(vm->current_node)+line_number_bias);
 }
 
 void _VM_CALL vm_op_astGetCol(vm_t vm, word_t x) {
@@ -328,9 +332,12 @@ void _VM_CALL vm_op_pp_curNode(vm_t vm, word_t x) {
 }
 
 void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
+	int lnb_backup=line_number_bias;
 	vm_data_t d = _vm_pop(vm);
 	const char*buffer = (const char*)d->data;
 	assert(d->type==DataString||d->type==DataObjStr);
+
+	line_number_bias=0;
 
 	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
 	tinyap_parse(vm->parser);
@@ -342,8 +349,9 @@ void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
 		vm_compinput_pop(vm);
 		wa_del(wa);
 	} else {
-		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
+		vm_printerrf("parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser), tinyap_get_error_col(vm->parser), tinyap_get_error(vm->parser));
 	}
+	line_number_bias=lnb_backup;
 }
 
 /*@}*/

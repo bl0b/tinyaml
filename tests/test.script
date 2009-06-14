@@ -5,8 +5,8 @@ script
 
 global a,b,c,d,e
 
-function newArray() asm arrayNew push 1 ret 0 end end
-function newStruc() asm mapNew push 1 ret 0 end end
+function newArray(args...) return args end
+function newStruc() local ret asm mapNew -$ret end return ret end
 
 function genDecimator(y)
 	return function(x) return x/y end
