@@ -4,8 +4,8 @@ There are currently 4 sections :
 
 I.   Basics
 	This section covers the syntax of the core assembly language and the
-	basic features of the VM, such as dynamic function objects and
-	exception handling.
+	basic features of the Virtual Machine (VM), such as dynamic function
+	objects and exception handling.
 
 II.  Layers
 	This section covers the following language layers :
