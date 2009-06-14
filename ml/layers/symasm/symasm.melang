@@ -594,8 +594,13 @@ end
 
 compile GlobIdx asm
 	astGetChildString 0
-	call @getLocSym
+	call @LSTFindSym
 	dup 0 dec SZ jmp @_write3
+	pop
+	astGetChildString 0
+	call @CSTGet
+	dup 0 inc SZ jmp@_write0
+	pop
 	astGetChildString 0
 	call @getGlobSym
 	dup 0 inc SNZ jmp @globUnknown

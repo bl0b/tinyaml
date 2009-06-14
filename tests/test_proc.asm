@@ -7,6 +7,16 @@ endfunc
 
 func var(n)
 	local arg, counter {
+		push "n @" $n push '\n' print 3
+		push "arg @" $arg push '\n' print 3
+		push "counter @" $counter push '\n' print 3
+		local test_inner {
+			push "Inner frame :\n" print 1
+			push "n @" $n push '\n' print 3
+			push "arg @" $arg push '\n' print 3
+			push "counter @" $counter push '\n' print 3
+			push "test_inner @" $test_inner push '\n' print 3
+		}
 		push 0 -$counter
 	_v_lp:	+$counter inc +$n inf [
 			-$arg
