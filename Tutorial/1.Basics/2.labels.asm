@@ -32,3 +32,11 @@ finish:
 _end_of_code_segment:		# there may not be any opcode after a label. This is legal.
 end
 
+
+# Example output :
+#
+# $ tinyaml 2.labels.asm
+# at label1 !
+# at label2 !
+# at label3 !
+# Finished !

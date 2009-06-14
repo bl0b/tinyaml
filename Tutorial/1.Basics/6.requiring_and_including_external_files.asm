@@ -22,3 +22,13 @@ asm
 	envGet &my_greeting
 	print 2
 end
+
+
+# Example output :
+#
+# $ tinyaml 6.requiring_and_including_external_files.asm
+# We first call the label defined in the included file.
+# Hello, include world !
+# 
+# Now we get the greeting string from the environment of the VM.
+# Hello, world

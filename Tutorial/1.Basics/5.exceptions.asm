@@ -35,3 +35,14 @@ _catch2:
 _end:
 	push "Done.\n" print 1				# this code will never be executed
 end
+
+
+# Example output :
+#
+# $ tinyaml 5.exceptions.asm
+# Before throw
+# Catch 2
+# Exception #23
+# Catch 1
+# Exception #24
+# Done.

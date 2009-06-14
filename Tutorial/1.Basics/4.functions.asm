@@ -111,3 +111,24 @@ loop :
 loop_end :
 
 end
+
+
+# Example output :
+#
+# $ tinyaml 4.functions.asm
+# Hello, world !
+# Hello, foobar !
+# Hello, 42
+# We have a [Function  0x83a7a68] at offset 0 in data segment
+# Hello, DynFun !
+# Wibble, Closure !
+# generator says 1
+# generator says 2
+# generator says 3
+# generator says 4
+# generator says 5
+# generator says 6
+# generator says 7
+# generator says 8
+# generator says 9
+# generator says 10

@@ -50,3 +50,11 @@ asm
 
 	leave 2				# free the 2 data slots.
 end
+
+
+# Example output :
+#
+# $ tinyaml 3.data.asm
+# Hello, data !
+# 42+23=65
+# 123.449997*100=12345.000000

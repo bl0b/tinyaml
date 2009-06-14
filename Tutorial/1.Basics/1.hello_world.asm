@@ -23,3 +23,10 @@ asm
 	print 8					# print everything (8 values)
 end
 
+# Example command and output :
+#
+# $ tinyaml 1.hello_world.asm
+# Hello, world.
+# Hello, one-line world.
+# Hello, world ! 42 2.300000
+
