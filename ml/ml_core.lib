@@ -238,6 +238,15 @@ lib
         opcode lockMtx                  # pop int memcell
         opcode unlockMtx                # same
 
+      # Critical sections
+        opcode crit_begin
+        opcode crit_end
+
+      # time-slice management
+        opcode _set_timeslice:Int
+        opcode _set_timeslice
+        opcode _get_timeslice
+
       # accessing thread registers
         opcode regGet:Int               # push reg value
         opcode regGet                   # pop index, push reg value

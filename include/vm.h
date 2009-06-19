@@ -209,6 +209,11 @@ thread_t vm_get_current_thread(vm_t);
 /*! \brief kill a thread (thread resources won't be freed while it's referenced). */
 vm_t vm_kill_thread(vm_t,thread_t);
 
+
+/*! \brief set the timeslice for thread scheduling. */
+void vm_set_timeslice(vm_t vm, int timeslice);
+
+
 /*@}*/
 
 /*! \addtogroup lolvl

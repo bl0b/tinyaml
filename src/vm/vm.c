@@ -354,6 +354,10 @@ void vm_del(vm_t ret) {
 }
 
 
+void vm_set_timeslice(vm_t vm, int timeslice) {
+	vm->timeslice=timeslice;
+}
+
 int comp_prio(dlist_node_t a, dlist_node_t b) {
 	return (int)(node_value(thread_t,b)->prio-node_value(thread_t,a)->prio);
 }
@@ -928,18 +932,19 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 	/* quick pass if current meets conditions */
 	if(current) {
 		/*vm_printf("\thave current thread %p, state=%i, remaining=%li\n",current,current->state,current->remaining);*/
-	}
-	if(current&&current->state==ThreadRunning) {
-		if(current->remaining!=0/*&&current->remaining<vm->timeslice*/) {
-			/*vm_printf("\tcurrent still running for %lu more cycles\n",current->remaining);*/
-			return current;
-		} else if(vm->current_thread->sched_data.next) {
-			vm->current_thread = (thread_t)vm->current_thread->sched_data.next;
-			/*vm_printf("\tnext thread\n");*/
-		} else {
-			vm->current_thread = NULL;
+		if(current->state==ThreadRunning) {
+			if(current->remaining>0 || current->exec_flags&IN_CRITICAL_SECTION) {
+				/*vm_printf("\tcurrent still running for %lu more cycles%s\n",current->remaining, current->exec_flags&IN_CRITICAL_SECTION ? " (critical section)" : "");*/
+				return current;
+			} else if(vm->current_thread->sched_data.next) {
+				vm->current_thread = (thread_t)vm->current_thread->sched_data.next;
+				/*vm_printf("\tnext thread\n");*/
+			} else {
+				vm->current_thread = NULL;
+			}
 		}
-	} else if(vm->running_threads.head) {
+	}
+	if((!vm->current_thread)&&vm->running_threads.head) {
 		vm->current_thread = (thread_t)vm->running_threads.head;
 		/*vm_printf("\tnext thread (looped back to head)\n");*/
 	} else {
@@ -961,6 +966,7 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 	if(vm->current_thread) {
 		vm->current_thread->remaining=vm->timeslice;
 		/*vm_printf("\tthread %p restarts for %li cycles\n",vm->current_thread,vm->current_thread->remaining);*/
+		vm_printf("\tcurrent thread is %p  (%li cycles to go)\n", vm->current_thread, vm->current_thread->remaining);
 		return vm->current_thread;
 	} else {
 		return NULL;

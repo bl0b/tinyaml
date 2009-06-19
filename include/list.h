@@ -86,14 +86,14 @@ struct _dlist_t {
  */
 
 #define dlist_insert_head_node(_l,_n)	do {\
-		_n->next=(_l)->head;\
-		_n->prev=NULL;\
+		(_n)->next=(_l)->head;\
+		(_n)->prev=NULL;\
 		if((_l)->tail==NULL) {\
-			(_l)->tail=_n;\
+			(_l)->tail=(_n);\
 		} else {\
-			(_l)->head->prev=_n;\
+			(_l)->head->prev=(_n);\
 		}\
-		(_l)->head=_n;\
+		(_l)->head=(_n);\
 	} while(0)
 
 #define dlist_insert_head(_l,_v)	do {\
@@ -119,62 +119,37 @@ struct _dlist_t {
 		dlist_insert_tail_node(_l,n);\
 	} while(0)
 
-#define dlist_remove_head(_l)	do {\
-		dlist_node_t n=(_l)->head;\
-		if((_l)->tail==(_l)->head) {\
-			(_l)->head=NULL;\
-			(_l)->tail=NULL;\
-		} else {\
-			(_l)->head = n->next;\
-			(_l)->head->prev = NULL;\
-		}\
-		snode_del(n);\
-	} while(0)
 
 #define dlist_remove_head_no_free(_l)	do {\
-		dlist_node_t n=(_l)->head;\
 		if((_l)->tail==(_l)->head) {\
 			(_l)->head=NULL;\
 			(_l)->tail=NULL;\
 		} else {\
-			(_l)->head = n->next;\
+			(_l)->head = (_l)->head->next;\
 			(_l)->head->prev = NULL;\
+		}\
+	} while(0)
+
+#define dlist_remove_head(_l)	do {\
+		dlist_node_t n=(_l)->head;\
+		dlist_remove_head_no_free(_l);\
+		dnode_del(n);\
+	} while(0)
+
+#define dlist_remove_tail_no_free(_l)	do {\
+		if((_l)->tail==(_l)->head) {\
+			(_l)->head=NULL;\
+			(_l)->tail=NULL;\
+		} else {\
+			(_l)->tail = (_l)->tail->prev;\
+			(_l)->tail->next = NULL;\
 		}\
 	} while(0)
 
 #define dlist_remove_tail(_l)	do {\
 		dlist_node_t n=(_l)->tail;\
-		if((_l)->tail==(_l)->head) {\
-			(_l)->head=NULL;\
-			(_l)->tail=NULL;\
-		} else {\
-			(_l)->tail = n->prev;\
-			(_l)->tail->next = NULL;\
-		}\
+		dlist_remove_tail_no_free(_l);\
 		dnode_del(n);\
-	} while(0)
-
-#define dlist_remove_tail_no_free(_l)	do {\
-		dlist_node_t n=(_l)->tail;\
-		if((_l)->tail==(_l)->head) {\
-			(_l)->head=NULL;\
-			(_l)->tail=NULL;\
-		} else {\
-			(_l)->tail = n->prev;\
-			(_l)->tail->next = NULL;\
-		}\
-	} while(0)
-
-#define dlist_remove(_l,_n)	do {\
-		if((_n)==(_l)->head) {\
-			dlist_remove_head(_l);\
-		} else if((_n)==(_l)->tail) {\
-			dlist_remove_tail(_l);\
-		} else {\
-			(_n)->next->prev=(_n)->prev;\
-			(_n)->prev->next=(_n)->next;\
-			dnode_del(_n);\
-		}\
 	} while(0)
 
 #define dlist_remove_no_free(_l,_n)	do {\
@@ -187,6 +162,12 @@ struct _dlist_t {
 			(_n)->prev->next=(_n)->next;\
 		}\
 	} while(0)
+
+#define dlist_remove(_l,_n)	do {\
+		dlist_remove_no_free(_l, _n);\
+		dnode_del(_n);\
+	} while(0)
+
 /*@}*/
 
 
@@ -304,12 +285,12 @@ void slist_del(slist_t);
 
 #define slist_insert_sorted(_l,_n,_cmp)	do {\
 		slist_node_t r=(_l)->head;\
-		if(r==NULL) {\
-			dlist_insert_head(_l,_n);\
+		if(r==NULL||_cmp((_n),r)<0) {\
+			slist_insert_head(_l,_n);\
 		} else if(_cmp((_l)->tail,_n)<=0) {\
-			dlist_insert_tail(_l,_n);\
+			slist_insert_tail(_l,_n);\
 		} else {\
-			while(_cmp(_n,r)<0) {\
+			while(_cmp(_n,r)<=0) {\
 				r=r->next;\
 			}\
 			(_n)->next=r->next;\
@@ -332,12 +313,12 @@ void slist_del(slist_t);
 #define debug(_n) vm_printf("[%p]<- %p -> [%p]\n",(_n)->sched_data.prev,(_n),(_n)->sched_data.next)
 #define dlist_insert_sorted(_l,_n,_cmp)	do {\
 		dlist_node_t r=(_l)->head;\
-		if(r==NULL||_cmp(_n,r)<=0) {\
+		if(r==NULL||_cmp((_n),r)<0) {\
 			dlist_insert_head_node(_l,(_n));\
 		} else if(_cmp((_l)->tail,(_n))<=0) {\
 			dlist_insert_tail_node(_l,(_n));\
 		} else {\
-			while(r&&_cmp((_n),r)<0) {\
+			while(r&&_cmp((_n),r)<=0) {\
 				r=r->next;\
 			}\
 			if(!r) {\

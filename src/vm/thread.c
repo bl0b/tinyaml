@@ -18,6 +18,7 @@
 
 #include "_impl.h"
 #include "vm.h"
+#include "program.h"
 #include "thread.h"
 #include "object.h"
 
@@ -47,6 +48,7 @@ void thread_init(thread_t ret, word_t prio, program_t p, word_t ip) {
 	ret->program = p;
 	ret->jmp_seg = p;
 	ret->jmp_ofs = 0;
+	ret->exec_flags = 0;
 	ret->IP = ip;
 	ret->prio = prio;
 	ret->state = ThreadReady;
@@ -152,14 +154,14 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 		vm_obj_deref_ptr(vm, t);
 		break;
 	case ThreadReady:
-		dlist_insert_sorted(&vm->ready_threads,&t->sched_data,comp_prio);
+		dlist_insert_tail_node(&vm->ready_threads,&t->sched_data);
 		break;
 	case ThreadBlocked:
 		/*dlist_insert_sorted(&vm->yielded_threads,&t->sched_data,comp_prio);*/
 		break;
 	case ThreadRunning:
 		t->remaining=vm->timeslice;
-		dlist_insert_sorted(&vm->running_threads,&t->sched_data,comp_prio);
+		dlist_insert_tail_node(&vm->running_threads,&t->sched_data);
 		break;
 	case ThreadDying:
 		/*mutex_unlock(vm,&t->join_mutex,t);*/
@@ -202,6 +204,9 @@ long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
 		/*vm_printf("mutex is not owned.\n");*/
 		m->owner=t;
 	}
+	if(!t) {
+		_vm_assert_fail("Trying to lock a mutex with NULL owner.\n", __FILE__, __LINE__, __func__);
+	}
 	if(m->owner==t) {
 		m->count+=1;
 		/*vm_printf("mutex %p locked by thread %p (%li recursive locks)\n",m,t,m->count);*/
@@ -209,6 +214,7 @@ long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
 	} else {
 		/*vm_printf("mutex lock : blocking thread %p\n",t);*/
 		thread_set_state(vm, t, ThreadBlocked);
+		vm->current_thread=NULL;
 		dlist_insert_sorted(&m->pending,&t->sched_data,comp_prio);
 		return 0;
 	}
@@ -217,7 +223,13 @@ long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
 long mutex_unlock(vm_t vm, mutex_t m, thread_t t) {
 	/*vm_printf("MUTEX UNLOCK :: thread %p attempts to unlock mutex %p owned by %p\n",t,m,m->owner);*/
 	if(m->owner!=t) {
-		vm_printerrf("[VM::ERR] : trying to unlock a mutex that is owned by another thread (%p).\n",m->owner);
+		if(!m->owner) {
+			_vm_assert_fail("Trying to unlock a mutex owned by nobody.\n", __FILE__, __LINE__, __func__);
+		} else {
+			static char err_msg[80];
+			sprintf(err_msg, "[VM::ERR] : trying to unlock a mutex that is owned by another thread (%p).\n",m->owner);
+			_vm_assert_fail(err_msg, __FILE__, __LINE__, __func__);
+		}
 	} else if(m->count>0) {
 		m->count-=1;
 	}

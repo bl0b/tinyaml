@@ -297,5 +297,9 @@ typedef void _VM_CALL (*opcode_stub_t) (vm_t, word_t t);
 /*! \brief Define the number of registers in VM threads */
 #define TINYAML_N_REGISTERS 8
 
+
+/*! \brief Flag that tells if a thread is in a critical section */
+#define IN_CRITICAL_SECTION 1
+
 #endif
 

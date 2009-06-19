@@ -279,10 +279,11 @@ struct _thread_t {
 	volatile word_t jmp_ofs;
 	/* scheduling */
 	volatile thread_state_t state;
+	volatile word_t exec_flags;
 	/*word_t IP_status;*/
 	int _sync;
 	word_t prio;
-	volatile word_t remaining;
+	volatile int remaining;
 	volatile mutex_t pending_lock;
 	struct _mutex_t join_mutex;
 	/* registers */

@@ -58,8 +58,11 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 	for(i=1;i<argc;i+=1) {
 		if(cmp_param(0,"--trace","-t")) {
 			_vm_trace=1;
-		} else if(cmp_param(1,"--no-trace","-nt")) {
+		} else if(cmp_param(0,"--no-trace","-nt")) {
 			_vm_trace=0;
+		} else if(cmp_param(1,"--timeslice","-ts")) {
+			i+=1;
+			vm_set_timeslice(vm, atoi(argv[i]));
 		} else if(cmp_param(1,"--compile","-c")) {
 			i+=1;
 			p = vm_compile_file(vm,argv[i]);

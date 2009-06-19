@@ -26,6 +26,23 @@
 #include "opcode_chain.h"
 #include "object.h"
 
+
+void _VM_CALL vm_op__set_timeslice_Int(vm_t vm, word_t timeslice) {
+	assert(timeslice!=0);
+	vm->timeslice=timeslice;
+}
+
+void _VM_CALL vm_op__set_timeslice(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	vm_op__set_timeslice(vm, d->data);
+}
+
+void _VM_CALL vm_op__get_timeslice(vm_t vm, word_t unused) {
+	vm_push_data(vm, DataInt, vm->timeslice);
+}
+
+
 void _VM_CALL vm_op_onCompInit(vm_t vm, word_t unused) {
 	vm_data_t df = _vm_pop(vm);
 	assert(df->type==DataObjFun);
@@ -577,6 +594,23 @@ void _VM_CALL vm_op_unlockMtx(vm_t vm, word_t unused) {
 	mutex_unlock(vm,m,t);
 }
 
+
+
+void _VM_CALL vm_op_crit_begin(vm_t vm, word_t unused) {
+	/*vm_printf("[VM:DBG] Entering critical section (flags=%X)\n", vm->current_thread->exec_flags);*/
+	assert((vm->current_thread->exec_flags&IN_CRITICAL_SECTION)==0);
+	vm->current_thread->exec_flags|=IN_CRITICAL_SECTION;
+}
+
+void _VM_CALL vm_op_crit_end(vm_t vm, word_t unused) {
+	/*vm_printf("[VM:DBG] Leaving critical section (flags=%X)\n", vm->current_thread->exec_flags);*/
+	assert((vm->current_thread->exec_flags&IN_CRITICAL_SECTION)!=0);
+	vm->current_thread->exec_flags&=~IN_CRITICAL_SECTION;
+}
+
+
+
+
 /*! \brief dirty hack : compute thread_t address from thread->join_mutex address. requires a local thread_t variable. */
 #define join_lock_to_thread(_t,_m) ((thread_t) (((char*)(_m)) - ( ((char*)&(_t)->join_mutex) - ((char*)(_t)) ) ))
 
@@ -617,9 +651,10 @@ void _VM_CALL vm_op_killThread(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_yield(vm_t vm, word_t unused) {
 	/* skip yield when thread resumes */
-	/*vm->current_thread->IP+=2;*/
-	/*thread_set_state(vm,vm->current_thread,ThreadReady);*/
-	vm->current_thread->remaining=0;
+	vm->current_thread->IP+=2;
+	thread_set_state(vm,vm->current_thread,ThreadReady);
+	vm->current_thread=NULL;
+	/*vm->current_thread->remaining=0;*/
 	/*vm_printf("YIELD %p\n",vm->current_thread);*/
 }
 /*@}*/
