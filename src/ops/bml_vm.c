@@ -35,7 +35,7 @@ void _VM_CALL vm_op__set_timeslice_Int(vm_t vm, word_t timeslice) {
 void _VM_CALL vm_op__set_timeslice(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataInt);
-	vm_op__set_timeslice(vm, d->data);
+	vm_op__set_timeslice_Int(vm, d->data);
 }
 
 void _VM_CALL vm_op__get_timeslice(vm_t vm, word_t unused) {

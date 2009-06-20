@@ -29,8 +29,8 @@
 
 thread_t thread_new(word_t prio, program_t p, word_t ip) {
 	thread_t ret = (thread_t)malloc(sizeof(struct _thread_t));
-	vm_printf("NEW THREAD %p\n",ret);
-	vm_printf("\tPROGRAM %p (%s)\n",ret->program, program_get_source(ret->program));
+	/*vm_printf("NEW THREAD %p\n",ret);*/
+	/*vm_printf("\tPROGRAM %p (%s)\n",ret->program, program_get_source(ret->program));*/
 	assert(DEPRECATED__MUST_NOT_USE);
 	thread_init(ret,prio,p,ip);
 	/* FIXME : deprecated */
@@ -117,7 +117,18 @@ const char* thread_state_to_str(thread_state_t ts) {
 	return "???";
 }
 
+void dump_thread_lists(vm_t vm) {
+	vm_printf("[VM:DBG] Ready threads :");
+	#define _pr(_x) printf(" %p[%i]", (_x), (_x)->prio)
+	dlist_forward(&vm->ready_threads, thread_t, _pr);
+	vm_printf("\n         Running threads :");
+	dlist_forward(&vm->running_threads, thread_t, _pr);
+	vm_printf("\n");
+	#undef _pr
+}
+
 void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
+	/*int do_dump=0;*/
 	assert(t->sched_data.value==(word_t)t);
 	/*assert(t->state!=state);*/
 	/*if(t->state==state) {*/
@@ -130,11 +141,13 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 		break;
 	case ThreadReady:
 		dlist_remove_no_free(&vm->ready_threads,&t->sched_data);
+		/*do_dump=1;*/
 		break;
 	case ThreadDying:
 		break;
 	case ThreadRunning:
 		dlist_remove_no_free(&vm->running_threads,&t->sched_data);
+		/*do_dump=1;*/
 		break;
 	case ThreadStateMax:
 		/* thread is just starting */
@@ -151,10 +164,12 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 		if(t->_sync) {
 			vm->engine->_fg_thread_done_cb(vm->engine);
 		}
+		/*do_dump=1;*/
 		vm_obj_deref_ptr(vm, t);
 		break;
 	case ThreadReady:
 		dlist_insert_tail_node(&vm->ready_threads,&t->sched_data);
+		/*do_dump=1;*/
 		break;
 	case ThreadBlocked:
 		/*dlist_insert_sorted(&vm->yielded_threads,&t->sched_data,comp_prio);*/
@@ -162,13 +177,14 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 	case ThreadRunning:
 		t->remaining=vm->timeslice;
 		dlist_insert_tail_node(&vm->running_threads,&t->sched_data);
+		/*do_dump=1;*/
 		break;
 	case ThreadDying:
 		/*mutex_unlock(vm,&t->join_mutex,t);*/
 		break;
 	default:;
-		
 	};
+	/*dump_thread_lists(vm);*/
 }
 
 mutex_t mutex_new() {
@@ -216,6 +232,7 @@ long mutex_lock(vm_t vm, mutex_t m, thread_t t) {
 		thread_set_state(vm, t, ThreadBlocked);
 		vm->current_thread=NULL;
 		dlist_insert_sorted(&m->pending,&t->sched_data,comp_prio);
+		/*t->sched_data.value=(word_t)t;*/
 		return 0;
 	}
 }

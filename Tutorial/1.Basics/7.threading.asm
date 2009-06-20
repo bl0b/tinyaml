@@ -66,12 +66,11 @@ data
 	0	# thread 2
 	0	# mutex
 	0	# data
+	3	# timeslice value
 end
 
 asm
-	_set_timeslice 7
-	push "Timeslice has been set to " _get_timeslice push " cycles per thread.\n\n" print 3
-
+	_set_timeslice 3
 	jmp @_start
 
 # Define some utility functions
@@ -87,17 +86,6 @@ _unlock:
 
 _reset_data:
 	push 0 setmem 3
-	ret 0
-
-_waste_time:
-	# We add a time-consuming loop to implement a race condition
-	enter 1
-	push 0						# push a counter
-	setmem -1
-_race_condition_lp:
-	getmem -1 inc setmem -1				# while < 50 : inc
-	getmem -1 push 200 eq SZ jmp@_race_condition_lp	# note : we dup so the counter is not lost in the test
-	leave 1
 	ret 0
 
 _fetch_data:
@@ -116,7 +104,7 @@ _set_data:
 
 _test_data:
 	crit_begin
-	getmem 3 push 5 supEq
+	getmem 3 push 3 supEq
 	crit_end
 	ret 0
 
@@ -130,7 +118,7 @@ _thread1_func:
 	enter 1
 	push 0 setmem -1	# initialize a counter
 _thread1_loop:
-	getmem -1 push 5 eq SZ jmp@_thread1_done	# while counter<5 {
+	getmem -1 push 3 eq SZ jmp@_thread1_done	# while counter<5 {
 	push "In thread "
 	getPid
 	push " : "
@@ -166,12 +154,16 @@ _t2m_loop:
 
 
 _start:
+	push "\nTimeslice has been set to " _get_timeslice push " cycles per thread.\n\n" print 3
+
 	# Initialize the mutex
 	newMtx
 	setmem 2
 
-	push 90 newThread @_thread1_func setmem 0
-	push 90 newThread @_thread1_func setmem 1
+	push "Demonstrating yielding threads to achieve synchronization.\n" print 1
+
+	push 50 newThread @_thread1_func setmem 0
+	push 50 newThread @_thread1_func setmem 1
 
 	push "Thread1 & Thread1 have not yet started.\nNow we yield the main thread.\n" print 1
 	yield
@@ -183,8 +175,8 @@ _start:
 
 	push "\nDemonstrating a race condition :\n\n" print 1
 
-	push 10 newThread @_thread2_no_mutex_func setmem 0
-	push 10 newThread @_thread2_no_mutex_func setmem 1
+	push 50 newThread @_thread2_no_mutex_func setmem 0
+	push 50 newThread @_thread2_no_mutex_func setmem 1
 
 	yield
 
@@ -195,13 +187,24 @@ _start:
 
 	push "\nDemonstrating mutex :\n\n" print 1
 
-	push 10 newThread @_thread2_mutex_func setmem 0
-	push 10 newThread @_thread2_mutex_func setmem 1
+	push 50 newThread @_thread2_mutex_func setmem 0
+	push 50 newThread @_thread2_mutex_func setmem 1
 
 	yield
 
 	getmem 1 joinThread
 	getmem 0 joinThread
 
+
+	# Now, increase the timeslice and re-run the test.
+	getmem 4
+	push 2
+	mul
+	inc
+	setmem 4
+	getmem 4 push 31 infEq SNZ jmp @_done
+	getmem 4 _set_timeslice
+	jmp @_start
+_done:
 end
 

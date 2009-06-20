@@ -937,28 +937,34 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 				/*vm_printf("\tcurrent still running for %lu more cycles%s\n",current->remaining, current->exec_flags&IN_CRITICAL_SECTION ? " (critical section)" : "");*/
 				return current;
 			} else if(vm->current_thread->sched_data.next) {
-				vm->current_thread = (thread_t)vm->current_thread->sched_data.next;
-				/*vm_printf("\tnext thread\n");*/
+				vm->current_thread = (thread_t)vm->current_thread->sched_data.next->value;
+				/*vm_printf("(%li) next thread in list : %p\n", vm->cycles, vm->current_thread);*/
+			} else if(vm->running_threads.head) {
+				vm->current_thread = (thread_t)vm->running_threads.head->value;
+				/*vm_printf("(%li) next thread (looped back to head) : %p\n", vm->cycles, vm->current_thread);*/
 			} else {
 				vm->current_thread = NULL;
 			}
+		} else if(vm->running_threads.head) {
+			vm->current_thread = (thread_t)vm->running_threads.head->value;
+			/*vm_printf("(%li) next thread (looped back to head) : %p\n", vm->cycles, vm->current_thread);*/
+		} else {
+			vm->current_thread = NULL;
 		}
+	} else if(vm->running_threads.head) {
+		vm->current_thread = (thread_t)vm->running_threads.head->value;
+		/*vm_printf("(%li) next thread (looped back to head) : %p\n", vm->cycles, vm->current_thread);*/
 	}
-	if((!vm->current_thread)&&vm->running_threads.head) {
-		vm->current_thread = (thread_t)vm->running_threads.head;
-		/*vm_printf("\tnext thread (looped back to head)\n");*/
-	} else {
-		vm->current_thread=NULL;
-	}
+	/*vm_printf("(%li)    vm->current_thread = %p\n", vm->cycles, vm->current_thread);*/
 	/* solve the conflict between next ready and next running threads, if any */
 	if(vm->ready_threads.head) {
-		dlist_node_t a = &vm->current_thread->sched_data;
+		/*dlist_node_t a = &vm->current_thread->sched_data;*/
 		dlist_node_t b = vm->ready_threads.head;
 		thread_t tb = node_value(thread_t,b);
-		if((!a)||node_value(thread_t,a)->prio <= tb->prio) {
+		if((!vm->current_thread)||vm->current_thread->prio <= tb->prio) {
 			/* thread is no more ready */
 			thread_set_state(vm,tb,ThreadRunning);
-			vm->current_thread = (thread_t)b;
+			vm->current_thread = tb;
 			/*vm_printf("\trunning next ready thread\n");*/
 		}
 	}
@@ -966,7 +972,7 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 	if(vm->current_thread) {
 		vm->current_thread->remaining=vm->timeslice;
 		/*vm_printf("\tthread %p restarts for %li cycles\n",vm->current_thread,vm->current_thread->remaining);*/
-		vm_printf("\tcurrent thread is %p  (%li cycles to go)\n", vm->current_thread, vm->current_thread->remaining);
+		/*vm_printf("(%li) current thread is %p  (%li cycles to go)\n", vm->cycles, vm->current_thread, vm->current_thread->remaining);*/
 		return vm->current_thread;
 	} else {
 		return NULL;
@@ -987,7 +993,7 @@ _sched_method_t schedulers[SchedulerAlgoMax] = {
  * if has many threads, time-slice round-robin them.
  */
 void _VM_CALL vm_schedule_cycle(vm_t vm) {
-	thread_t current;
+	register thread_t current;
 
 	vm->engine->_client_lock(vm->engine);
 
