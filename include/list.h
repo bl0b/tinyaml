@@ -310,31 +310,44 @@ void slist_del(slist_t);
 		}\
 	} while(0)
 
-#define debug(_n) vm_printf("[%p]<- %p -> [%p]\n",(_n)->sched_data.prev,(_n),(_n)->sched_data.next)
+#define DLIST_INSERT_SORTED_IS_MACRO
+
+#ifdef DLIST_INSERT_SORTED_IS_MACRO
+
+#define debug(_n) vm_printf("[%p] <- %p -> [%p]\n",(_n)->sched_data.prev,(_n),(_n)->sched_data.next)
 #define dlist_insert_sorted(_l,_n,_cmp)	do {\
 		dlist_node_t r=(_l)->head;\
-		if(r==NULL||_cmp((_n),r)<0) {\
-			dlist_insert_head_node(_l,(_n));\
-		} else if(_cmp((_l)->tail,(_n))<=0) {\
-			dlist_insert_tail_node(_l,(_n));\
+		if(!r) {\
+			(_n)->next=NULL;\
+			(_n)->prev=NULL;\
+			(_l)->head=(_n);\
+			(_l)->tail=(_n);\
+		} else if(_cmp(_n, r)<0) {\
+			(_n)->next=r;\
+			(_n)->prev=NULL;\
+			r->prev=(_n);\
+			(_l)->head=(_n);\
+		} else if(_cmp(_n, (_l)->tail)>=0) {\
+			(_n)->next=NULL;\
+			(_n)->prev=(_l)->tail;\
+			(_l)->tail->next=(_n);\
+			(_l)->tail=(_n);\
 		} else {\
-			while(r&&_cmp((_n),r)<=0) {\
+			while(_cmp(_n, r->next)>=0) {\
 				r=r->next;\
 			}\
-			if(!r) {\
-				vm_printf("PROUUUUUUUT\n");\
-				dlist_forward(_l,thread_t,debug);\
-			}\
 			(_n)->next=r->next;\
-			(_n)->prev=r;\
-			if(r->next==NULL) {\
-				(_l)->tail=(_n);\
-			} else {\
-				r->next->prev=(_n);\
-			}\
+			r->next->prev=(_n);\
 			r->next=(_n);\
+			(_n)->prev=r;\
 		}\
 	} while(0)
+
+#else
+
+void dlist_insert_sorted(dlist_t l, dlist_node_t n, int(*cmp)(dlist_node_t, dlist_node_t));
+
+#endif
 
 /*
  * Creating and destroying Lists

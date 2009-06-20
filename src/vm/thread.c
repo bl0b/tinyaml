@@ -168,7 +168,8 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 		vm_obj_deref_ptr(vm, t);
 		break;
 	case ThreadReady:
-		dlist_insert_tail_node(&vm->ready_threads,&t->sched_data);
+		/*dlist_insert_tail_node(&vm->ready_threads,&t->sched_data);*/
+		dlist_insert_sorted(&vm->ready_threads,&t->sched_data, comp_prio);
 		/*do_dump=1;*/
 		break;
 	case ThreadBlocked:
@@ -184,7 +185,9 @@ void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
 		break;
 	default:;
 	};
-	/*dump_thread_lists(vm);*/
+	/*if(do_dump) {*/
+		/*dump_thread_lists(vm);*/
+	/*}*/
 }
 
 mutex_t mutex_new() {
@@ -251,19 +254,23 @@ long mutex_unlock(vm_t vm, mutex_t m, thread_t t) {
 		m->count-=1;
 	}
 	if(!(m->owner&&m->count)) {
+		thread_t pending;
 		dlist_node_t dn;
 		m->owner=NULL;
 		while(m->pending.head) {
 			dn = m->pending.head;
 			m->pending.head=dn->next;
-			t = node_value(thread_t,dn);
+			pending = node_value(thread_t,dn);
 			if(dn->next) {
 				dn->next->prev=NULL;
 			} else {
 				m->pending.tail=NULL;
 			}
 			/*vm_printf("mutex unlock : unblocking thread %p\n",t);*/
-			thread_set_state(vm, t, ThreadReady);
+			thread_set_state(vm, pending, ThreadReady);
+			if(pending->prio>=t->prio) {
+				t->remaining=0;
+			}
 		}
 	}
 	return m->count;

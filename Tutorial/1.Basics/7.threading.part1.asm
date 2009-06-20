@@ -42,7 +42,8 @@
 # - yield : tell the scheduler to skip to next thread in queue.
 # - joinThread : pop thread object from stack and wait till it finishes.
 # - killThread : pop thread object from stack and kill it at once.
-# - crit_begin : starts a critical section (thread can NOT be interrupted).
+# - crit_begin : starts a critical section (thread can NOT be interrupted
+#                while inside a critical section).
 # - crit_end : ends the critical section.
 # - _set_timeslice : change the timeslice value (any integer > 0). If an
 #                    integer argument is not provided, the value is popped from
@@ -61,62 +62,52 @@
 #               This instruction may yield the thread if a higher priority
 #               thread is waiting to lock the mutex.
 
+# This tutorial is rather long, so it is divided into three parts :
+# - In part 1 (this file), we demonstrate creating threads, joining them (i.e.
+#   waiting for a thread to finish), and yielding threads to synchronize their
+#   execution.
+# - In part 2, we demonstrate the effects of changing the timeslice value, as
+#   well as race conditions that can occur when threads are accessing and
+#   modifying unsynchronized resources. We also introduce critical sections to
+#   ensure that some instructions sequences can't be interrupted by the
+#   scheduler.
+# - In part 3, we modify the example from part 2 to achieve synchronized access
+#   and modification of a resource.
+
+
 data
 	0	# thread 1
 	0	# thread 2
-	0	# mutex
-	0	# data
-	3	# timeslice value
 end
 
 asm
-	_set_timeslice 3
-	jmp @_start
+	push "\nTimeslice value is " _get_timeslice push " cycles per thread.\n\n" print 3
+
+	push "Demonstrating yielding threads to achieve synchronization.\n" print 1
+
+	push 50 newThread @_thread1_func setmem 0
+	push 50 newThread @_thread1_func setmem 1
+
+	push "Thread1 & Thread1 have not yet started.\nNow we yield the main thread.\n" print 1
+	yield
+
+	getmem 0 joinThread
+	push "Thread1 #1 is done !\n" print 1
+	getmem 1 joinThread
+	push "Thread1 #2 is done !\n" print 1
+
+	ret 0						# the code after the ret instruction will not be
+							# executed in the main thread. It is another way
+							# to write :
+							# jmp @_start
+							# [write some functions]
+							# _start: [main code]
 
 # Define some utility functions
 
-_lock:
-	getmem 2 lockMtx
-	push "Lock...   " getPid push "\n" print 3
-	ret 0
-_unlock:
-	push "Unlock... " getPid push "\n" print 3
-	getmem 2 unlockMtx
-	ret 0
-
-_reset_data:
-	push 0 setmem 3
-	ret 0
-
-_fetch_data:
-	crit_begin
-	getmem 3
-	push "In thread " getPid push ", read " dup -3 push '\n' print 5
-	crit_end
-	ret 0
-
-_set_data:
-	crit_begin
-	push "In thread " getPid push ", write " dup -3 push '\n' print 5
-	setmem 3
-	crit_end
-	ret 0
-
-_test_data:
-	crit_begin
-	getmem 3 push 3 supEq
-	crit_end
-	ret 0
-
-_print_data:
-	crit_begin
-	push "In thread " getPid push " ; data = " getmem 3 push '\n' print 5
-	crit_end
-	ret 0
-
 _thread1_func:
 	enter 1
-	push 0 setmem -1	# initialize a counter
+	push 0 setmem -1				# initialize a counter in a local variable
 _thread1_loop:
 	getmem -1 push 3 eq SZ jmp@_thread1_done	# while counter<5 {
 	push "In thread "
@@ -132,79 +123,27 @@ _thread1_done:
 	leave 1
 	ret 0
 
-_thread2_no_mutex_func:
-_t2nm_loop:
-	call @_fetch_data
-	inc
-	call @_set_data
-	call @_test_data SNZ jmp@_t2nm_loop
-	ret 0
-
-
-_thread2_mutex_func:
-_t2m_loop:
-	call @_lock
-	call @_fetch_data
-	inc
-	call @_set_data
-	call @_test_data
-	call @_unlock
-	SNZ jmp@_t2m_loop
-	ret 0
-
-
-_start:
-	push "\nTimeslice has been set to " _get_timeslice push " cycles per thread.\n\n" print 3
-
-	# Initialize the mutex
-	newMtx
-	setmem 2
-
-	push "Demonstrating yielding threads to achieve synchronization.\n" print 1
-
-	push 50 newThread @_thread1_func setmem 0
-	push 50 newThread @_thread1_func setmem 1
-
-	push "Thread1 & Thread1 have not yet started.\nNow we yield the main thread.\n" print 1
-	yield
-
-	getmem 0 joinThread
-	push "Thread1 #1 is done !\n" print 1
-	getmem 1 joinThread
-	push "Thread1 #2 is done !\n" print 1
-
-	push "\nDemonstrating a race condition :\n\n" print 1
-
-	push 50 newThread @_thread2_no_mutex_func setmem 0
-	push 50 newThread @_thread2_no_mutex_func setmem 1
-
-	yield
-
-	getmem 1 joinThread
-	getmem 0 joinThread
-
-	call @_reset_data
-
-	push "\nDemonstrating mutex :\n\n" print 1
-
-	push 50 newThread @_thread2_mutex_func setmem 0
-	push 50 newThread @_thread2_mutex_func setmem 1
-
-	yield
-
-	getmem 1 joinThread
-	getmem 0 joinThread
-
-
-	# Now, increase the timeslice and re-run the test.
-	getmem 4
-	push 2
-	mul
-	inc
-	setmem 4
-	getmem 4 push 31 infEq SNZ jmp @_done
-	getmem 4 _set_timeslice
-	jmp @_start
-_done:
 end
+
+
+# Example command and output :
+#
+# $ tinyaml 7.threading.part1.asm
+# 
+# Timeslice value is 100 cycles per thread.
+# 
+# Demonstrating yielding threads to achieve synchronization.
+# Thread1 & Thread1 have not yet started.
+# Now we yield the main thread.
+# In thread [Thread  0x93d31c8] : 0
+# In thread [Thread  0x93d32e8] : 0
+# In thread [Thread  0x93d31c8] : 1
+# In thread [Thread  0x93d32e8] : 1
+# In thread [Thread  0x93d31c8] : 2
+# In thread [Thread  0x93d32e8] : 2
+# Thread1 #1 is done !
+# Thread1 #2 is done !
+
+# NOTE : the values displayed when print'ing a Thread object are pointers in
+#        memory. They may differ at each execution.
 

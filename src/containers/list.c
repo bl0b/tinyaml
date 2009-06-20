@@ -52,4 +52,36 @@ void dlist_del(dlist_t l) {
 }
 
 
+#ifndef DLIST_INSERT_SORTED_IS_MACRO
+void dlist_insert_sorted(dlist_t l, dlist_node_t n, int(*cmp)(dlist_node_t, dlist_node_t)) {
+	dlist_node_t r = l->head;
+	if(!r) {
+		/* quick insert at head (and tail) */
+		n->next=NULL;
+		n->prev=NULL;
+		l->head=n;
+		l->tail=n;
+	} else if(cmp(n, r)<0) {
+		/* insert at head */
+		n->next=r;
+		n->prev=NULL;
+		r->prev=n;
+		l->head=n;
+	} else if(cmp(n, l->tail)>=0) {
+		/* insert at tail */
+		n->next=NULL;
+		n->prev=l->tail;
+		l->tail->next=n;
+		l->tail=n;
+	} else {
+		while(cmp(n, r->next)>=0) {
+			r=r->next;
+		}
+		n->next=r->next;
+		r->next->prev=n;
+		r->next=n;
+		n->prev=r;
+	}
+}
+#endif
 

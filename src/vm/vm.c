@@ -359,7 +359,7 @@ void vm_set_timeslice(vm_t vm, int timeslice) {
 }
 
 int comp_prio(dlist_node_t a, dlist_node_t b) {
-	return (int)(node_value(thread_t,b)->prio-node_value(thread_t,a)->prio);
+	return (int)(node_value(thread_t,b)->prio - node_value(thread_t,a)->prio);
 }
 
 
@@ -958,14 +958,12 @@ thread_t _VM_CALL _sched_rr(vm_t vm) {
 	/*vm_printf("(%li)    vm->current_thread = %p\n", vm->cycles, vm->current_thread);*/
 	/* solve the conflict between next ready and next running threads, if any */
 	if(vm->ready_threads.head) {
-		/*dlist_node_t a = &vm->current_thread->sched_data;*/
-		dlist_node_t b = vm->ready_threads.head;
-		thread_t tb = node_value(thread_t,b);
+		thread_t tb = node_value(thread_t,vm->ready_threads.head);
 		if((!vm->current_thread)||vm->current_thread->prio <= tb->prio) {
 			/* thread is no more ready */
-			thread_set_state(vm,tb,ThreadRunning);
 			vm->current_thread = tb;
-			/*vm_printf("\trunning next ready thread\n");*/
+			/*vm_printf("(%li)   running next ready thread %p\n", vm->cycles, vm->current_thread);*/
+			thread_set_state(vm,tb,ThreadRunning);
 		}
 	}
 

@@ -282,7 +282,7 @@ struct _thread_t {
 	volatile word_t exec_flags;
 	/*word_t IP_status;*/
 	int _sync;
-	word_t prio;
+	int prio;
 	volatile int remaining;
 	volatile mutex_t pending_lock;
 	struct _mutex_t join_mutex;
