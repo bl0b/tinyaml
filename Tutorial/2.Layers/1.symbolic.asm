@@ -105,6 +105,44 @@ asm
 		print 3
 	]]
 
+
+	# Last thing to demonstrate here is the definition of local symbols.
+	# Local symbols have a restricted scope and lifespan. Define them using the `local' keyword followed by a list of symbols.
+	# The code where they can be used is enclosed between braces. They are allocated on the locals stack and automatically freed
+	# at the end of the code bloc.
+	local a, b, c {
+		push "In a local context.\n" print 1
+		push "local symbol a has offset " $a push "\n" print 3
+		push "local symbol b has offset " $b push "\n" print 3
+		push "local symbol c has offset " $c push "\n" print 3
+		# the `local' statement is reentrant.
+		local d {
+			push "In a local context inside the first one.\n" print 1
+			push "local symbol a has offset " $a push "\n" print 3
+			push "local symbol b has offset " $b push "\n" print 3
+			push "local symbol c has offset " $c push "\n" print 3
+			push "local symbol d has offset " $d push "\n" print 3
+		}
+	}
+
 end
 
+
+# Example command and output :
+#
+# $ tinyaml Tutorial/2.Layers/1.symbolic.asm
+# Hello, world
+# the symbol foobar is at offset 1
+# Duck says Kwak
+# 42
+# Foobar=1
+# In a local context.
+# local symbol a has offset -1
+# local symbol b has offset -2
+# local symbol c has offset -3
+# In a local context inside the first one.
+# local symbol a has offset -2
+# local symbol b has offset -3
+# local symbol c has offset -4
+# local symbol d has offset -1
 
