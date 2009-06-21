@@ -307,12 +307,26 @@ void blocker_suspend(vm_t vm,vm_blocker_t b,thread_t t) {
 void blocker_resume(vm_t vm,vm_blocker_t b) {
 	thread_t t;
 	assert(b);
-	while(gstack_size(b)) {
-		t = *(thread_t*)_gpop(b);
-		/*vm_printf("task arrived ! resuming thread %p\n",t);*/
-		t->IP-=2;
-		vm_obj_deref_ptr(vm,t);
-		thread_set_state(vm,t,ThreadReady);
+	if(vm->current_thread) {
+		int cur_prio = vm->current_thread->prio;
+		while(gstack_size(b)) {
+			t = *(thread_t*)_gpop(b);
+			/*vm_printf("task arrived ! resuming thread %p\n",t);*/
+			t->IP-=2;
+			vm_obj_deref_ptr(vm,t);
+			thread_set_state(vm,t,ThreadReady);
+			if(t->prio>=cur_prio) {
+				vm->current_thread->remaining=0;
+			}
+		}
+	} else {
+		while(gstack_size(b)) {
+			t = *(thread_t*)_gpop(b);
+			/*vm_printf("task arrived ! resuming thread %p\n",t);*/
+			t->IP-=2;
+			vm_obj_deref_ptr(vm,t);
+			thread_set_state(vm,t,ThreadReady);
+		}
 	}
 }
 
