@@ -61,7 +61,8 @@
 #		there must be as many terms in the expression list as in the variables list
 #	- call :
 #		FUNC_NAME ( EXPRESSION_LIST )
-#		Used as an instruction, any returned values will be silently discarded
+#		Used as an instruction, any returned values will be silently discarded.
+#		Used as a boolean or arithmetic expression, exactly ONE return value is expected.
 #
 # - exception handling :
 #	raise an exception :
@@ -78,6 +79,6 @@
 require "script.wc"
 
 script
-
+	print("Hello, world.\n")
 end
 
