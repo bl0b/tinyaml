@@ -1,0 +1,21 @@
+# Here we demonstrate the declaration and use of data and variables.
+require "script.wc"
+
+script
+	# the global statement declares global variables.
+	global myglobvar1, myglobvar2
+
+	function test_func()
+		# the local statement declares local variables (only inside functions. Local variables are meaningless outside of functions)
+		local foobar
+		myglobvar1, foobar = "Hello", "World !"
+		print(myglobvar1, ", ", foobar, "\n")
+	end
+
+	test_func()
+
+	myglobvar2 = 1 and 0
+	print("1 and 0 = ", myglobvar2, "\n")
+	myglobvar2 = 1 and 1
+	print("1 and 1 = ", myglobvar2, "\n")
+end

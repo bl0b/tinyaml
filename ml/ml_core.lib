@@ -113,6 +113,13 @@ lib
         opcode cos
         opcode tan
 
+        opcode sqrt             # pop float, push sqrt(value)
+        opcode log              # pop float, push ln(value)
+        opcode log:Float        # pop float, push ln(value)/ln(arg)
+        opcode exp              # pop float, push exp(float)
+        opcode pow              # pop int/float (x), pop int/float (y),
+                                # push float (x^y)
+
       # AST manipulation
         opcode astGetOp
         opcode astGetRow

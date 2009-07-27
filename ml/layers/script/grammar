@@ -76,14 +76,18 @@ language
  script_array_access ::= "[" (m_expr|script_call_ret_1|script_var) "]".
  script_struc_access ::= "." sym.
 
- m_expr = (expr4|number).
+ m_expr = (expr5|number).
  b_expr = bexpr4.
 
 m_minus ::= "-" number.
-m_div ::= ( m_div "/" expr00 | expr00 "/" expr00 ).
-m_mul ::= ( m_mul "*" expr11 | expr11 "*" expr11 ).
-m_sub ::= ( m_sub "-" expr22 | expr22 "-" expr22 ).
-m_add ::= ( m_add "+" expr33 | expr33 "+" expr33 ).
+m_pow ::= (m_pow "^" expr00 | expr00 "^" expr00 ).
+m_div ::= ( m_div "/" expr11 | expr11 "/" expr11 ).
+m_mul ::= ( m_mul "*" expr22 | expr22 "*" expr22 ).
+m_sub ::= ( m_sub "-" expr33 | expr33 "-" expr33 ).
+m_add ::= ( m_add "+" expr44 | expr44 "+" expr44 ).
+m_log ::= /\<log\>/ m_expr_plug.
+m_exp ::= /\<e\>/ "^" m_expr_plug.
+m_sqrt ::= /\<sqrt\>/ m_expr_plug.
 
 b_not ::= /\<not\>/ (m_expr | script_call_ret_1 | script_var).
 b_and ::= ( b_and /\<and\>/ bexpr11 | bexpr11 /\<and\>/ bexpr11 ).
@@ -91,17 +95,24 @@ b_or ::= ( b_or /\<or\>/ bexpr22 | bexpr22 /\<or\>/ bexpr22 ).
 
 comp ::= bexpr33 /(<|>|=|!=|>=|<=)/ bexpr33.
 
-m_expr_plug = ( number | script_call_ret_1 | script_var ).
+m_expr_plug = ( m_sqrt | m_log | m_exp | m_const | number | script_call_ret_1 | script_var ).
 
-expr0	= m_minus.
-expr00	= ( m_minus | m_expr_plug ).
-expr1	= ( m_div | expr0 ).
-expr11	= ( m_div | expr0 | m_expr_plug ).
-expr2	= ( m_mul | expr1 ).
-expr22	= ( m_mul | expr1 | m_expr_plug ).
-expr3	= ( m_sub | expr2 ).
-expr33	= ( m_sub | expr2 | m_expr_plug ).
-expr4	= ( m_add | expr3 ).
+m_const = ( m_pi | m_e ).
+
+m_pi ::= /\<pi\>/.
+m_e ::= /\<e\>/.
+
+expr0	= m_expr_plug.
+expr00	= ( m_expr_plug ).
+expr1	= ( m_pow | expr0 ).
+expr11	= ( m_pow | expr0 | m_expr_plug ).
+expr2	= ( m_div | expr1 ).
+expr22	= ( m_div | expr1 | m_expr_plug ).
+expr3	= ( m_mul | expr2 ).
+expr33	= ( m_mul | expr2 | m_expr_plug ).
+expr4	= ( m_sub | expr3 ).
+expr44	= ( m_sub | expr3 | m_expr_plug ).
+expr5	= ( m_add | expr4 ).
 
 bexpr1	= ( b_not | m_expr ).
 bexpr11	= ( b_not | m_expr | m_expr_plug ).

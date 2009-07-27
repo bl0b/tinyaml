@@ -10,8 +10,8 @@ language
 	meta_inline ::= "(" asm_statement+ ")".
 	meta_elem = ( meta_inline | meta_sym ).
 	meta_sym ::= sym.
-	meta_oc_arg =	( meta_oc_int
-			| meta_oc_float
+	meta_oc_arg =	( meta_oc_float
+			| meta_oc_int
 			| meta_oc_string
 			| meta_oc_label
 			| meta_oc_envsym

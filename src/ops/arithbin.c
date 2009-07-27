@@ -360,6 +360,31 @@ void _VM_CALL vm_op_sup(vm_t vm, word_t unused) {
 	vm_poke_data(vm,dta,a);
 }
 
+void _VM_CALL vm_op_pow(vm_t vm, word_t unused) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	_IFC x, y;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	if(dta==DataInt) {
+		x.f = i2f(a);
+	} else if(dta==DataFloat) {
+		x.i = a;
+	} else {
+		assert(dta==DataInt||dta==DataFloat);
+	}
+	if(dtb==DataInt) {
+		y.f = i2f(b);
+	} else if(dtb==DataFloat) {
+		y.i = b;
+	} else {
+		assert(dtb==DataInt||dtb==DataFloat);
+	}
+	x.f = powf(x.f, y.f);
+	vm_poke_data(vm,dta,x.i);
+}
+
 void _VM_CALL vm_op_infEq(vm_t vm, word_t unused) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
@@ -427,6 +452,65 @@ void _VM_CALL vm_op_tan(vm_t vm, word_t unused) {
 	assert(d->type==DataFloat);
 	conv.i = d->data;
 	conv.f = tanf(conv.f);
+	vm_push_data(vm, DataFloat, conv.i);
+}
+
+
+void _VM_CALL vm_op_sqrt(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	_IFC conv;
+	if(d->type==DataFloat) {
+		conv.i = d->data;
+	} else if(d->type==DataInt) {
+		conv.f = i2f(d->data);
+	} else {
+		assert(d->type==DataFloat||d->type==DataInt);
+	}
+	conv.f = sqrtf(conv.f);
+	vm_push_data(vm, DataFloat, conv.i);
+}
+
+void _VM_CALL vm_op_log(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	_IFC conv;
+	if(d->type==DataFloat) {
+		conv.i = d->data;
+	} else if(d->type==DataInt) {
+		conv.f = i2f(d->data);
+	} else {
+		assert(d->type==DataFloat||d->type==DataInt);
+	}
+	conv.f = logf(conv.f);
+	vm_push_data(vm, DataFloat, conv.i);
+}
+
+void _VM_CALL vm_op_log_Float(vm_t vm, word_t base) {
+	vm_data_t d = _vm_pop(vm);
+	_IFC conv;
+	_IFC convbase;
+	if(d->type==DataFloat) {
+		conv.i = d->data;
+	} else if(d->type==DataInt) {
+		conv.f = i2f(d->data);
+	} else {
+		assert(d->type==DataFloat||d->type==DataInt);
+	}
+	convbase.i = base;
+	conv.i = logf(conv.f)/logf(convbase.f);
+	vm_push_data(vm, DataFloat, conv.i);
+}
+
+void _VM_CALL vm_op_exp(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	_IFC conv;
+	if(d->type==DataFloat) {
+		conv.i = d->data;
+	} else if(d->type==DataInt) {
+		conv.f = i2f(d->data);
+	} else {
+		assert(d->type==DataFloat||d->type==DataInt);
+	}
+	conv.f = expf(conv.f);
 	vm_push_data(vm, DataFloat, conv.i);
 }
 

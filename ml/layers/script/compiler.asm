@@ -800,7 +800,55 @@ end
 
 
 
+compile m_pow
+asm
+	astCompileChild 0
+	astCompileChild 1
+	<< pow >>
+	compileStateNext
+end
 
+
+
+compile m_sqrt
+asm
+	astCompileChild 1
+	<< sqrt >>
+	compileStateNext
+end
+
+
+
+compile m_exp
+asm
+	astCompileChild 1
+	<< exp >>
+	compileStateNext
+end
+
+
+
+compile m_log
+asm
+	astCompileChild 1
+	<< log >>
+	compileStateNext
+end
+
+
+
+compile m_pi
+asm
+	<< push 3.14159265358979323846 >>
+	compileStateNext
+end
+
+
+compile m_e
+asm
+	<< push 2.71828182845904523536 >>
+	compileStateNext
+end
 
 compile b_and
 asm
