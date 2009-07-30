@@ -31,6 +31,7 @@
 #include "opcode_dict.h"
 #include "program.h"
 #include "_impl.h"
+#include "text_seg.h"
 
 /* hidden tinyap feature */
 ast_node_t newAtom(const char*data,int row,int col);
@@ -52,7 +53,8 @@ void* try_walk(wast_t node, const char* pname, vm_t vm) {
 	ret = tinyap_walk(node, pname, vm);
 	/*vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);*/
 	/*vm_printerrf("done walking... (vwalker=%s, state=%s)\n", vm->virt_walker, state2str(vm->compile_state));*/
-	if(vm->compile_state==Error) {
+	vm->compile_error = (vm->compile_state==Error);
+	if(vm->compile_error) {
 		vm->onCompileError(vm, "<not implemented>", 0);
 		ret = NULL;
 	}
@@ -213,6 +215,7 @@ void* ape_compiler_result(vm_t vm) {
 }
 
 static inline WalkDirection update_vm_state(vm_t vm, WalkDirection wd) {
+	vm->compile_error = (wd==Error);
 	return vm->compile_state=wd;
 }
 
@@ -449,17 +452,20 @@ WalkDirection ape_compiler_DataFloat(wast_t node, vm_t vm) {
 		rep=wa_op(wa_opd(node,1));
 	}
 	opcode_chain_add_data(vm->result,DataFloat,wa_op(wa_opd(node,0)),rep, wa_row(node), wa_col(node));
+	_text_seg_append(vm->current_edit_prg->data_symbols, "");
 	return update_vm_state(vm, Next);
 }
 
 
 WalkDirection ape_compiler_DataString(wast_t node, vm_t vm) {
 	opcode_chain_add_data(vm->result,DataString,wa_op(wa_opd(node,0)),NULL, wa_row(node), wa_col(node));
+	_text_seg_append(vm->current_edit_prg->data_symbols, "");
 	return update_vm_state(vm, Next);
 }
 
 WalkDirection ape_compiler_DataChar(wast_t node, vm_t vm) {
 	opcode_chain_add_data(vm->result,DataChar,wa_op(wa_opd(node,0)),NULL, wa_row(node), wa_col(node));
+	_text_seg_append(vm->current_edit_prg->data_symbols, "");
 	return update_vm_state(vm, Next);
 }
 

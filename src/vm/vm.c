@@ -148,7 +148,8 @@ void vm_print_data(vm_t vm, vm_data_t d) {
 
 extern volatile int line_number_bias;
 
-void default_error_handler(vm_t vm, const char* input, int is_buffer) {
+
+void default_error_handler_no_exit(vm_t vm, const char* input, int is_buffer) {
 	int ofs, sz;
 	compinput_t ci;
 	const char* buf;
@@ -162,14 +163,22 @@ void default_error_handler(vm_t vm, const char* input, int is_buffer) {
 		vm_printf("\n");
 	}
 	sz = vm->cn_stack.sp;
-	vm_printf("Node stack :\n");
-	for(ofs=-sz;ofs<=0;ofs+=1) {
-		wa = *(wast_t*) _gpeek(&vm->cn_stack, ofs);
-		if(wa) {
-			vm_printf(" * %i:%i %s (%i)\n", wa_row(wa)+line_number_bias, wa_col(wa), wa_op(wa), wa_opd_count(wa));
+	if(sz>0) {
+		vm_printf("Node stack :\n");
+		for(ofs=-sz;ofs<=0;ofs+=1) {
+			wa = *(wast_t*) _gpeek(&vm->cn_stack, ofs);
+			if(wa) {
+				vm_printf(" * %i:%i %s (%i)\n", wa_row(wa)+line_number_bias, wa_col(wa), wa_op(wa), wa_opd_count(wa));
+			}
 		}
 	}
-	vm_printf("at %i:%i (%s)\n", wa_row(vm->current_node)+line_number_bias, wa_col(vm->current_node), wa_op(vm->current_node));
+	if(sz==0) {
+		vm_printf("at %i:%i (%s)\n", wa_row(vm->current_node)+line_number_bias, wa_col(vm->current_node), wa_op(vm->current_node));
+	}
+}
+
+void default_error_handler(vm_t vm, const char* input, int is_buffer) {
+	default_error_handler_no_exit(vm, input, is_buffer);
 	exit(-1);
 }
 
@@ -434,20 +443,16 @@ vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
 program_t compile_wast(wast_t, vm_t);
 void wa_del(wast_t w);
 
-program_t vm_compile_file(vm_t vm, const char* fname) {
+program_t vm_compile_any(vm_t vm, word_t* start_IP, int last) {
 	program_t p=NULL;
 	word_t reent = vm->compile_reent;
 	vm->compile_reent=0;
 
-	/*vm_printf("vm_compile_file(%s)\n",fname);*/
-
-	tinyap_set_source_file(vm->parser,fname);
-	vm_compinput_push_file(vm, fname);
 	tinyap_parse(vm->parser);
 
 	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
 		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
-		p = compile_wast(wa, vm);
+		p = compile_append_wast(wa, vm, start_IP, last);
 		wa_del(wa);
 		vm->engine->_client_lock(vm->engine);
 		slist_insert_tail(&vm->all_programs,p);
@@ -462,43 +467,54 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 	return p;
 }
 
+program_t vm_compile_append_file(vm_t vm, const char* fname, word_t* start_IP, int last) {
+	/*vm_printf("vm_compile_file(%s)\n",fname);*/
+	tinyap_set_source_file(vm->parser,fname);
+	vm_compinput_push_file(vm, fname);
+	return vm_compile_any(vm, start_IP, last);
+}
 
-program_t vm_compile_buffer(vm_t vm, const char* buffer) {
-	program_t p=NULL;
-	word_t reent = vm->compile_reent;
-	vm->compile_reent=0;
+program_t vm_compile_file(vm_t vm, const char* fname) {
+	word_t zero;
+	program_t backup = vm->current_edit_prg, ret;
+	vm->current_edit_prg = program_new();
+	ret = vm_compile_append_file(vm, fname, &zero, 1);
+	vm->current_edit_prg = backup;
+	return ret;
+}
+
+
+program_t vm_compile_append_buffer(vm_t vm, const char* buffer, word_t* start_IP, int last) {
 	/*vm_printf("vm_compile_buffer(%s)\n",buffer);*/
 	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
 	vm_compinput_push_buffer(vm, buffer);
-	tinyap_parse(vm->parser);
+	return vm_compile_any(vm, start_IP, last);
+}
 
-	if(tinyap_parsed_ok(vm->parser)&&tinyap_get_output(vm->parser)) {
-		wast_t wa = tinyap_make_wast( tinyap_list_get_element( tinyap_get_output(vm->parser), 0) );
-		p = compile_wast(wa, vm);
-		wa_del(wa);
-		vm->engine->_client_lock(vm->engine);
-		slist_insert_tail(&vm->all_programs,p);
-		vm->engine->_client_unlock(vm->engine);
-		/*slist_forward(&vm->all_programs,program_t,program_dump_stats);*/
-	} else {
-		vm_printerrf("Parse error at %i:%i\n%s",tinyap_get_error_row(vm->parser),tinyap_get_error_col(vm->parser),tinyap_get_error(vm->parser));
-		vm->onCompileError(vm, "<not implemented>", 0);
-	}
-	vm_compinput_pop(vm);
-	vm->compile_reent=reent;
-	return p;
+
+program_t vm_compile_buffer(vm_t vm, const char* buffer) {
+	word_t zero;
+	program_t backup = vm->current_edit_prg, ret;
+	vm->current_edit_prg = program_new();
+	ret = vm_compile_append_buffer(vm, buffer, &zero, 1);
+	vm->current_edit_prg = backup;
+	return ret;
 }
 
 
 
 vm_t vm_run_program_bg(vm_t vm, program_t p, word_t ip, word_t prio) {
-	vm->engine->_run_async(vm->engine, p, ip, prio);
+	if(p) {
+		vm->engine->_run_async(vm->engine, p, ip, prio);
+	}
 	return vm;
 }
 
 
 vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio) {
-	vm->engine->_run_sync(vm->engine, p, ip, prio);
+	if(p) {
+		vm->engine->_run_sync(vm->engine, p, ip, prio);
+	}
 	return vm;
 }
 

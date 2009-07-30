@@ -1,9 +1,9 @@
 language
 
- Script ::= "script" script_glob p_ScriptStatement+ "end".
+ Script ::= "script" script_glob? p_ScriptStatement* "end".
  p_ScriptStatement = ( script_glob_fun | script_instruction ).
 
- script_glob ::= ("global" sym ("," sym)*|_epsilon).
+ script_glob ::= "global" sym ("," sym)*.
  script_loc ::= "local"  sym ("," sym)*.
  script_id ::= sym.
  script_string ::= string.

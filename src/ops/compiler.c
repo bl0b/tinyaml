@@ -45,6 +45,9 @@ extern volatile int line_number_bias;
  * @{
  */
 
+void _VM_CALL vm_op__vm_prog_get_globals(vm_t vm, word_t unused) {
+	vm_push_data(vm, DataObjSymTab, vm->current_edit_prg->data_symbols);
+}
 
 void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
 	word_t test = text_seg_text_to_index(&vm->gram_nodes,sernode);

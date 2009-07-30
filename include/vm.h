@@ -186,6 +186,11 @@ program_t vm_compile_file(vm_t, const char*);
 /*! \brief Compile a character string. */
 program_t vm_compile_buffer(vm_t, const char*);
 
+/*! \brief Compile a file (append to the current program). */
+program_t vm_compile_append_file(vm_t, const char*, word_t*, int);
+/*! \brief Compile a character string (append to the current program). */
+program_t vm_compile_append_buffer(vm_t, const char*, word_t*, int);
+
 /*@}*/
 
 /*! \addtogroup Threads

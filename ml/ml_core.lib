@@ -264,7 +264,8 @@ lib
         opcode print:Int
         opcode print                    # pop number of items, pop each item
 
-
+      # Access to internals
+        opcode _vm_prog_get_globals     # push symtab
 
 
 

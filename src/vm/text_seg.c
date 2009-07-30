@@ -79,6 +79,12 @@ word_t text_seg_text_to_index(text_seg_t ts, const char*str) {
 	}
 }
 
+void _text_seg_append(text_seg_t ts, const char* sym) {
+	char* ret = strdup(sym);
+	hash_addelem(&ts->by_text, (hash_key)ret, (hash_elem)dynarray_size(&ts->by_index));
+	dynarray_set(&ts->by_index, dynarray_size(&ts->by_index), (value_t)ret);
+}
+
 void text_seg_copy(text_seg_t dest, text_seg_t src) {
 	int i;
 	for(i=1;i<dynarray_size(&src->by_index);i+=1) {

@@ -182,6 +182,7 @@ struct _vm_t {
 	tinyap_t parser;
 	/* meta-compiler */
 	word_t compile_reent;
+	word_t compile_error;
 	struct _text_seg_t compile_vectors;
 	program_t current_edit_prg;
 	opcode_chain_t result;
@@ -256,6 +257,9 @@ struct _program_t {
 	struct _dynarray_t gram_nodes_indexes;
 	struct _dynarray_t data;
 	struct _dynarray_t code;
+	/* TODO : use this table in symasm, script, etc. */
+	/*struct _text_seg_t data_symbols;*/
+	text_seg_t data_symbols;
 };
 /*@}*/
 

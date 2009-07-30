@@ -14,15 +14,19 @@ script
 		asm +$val +$sym envAdd end
 	end
 	function addTo(name,field,value)
-		asm getmem -3 getmem -1 envGet getmem -2 mapSet push 0 end
+		asm
+			+$value
+			+$name envGet
+			+$field
+			mapSet
+		end
 	end
 	function exportGroup(name)
-		asm mapNew getmem -1 envAdd end
+		asm mapNew +$name envAdd end
 	end
 	function strcmp(a,b)
-		local r
-		asm getmem -1 getmem -2 strcmp -$r end
-		return r
+		asm +$a +$b strcmp -$a end
+		return a
 	end
 
 	export("export",export)
@@ -33,21 +37,19 @@ script
 
 	addTo("String","compare",strcmp)
 	addTo("String","length",
-		function(a)
-			local r
-			asm getmem -1 strlen -$r end
-			return r
+		function(l)
+			asm +$l strlen -$l end
+			return l
 		end)
 	addTo("String","append",
 		function(a,b)
-			local r
-			asm getmem -1 getmem -2 strcat -$r end
-			return r
+			asm +$a +$b strcat -$a end
+			return a
 		end)
 	addTo("String","charAt",
-		function(str,i) local r asm getmem -1 getmem -2 charAt -$r end return r end)
+		function(str,i) local r asm +$str +$i charAt -$i end return i end)
 	addTo("String","setCharAt",
-		function(str,i,c) asm getmem -1 getmem -3 getmem -2 setCharAt end end)
+		function(str,i,c) asm +$str +$c +$i setCharAt end end)
 
 	exportGroup("Compiler")
 
@@ -64,31 +66,31 @@ script
 			end
 		end)
 	addTo("Compiler","opcodeNoArg",
-		function(oc) asm getmem -1 write_oc end end)
+		function(oc) asm +$oc write_oc end end)
 	addTo("Compiler","opcodeInt",
-		function(oc,arg) asm getmem -2 getmem -1 write_ocInt end end)
+		function(oc,arg) asm +$arg +$oc write_ocInt end end)
 	addTo("Compiler","opcodeFloat",
-		function(oc,arg) asm getmem -2 getmem -1 write_ocFloat end end)
+		function(oc,arg) asm +$arg +$oc write_ocFloat end end)
 	addTo("Compiler","opcodeLabel",
-		function(oc,arg) asm getmem -2 getmem -1 write_ocLabel end end)
+		function(oc,arg) asm +$arg +$oc write_ocLabel end end)
 	addTo("Compiler","opcodeString",
-		function(oc,arg) asm getmem -2 getmem -1 write_ocString end end)
+		function(oc,arg) asm +$arg +$oc write_ocString end end)
 	addTo("Compiler","opcodeEnvSym",
-		function(oc,arg) asm getmem -2 getmem -1 write_ocEnvSym end end)
+		function(oc,arg) asm +$arg +$oc write_ocEnvSym end end)
 	addTo("Compiler","label",
-		function(label) asm getmem -1 write_label end end)
+		function(label) asm +$label write_label end end)
 	addTo("Compiler","data",
-		function(data,rep) asm getmem -1 getmem -2 write_data end end)
+		function(data,rep) asm +$data +$rep write_data end end)
 	addTo("Compiler","printNode",
 		function() asm pp_curNode end end)
 	addTo("Compiler","getChildString",
-		function(i) local r asm getmem -1 astGetChildString -$r end return r end)
+		function(i) asm +$i astGetChildString -$i end return i end)
 	addTo("Compiler","getChildrenCount",
 		function() local r asm astGetChildrenCount -$r end return r end)
 	addTo("Compiler","compileChild",
-		function(i) asm getmem -1 astCompileChild end end)
+		function(i) asm +$i astCompileChild end end)
 	addTo("Compiler","walk",
-		function(walkerName) asm getmem -1 doWalk end end)
+		function(walkerName) asm +$walkerName doWalk end end)
 
 	exportGroup("Array")
 	function _anew(args...) return args end
@@ -97,7 +99,7 @@ script
 		function(a) asm +$a arraySize -$a end return a end)
 	function _afe(a,f)
 		local i,j
-		asm getmem -3 arraySize setmem -2 end
+		asm +$a arraySize -$j end
 		i=0
 		while i<j do
 			f(i,a[i])
@@ -107,7 +109,7 @@ script
 	addTo("Array","apply",
 		function(a,f)
 			local i,j
-			asm getmem -3 arraySize setmem -2 end
+			asm +$a arraySize -$j end
 			i=0
 			while i<j do
 				a[i] = f(i,a[i])
@@ -117,7 +119,7 @@ script
 	addTo("Array","foreach", _afe)
 	function _af(a,p)
 		local i,j,k,ret
-		asm getmem -5 arraySize setmem -3 end
+		asm +$a arraySize -$k end
 		i,j=0,0
 		ret=_anew()
 		while i<k do
@@ -143,29 +145,28 @@ script
 	function _ar(a,f)
 		local accum,i,j
 		asm +$a arraySize -$j end
-		i=2
-		accum=f(a[0],a[1])
-		while i<j do
-			accum=f(accum,a[i])
-			i=i+1
+		if j<2 then
+			return a[0]
+		else
+			i=2
+			accum=f(a[0],a[1])
+			while i<j do
+				accum=f(accum,a[i])
+				i=i+1
+			end
 		end
 		return accum
 	end
 	addTo("Array", "reducei", _ari)
 	addTo("Array", "reduce", _ar)
 
-	exportGroup("SymTab")
-	addTo("SymTab","new",
+	exportGroup("Map")
+	addTo("Map","new",
 		function() local r asm newSymTab -$r end return r end)
-	addTo("SymTab","size",
-		function(st) local r asm getmem -1 symTabSz -$r end return r end)
+	addTo("Map","size",
+		function(st) asm +$st symTabSz -$st end return st end)
 
 	exportGroup("Thread")
-	#function _tn(prio, thread)
-	#	local ret
-	#	asm +$prio +$thread newThread -$ret end
-	#	return ret
-	#end
 	function _tn(prio, thread)
 		asm +$prio +$thread newThread -$thread end
 		return thread

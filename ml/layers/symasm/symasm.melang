@@ -216,7 +216,8 @@ CSTAdd:
 
 
 globSymTabNew:
-	newSymTab
+	#newSymTab
+	_vm_prog_get_globals
 	dup 0 setmem 2
 	#push "_globSymTab" envAdd
 	ret 0

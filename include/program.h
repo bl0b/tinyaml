@@ -51,6 +51,8 @@ const char* program_disassemble(vm_t vm, program_t p, word_t IP);
 
 void program_dump_stats(program_t p);
 
+text_seg_t program_get_global_symbols(program_t p);
+
 /*@}*/
 
 #endif

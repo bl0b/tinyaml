@@ -29,6 +29,10 @@
 
 #include <sys/stat.h>
 
+#include <stdio.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+
 
 #define TINYAML_ABOUT	"This is not yet another meta-language.\n" \
 			"(c) 2007-2008 Damien 'bl0b' Leroux\n\n"
@@ -49,6 +53,41 @@ static int tinyaml_quiet=0;
 
 extern volatile int _vm_trace;
 
+char* interpreter_prefix="";
+char* interpreter_suffix="";
+
+int eval_buffer(vm_t vm, program_t p, const char* buf) {
+	if(strncmp(".mode ", buf, 6)) {
+		int prelen = strlen(interpreter_prefix);
+		int suflen = strlen(interpreter_suffix);
+		word_t IP;
+		char* interpreter_buffer = (char*) malloc(strlen(buf)+prelen+suflen+3);
+		sprintf(interpreter_buffer, "%s%s%s", interpreter_prefix, buf, interpreter_suffix);
+		vm->current_edit_prg = p;
+		p = vm_compile_append_buffer(vm, interpreter_buffer, &IP, 1);
+		/*printf("exec @%li\n", IP);*/
+		if(!vm->compile_error) {
+			vm_run_program_fg(vm, p, IP<<1, 50);
+		}
+		return vm->compile_error;
+	} else {
+		const char* mode = buf+6;
+		if(!strcmp(mode, "raw")) {
+			interpreter_prefix="";
+			interpreter_suffix="";
+		} else if(!strcmp(mode, "asm")) {
+			interpreter_prefix="asm ";
+			interpreter_suffix=" end";
+		} else if(!strcmp(mode, "script")) {
+			interpreter_prefix="script ";
+			interpreter_suffix=" end";
+		}
+	}
+	return 0;
+}
+
+void default_error_handler_no_exit(vm_t vm, const char* input, int is_buffer);
+
 int do_args(vm_t vm, int argc,char*argv[]) {
 	int i,k;
 	program_t p=NULL;
@@ -58,6 +97,23 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 	for(i=1;i<argc;i+=1) {
 		if(cmp_param(0,"--trace","-t")) {
 			_vm_trace=1;
+		} else if(cmp_param(0, "--interactive","-i")) {
+			char* line;
+			program_t p = vm->current_edit_prg;
+			if(!p) {
+				p = vm_compile_buffer(vm, "require \"script.wc\" asm end");
+			}
+			vm->compile_reent+=1;
+			vm_error_handler prev_hndl = vm_get_error_handler(vm);
+			vm_set_error_handler(vm, default_error_handler_no_exit);
+			using_history();
+			while((line=readline("\\_o< "))) {
+				eval_buffer(vm, p, line);
+				add_history(line);
+				free(line);
+			}
+			vm->compile_reent-=1;
+			vm_set_error_handler(vm, prev_hndl);
 		} else if(cmp_param(0,"--no-trace","-nt")) {
 			_vm_trace=0;
 		} else if(cmp_param(1,"--timeslice","-ts")) {

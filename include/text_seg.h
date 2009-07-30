@@ -36,6 +36,8 @@ const char* text_seg_find_by_text(text_seg_t, const char*);
 const char* text_seg_find_by_index(text_seg_t, word_t);
 word_t text_seg_text_to_index(text_seg_t, const char*);
 
+void _text_seg_append(text_seg_t, const char*);
+
 void text_seg_serialize(text_seg_t, writer_t, const char* sec_name);
 void text_seg_unserialize(text_seg_t, reader_t, const char* sec_name);
 

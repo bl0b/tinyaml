@@ -40,6 +40,9 @@ const char* program_get_source(program_t p) {
 	return p->source;
 }
 
+text_seg_t program_get_global_symbols(program_t p) {
+	return p->data_symbols;
+}
 
 
 const char* find_file(const char*fname) {
@@ -168,6 +171,8 @@ program_t program_new() {
 	dynarray_init(&ret->gram_nodes_indexes);
 	dynarray_init(&ret->data);
 	dynarray_init(&ret->code);
+	ret->data_symbols = vm_symtab_new();
+	vm_obj_ref_ptr(_glob_vm, ret->data_symbols);
 	/*program_write_code(ret, (word_t)vm_op_nop, 0);*/
 	/*vm_printf("PROGRAM NEW %p\n",ret);*/
 	return ret;
@@ -195,6 +200,7 @@ void program_free(vm_t vm, program_t p) {
 	dynarray_deinit(&p->gram_nodes_indexes,NULL);
 	dynarray_deinit(&p->data,NULL);
 	free((char*)p->source);
+	vm_obj_deref_ptr(_glob_vm, p->data_symbols);
 	free(p);
 }
 

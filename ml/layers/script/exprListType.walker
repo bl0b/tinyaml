@@ -42,6 +42,14 @@ walker exprListType {
 	on m_add asm %inc_exprs() compileStateNext end
 	on m_sub asm %inc_exprs() compileStateNext end
 
+	on m_log asm %inc_exprs() compileStateNext end
+	on m_exp asm %inc_exprs() compileStateNext end
+	on m_sqrt asm %inc_exprs() compileStateNext end
+	on m_pow asm %inc_exprs() compileStateNext end
+	
+	on m_e asm %inc_exprs() compileStateNext end
+	on m_pi asm %inc_exprs() compileStateNext end
+
 	on b_not asm %inc_exprs() compileStateNext end
 	on b_and asm %inc_exprs() compileStateNext end
 	on b_or  asm %inc_exprs() compileStateNext end
