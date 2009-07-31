@@ -85,9 +85,9 @@ m_div ::= ( m_div "/" expr11 | expr11 "/" expr11 ).
 m_mul ::= ( m_mul "*" expr22 | expr22 "*" expr22 ).
 m_sub ::= ( m_sub "-" expr33 | expr33 "-" expr33 ).
 m_add ::= ( m_add "+" expr44 | expr44 "+" expr44 ).
-m_log ::= /\<log\>/ m_expr_plug.
-m_exp ::= /\<e\>/ "^" m_expr_plug.
-m_sqrt ::= /\<sqrt\>/ m_expr_plug.
+m_log ::= /\<log\>/ (m_expr_plug | script_call_ret_1 | script_var).
+m_exp ::= /\<e\>/ "^" (m_expr_plug | script_call_ret_1 | script_var).
+m_sqrt ::= /\<sqrt\>/ (m_expr_plug | script_call_ret_1 | script_var).
 
 b_not ::= /\<not\>/ (m_expr | script_call_ret_1 | script_var).
 b_and ::= ( b_and /\<and\>/ bexpr11 | bexpr11 /\<and\>/ bexpr11 ).
@@ -95,7 +95,7 @@ b_or ::= ( b_or /\<or\>/ bexpr22 | bexpr22 /\<or\>/ bexpr22 ).
 
 comp ::= bexpr33 /(<|>|=|!=|>=|<=)/ bexpr33.
 
-m_expr_plug = ( m_sqrt | m_log | m_exp | m_const | number | script_call_ret_1 | script_var ).
+m_expr_plug = ( m_sqrt | m_log | m_exp | m_const | number ).
 
 m_const = ( m_pi | m_e ).
 
@@ -103,23 +103,23 @@ m_pi ::= /\<pi\>/.
 m_e ::= /\<e\>/.
 
 expr0	= m_expr_plug.
-expr00	= ( m_expr_plug ).
+expr00	= ( m_expr_plug | script_call_ret_1 | script_var ).
 expr1	= ( m_pow | expr0 ).
-expr11	= ( m_pow | expr0 | m_expr_plug ).
+expr11	= ( m_pow | expr0 | m_expr_plug | script_call_ret_1 | script_var ).
 expr2	= ( m_div | expr1 ).
-expr22	= ( m_div | expr1 | m_expr_plug ).
+expr22	= ( m_div | expr1 | m_expr_plug | script_call_ret_1 | script_var ).
 expr3	= ( m_mul | expr2 ).
-expr33	= ( m_mul | expr2 | m_expr_plug ).
+expr33	= ( m_mul | expr2 | m_expr_plug | script_call_ret_1 | script_var ).
 expr4	= ( m_sub | expr3 ).
-expr44	= ( m_sub | expr3 | m_expr_plug ).
+expr44	= ( m_sub | expr3 | m_expr_plug | script_call_ret_1 | script_var ).
 expr5	= ( m_add | expr4 ).
 
 bexpr1	= ( b_not | m_expr ).
-bexpr11	= ( b_not | m_expr | m_expr_plug ).
+bexpr11	= ( b_not | m_expr | m_expr_plug | script_call_ret_1 | script_var ).
 bexpr2	= ( b_and | bexpr1 ).
-bexpr22	= ( b_and | bexpr1 | m_expr_plug ).
+bexpr22	= ( b_and | bexpr1 | m_expr_plug | script_call_ret_1 | script_var ).
 bexpr3	= ( b_or | bexpr2 ).
-bexpr33	= ( b_or | bexpr2 | m_expr_plug ).
+bexpr33	= ( b_or | bexpr2 | m_expr_plug | script_call_ret_1 | script_var ).
 
 bexpr4 = ( comp | bexpr3 ).
 

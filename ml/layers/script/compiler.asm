@@ -98,17 +98,19 @@ compile script_glob_fun
 asm
 	local sz {
 		#pp_curNode
-		astGetChildString 0 envGet &_GSTGet call push -1 nEq [
-			push "Error : Symbol " astGetChildString 0 push "\ already defined !\n" print 3
-			compileStateError
-			ret 0
-		]
-
 		astGetChildString 0 -$cur_fname
 
-		push 1 push 0 write_data
+		+$cur_fname envGet &_GSTGet call push -1 nEq [[
+			#push "Error : Symbol " astGetChildString 0 push "\ already defined !\\n" print 3
+			push "Warning : shadowing previous definition of function " +$cur_fname push ".\\n" print 3
+			#compileStateError
+			#ret 0
+		][
+			push 1 push 0 write_data
+			+$cur_fname envGet &_GSTAdd call
+		]]
+
 		#+$glob_dic symTabSz -$sz
-		+$cur_fname envGet &_GSTAdd call
 		+$cur_fname envGet &_GSTGet -$sz
 
 		# do "cur_fname = ...fun..."

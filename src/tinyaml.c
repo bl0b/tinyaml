@@ -55,9 +55,45 @@ extern volatile int _vm_trace;
 
 char* interpreter_prefix="";
 char* interpreter_suffix="";
+int interpreter_multiline=0;
+int interpreter_running=0;
 
 int eval_buffer(vm_t vm, program_t p, const char* buf) {
-	if(strncmp(".mode ", buf, 6)) {
+	if(!strncmp(".mode ", buf, 6)) {
+		const char* mode = buf+6;
+		if(!strcmp(mode, "raw")) {
+			interpreter_prefix="";
+			interpreter_suffix="";
+		} else if(!strcmp(mode, "asm")) {
+			interpreter_prefix="asm ";
+			interpreter_suffix=" end";
+		} else if(!strcmp(mode, "script")) {
+			interpreter_prefix="script ";
+			interpreter_suffix=" end";
+		} else {
+			vm_printf("Please use 'asm' or 'raw' or 'script' after .mode\n");
+		}
+	} else if(!strncmp(".help", buf, 5)) {
+		vm_printf("Special commands :\n"
+			"	.help		display this text\n"
+			"	.mode asm	wrap input inside an asm...end bloc\n"
+			"	.mode script	wrap input insode a script...end bloc\n"
+			"	.mode raw	don't wrap input\n"
+			"	.multi on	enable multi-line input (empty line ends input)\n"
+			"	.multi off	disable multi-line input\n"
+			"	.quit		quit the interpreter\n"
+		);
+	} else if(!strcmp(".quit", buf)) {
+		interpreter_running=0;
+	} else if(!strncmp(".multi ", buf, 7)) {
+		if(!strcmp("on", buf+7)) {
+			interpreter_multiline=1;
+		} else if(!strcmp("off", buf+7)) {
+			interpreter_multiline=0;
+		} else {
+			vm_printf("Please use 'on' or 'off' after .multi\n");
+		}
+	} else {
 		int prelen = strlen(interpreter_prefix);
 		int suflen = strlen(interpreter_suffix);
 		word_t IP;
@@ -70,18 +106,6 @@ int eval_buffer(vm_t vm, program_t p, const char* buf) {
 			vm_run_program_fg(vm, p, IP<<1, 50);
 		}
 		return vm->compile_error;
-	} else {
-		const char* mode = buf+6;
-		if(!strcmp(mode, "raw")) {
-			interpreter_prefix="";
-			interpreter_suffix="";
-		} else if(!strcmp(mode, "asm")) {
-			interpreter_prefix="asm ";
-			interpreter_suffix=" end";
-		} else if(!strcmp(mode, "script")) {
-			interpreter_prefix="script ";
-			interpreter_suffix=" end";
-		}
 	}
 	return 0;
 }
@@ -98,8 +122,9 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 		if(cmp_param(0,"--trace","-t")) {
 			_vm_trace=1;
 		} else if(cmp_param(0, "--interactive","-i")) {
-			char* line;
+			char* line, * pending = NULL;
 			program_t p = vm->current_edit_prg;
+			vm_printf("Enter .help for help.\n");
 			if(!p) {
 				p = vm_compile_buffer(vm, "require \"script.wc\" asm end");
 			}
@@ -107,9 +132,28 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 			vm_error_handler prev_hndl = vm_get_error_handler(vm);
 			vm_set_error_handler(vm, default_error_handler_no_exit);
 			using_history();
-			while((line=readline("\\_o< "))) {
-				eval_buffer(vm, p, line);
-				add_history(line);
+			interpreter_running=1;
+			while(interpreter_running && (line=readline(pending?"...  ":"\\_o< "))) {
+				if(interpreter_multiline) {
+					if(pending) {
+						if(strlen(line)>0) {
+							pending = (char*)realloc(pending, strlen(pending)+strlen(line)+2);
+							strcat(pending, "\n");
+							strcat(pending, line);
+						}
+					} else {
+						pending=strdup(line);
+					}
+					if(strlen(line)==0) {
+						eval_buffer(vm, p, pending);
+						add_history(pending);
+						free(pending);
+						pending=NULL;
+					}
+				} else {
+					eval_buffer(vm, p, line);
+					add_history(line);
+				}
 				free(line);
 			}
 			vm->compile_reent-=1;

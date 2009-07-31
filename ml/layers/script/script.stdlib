@@ -54,12 +54,12 @@ script
 	exportGroup("Compiler")
 
 	addTo("Compiler","setState",
-		function(n)
-			if not strcmp(n,"down") then asm compileStateDown end
-			else	if not strcmp(n,"next") then asm compileStateNext end
-				else	if not strcmp(n,"error") then asm compileStateError end
-					else	if not strcmp(n,"done") then asm compileStateDone end
-						else if not strcmp(n,"up") then asm compileStateUp end end
+		function(state)
+			if not strcmp(state,"down") then asm compileStateDown end
+			else	if not strcmp(state,"next") then asm compileStateNext end
+				else	if not strcmp(state,"error") then asm compileStateError end
+					else	if not strcmp(state,"done") then asm compileStateDone end
+						else if not strcmp(state,"up") then asm compileStateUp end end
 						end
 					end
 				end
@@ -80,7 +80,7 @@ script
 	addTo("Compiler","label",
 		function(label) asm +$label write_label end end)
 	addTo("Compiler","data",
-		function(data,rep) asm +$data +$rep write_data end end)
+		function(data,rep) asm +$rep +$data write_data end end)
 	addTo("Compiler","printNode",
 		function() asm pp_curNode end end)
 	addTo("Compiler","getChildString",
