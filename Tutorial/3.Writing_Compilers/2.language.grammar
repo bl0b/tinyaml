@@ -1,0 +1,38 @@
+# The bloc "language...end" delimits new grammar rules to be appended to the
+# current tinyaml syntax.
+#
+# The syntax for grammar rule definition is that of tinyap, which is
+# extensively described at :
+# http://beublo23.free.fr/doxygen/tinyap/Tutorial.html#t_gram
+# You are strongly encouraged to read this documentation before reading this
+# tutorial any further.
+# Also, the section about AST walking in the tinyap tutorial will provide
+# insights about the compilation process. Read it at :
+# http://beublo23.free.fr/doxygen/tinyap/Tutorial.html#t_walk
+#
+
+# FIXME : change grammar to match the example in the tinyap tute. Better.
+
+language
+	ex_number ::= /[0-9]+/.
+
+	ex_atom_expr = ( ex_number | "(" ex_expr ")" ).
+
+	ex_div_expr = ex_atom_expr.
+	ex_mul_expr = (ex_div | ex_div_expr).
+	ex_sub_expr = (ex_mul | ex_mul_expr).
+	ex_add_expr = (ex_sub | ex_sub_expr).
+	ex_div ::= (ex_div "/" ex_div_expr | ex_atom_expr "/" ex_div_expr).
+	ex_mul ::= (ex_mul "*" ex_mul_expr | ex_atom_expr "*" ex_mul_expr).
+	ex_sub ::= (ex_sub "-" ex_sub_expr | ex_atom_expr "-" ex_sub_expr).
+	ex_add ::= (ex_add "+" ex_add_expr | ex_atom_expr "+" ex_add_expr).
+
+	ex_expr ::= (ex_add | ex_sub | ex_mul | ex_div | ex_atom_expr).
+
+	ex_expr_print ::= ex_expr.
+
+	ex_expr_list ::= ex_expr_print+.
+end
+
+plug ex_expr_list into p_ProgramTopLevel
+

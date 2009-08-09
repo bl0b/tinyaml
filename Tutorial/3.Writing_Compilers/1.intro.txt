@@ -1,0 +1,23 @@
+This section demonstrates how to write a new language layer for use in tinyaml.
+
+This section assumes you have prior knowledge on LL grammars and the EBNF
+notation, in particular the dialect used by tinyap (which handles a set of
+grammars a little bit broader than LL actually, with limited handling of left
+recursive rules).
+
+We will first focus on writing a grammar using the tinyap EBNF dialect embedded
+in tinyaml. This grammar describes the AST that the parser will output as well
+as the language itself. Next we will write the routines to compile each node
+of the AST into tinyaml opcodes.
+
+For this example, we will write a short arithmetic interpreter featuring the
+four basic operations, * + - /.
+
+The code for the interpreter will be divided into three sections for clarity :
+
+- 2.language.grammar : all the grammar rules and where to plug the entry points.
+
+- 3.compiler.asm : all the routines to compile the AST nodes into tinyaml
+                   wordcode.
+
+- 4.main.asm : a small file that bundles the rest together.
