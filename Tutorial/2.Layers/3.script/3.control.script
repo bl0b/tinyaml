@@ -1,0 +1,25 @@
+# Here we demonstrate the few flow control statements available in the script language.
+# There only exist if..then..(else)..end and while..do..end constructs.
+# Booleans as shown in the previous part are, just like in C, integers with 0==False and any other value==True.
+require "script.wc"
+
+script
+	global i
+
+	# demonstrating conditional execution with a recursive function
+	function fibonacci(n)
+		if n<=2 then
+			return 1
+		else
+			return fibonacci(n-2)+fibonacci(n-1)
+		end
+	end
+
+	# now display the first ten values of the sequence using a while loop
+	i=1
+	while i<=10 do
+		print("fibonacci(",i,") = ", fibonacci(i), '\n')
+		i=i+1
+	end
+end
+
