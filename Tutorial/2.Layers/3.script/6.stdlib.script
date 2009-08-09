@@ -55,7 +55,6 @@ script
 	Array.foreach(a, function(index, value) print("a[", index, "] = ", value, '\n') end)
 	# A fatal error will occur if you try to access a field that doesn't
 	# exist. You must use Map.has_key to ensure it does.
-	print("DEBUG ", Map.has_key(a, "pouet"), " ", Map.has_key(a, "foo"), "\n")
 	if Map.has_key(a, "baz") then
 		print("OK, a contains key 'baz'.\n")
 	else
