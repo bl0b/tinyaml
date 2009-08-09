@@ -5,6 +5,8 @@ func reset_tables()
 	arrayNew  -$func_tab
 	+$func_tab push 0 push 0 arraySet
 	stackNew -$local_dic_stack
+	stackNew -$legal_return_size
+	+$legal_return_size push 0 stackPush
 	#stackNew -$lst_backup
 endfunc
 
@@ -176,6 +178,53 @@ func testSym(symbol, tab, rettype, typestr)
 				+$_sym_ofs +$tab symTabSz dec sub -$_sym_ofs
 			]
 			$symUnknown
+		]]
+	}
+endfunc
+
+
+func set_return_size(n)
+	+$legal_return_size +$n stackPush
+endfunc
+
+func get_return_size()
+	+$legal_return_size stackPeek 0
+endfunc
+
+func pop_return_size()
+	+$legal_return_size stackPop
+endfunc
+
+func compile_post_call()
+	local rs {
+		%get_return_size() -$rs
+		+$rs push 0 eq [[
+			# 0
+			<<
+				(%gen_label(push "post_call_discard")):
+				popN
+			>>
+		][
+			+$rs push 1 eq [[
+				# 1
+				local _lbl {
+					%gen_label(push "_check_ret_1") -$_lbl
+					<<
+						(%gen_label(push "post_call_check_1")):
+						push 1 eq SZ jmp l(+$_lbl)
+						push "Function call was expected to return exactly ONE value." throw
+						(+$_lbl):
+					>>
+				}
+			][
+				# any
+				$exprListRunningSize +$list_algo eq [
+					<<
+						(%gen_label(push "post_call_running_size")):
+						getmem -1 add setmem -1
+					>>
+				]
+			]]
 		]]
 	}
 endfunc

@@ -141,6 +141,7 @@ walker analyzeFuncDecl {
 	on b_not		asm compileStateDown end
 	on b_and		asm compileStateDown end
 	on b_or			asm compileStateDown end
+	on expr_end		asm compileStateNext end
 	on script_call		asm compileStateDown end
 	on script_if		asm compileStateDown end
 	on sb_end		asm compileStateDown end

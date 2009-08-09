@@ -1,7 +1,14 @@
 
 compile Script asm
 	#pp_curNode
+	%set_return_size(push 0)
 	compileStateDown
+end
+
+
+compile script_end asm
+	%pop_return_size()
+	compileStateNext
 end
 
 compile instruction_bloc asm compileStateDown end
@@ -147,7 +154,9 @@ end
 
 compile script_anon_array_item
 asm
+	%set_return_size(push 1)
 	astCompileChild 0	# push data
+	%pop_return_size()
 	<<
 		dup -1		# dup array
 		arraySize	# get new index
@@ -165,7 +174,9 @@ end
 
 compile script_anon_map_item
 asm
+	%set_return_size(push 1)
 	astCompileChild 1	# push value
+	%pop_return_size()
 	<< dup -1 >>		# dup map
 	<< mapSet s(astGetChildString 0) >>
 	compileStateNext
@@ -335,6 +346,8 @@ asm
 	+$list_algo setmem -2
 	+$call_local_ofs setmem -3
 
+	%set_return_size(push -1)
+
 	push 0 -$expr_size
 
 	+$expr_list_exprs [[
@@ -437,6 +450,7 @@ asm
 	getmem -1 -$expr_size
 	getmem -2 -$list_algo
 	getmem -3 -$call_local_ofs
+	%pop_return_size()
 	leave 3
 	compileStateNext
 end
@@ -587,9 +601,12 @@ asm
 			<< push 0 >>	# manual insertion of argc when no arg is present
 		]]
 		# (push function object)
+		%set_return_size(push 1)
 		astCompileChild 0
+		%pop_return_size()
 		# call
 		<< call >>
+		%compile_post_call()
 	}
 	compileStateNext
 end
@@ -655,8 +672,13 @@ end
 
 
 ### DEBUG ONLY
-compile m_expr asm pp_curNode compileStateDown end
-compile b_expr asm pp_curNode compileStateDown end
+compile m_expr asm %set_return_size(push 1) compileStateDown end
+compile b_expr asm %set_return_size(push 1) compileStateDown end
+
+compile expr_end asm
+	%pop_return_size()
+	compileStateNext
+end
 ###
 
 
@@ -669,7 +691,9 @@ asm
 	local sym {
 		#getmem 1 astGetChildString 0 getSym -$sym
 		# process righthand side
+		%set_return_size(push -1)
 		astCompileChild 1
+		%pop_return_size()
 		#<< regSet 0 >>			# save number of exprs to be popped
 		# process lefthand side
 		#push 1 -$is_lvalue
@@ -909,7 +933,9 @@ asm
 			%gen_label(+$cur_fname strcat "_endif") -$endif_lbl
 
 			<< (+$if_lbl): >>
+			%set_return_size(push 1)
 			astCompileChild 0
+			%pop_return_size()
 			<< SNZ jmp l(+$else_lbl) (+$then_lbl): >>
 			astCompileChild 1
 			<< jmp l(+$endif_lbl) (+$else_lbl): >>
@@ -924,7 +950,9 @@ asm
 			%gen_label(+$cur_fname toS strcat "_endif") -$endif_lbl
 
 			<< (+$if_lbl): >>
+			%set_return_size(push 1)
 			astCompileChild 0
+			%pop_return_size()
 			<< SNZ jmp l(+$endif_lbl) (+$then_lbl): >>
 			astCompileChild 1
 			<< (+$endif_lbl): >>
@@ -943,7 +971,9 @@ asm
 		%gen_label(+$cur_fname toS strcat "_endwhile") -$endwhile_lbl
 
 		<< (+$while_lbl): >>
+		%set_return_size(push 1)
 		astCompileChild 0
+		%pop_return_size()
 		<< SNZ jmp l(+$endwhile_lbl) >>
 		astCompileChild 1
 		<< jmp l(+$while_lbl) (+$endwhile_lbl): >>
@@ -983,12 +1013,16 @@ compile script_array_access asm
 	+$is_lvalue [[
 		push 0 -$is_lvalue
 		<< dup -1 >>
+		%set_return_size(push 1)
 		astCompileChild 0
+		%pop_return_size()
 		<< arraySet >>
 		<< pop 2 >>
 		push 1 -$is_lvalue
 	][
+		%set_return_size(push 1)
 		astCompileChild 0
+		%pop_return_size()
 		<< arrayGet >>
 	]]
 	compileStateNext

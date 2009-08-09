@@ -55,6 +55,10 @@ walker exprListType {
 	on b_and asm %inc_exprs() compileStateNext end
 	on b_or  asm %inc_exprs() compileStateNext end
 	on comp  asm %inc_exprs() compileStateNext end
+
+	on b_expr asm compileStateDown end
+	on m_expr asm compileStateDown end
+	on expr_end asm compileStateNext end
 }
 
 
