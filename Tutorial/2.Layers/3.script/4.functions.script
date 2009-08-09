@@ -28,6 +28,11 @@ script
 	hello_en("World")
 	hello_klingon("tlhIngan maH")
 
+	print('\n')
+
+	# We can also chain calls, provided that the (SINGLE) returned value is a function.
+	generate_greeting("This is an example of chained call")("which is not spectacular at all")
+
 	# Actually, each global function definition creates the corresponding
 	# global variable.
 	print("generate_greeting is a global variable with value ", generate_greeting, '\n')
@@ -35,6 +40,17 @@ script
 	# We now fetch the offset of this variable in program's data segment,
 	# for display purposes.
 	asm $generate_greeting -$ofs end
-	print("Its offset in memory is ", ofs, '\n')
+	print("Its offset in memory is ", ofs, " (remember we defined 4 global variables above ?)\n")
 end
+
+# Example command and output :
+#
+# $ tinyaml 4.functions.script
+# Bonjour, Monde !
+# Hello, World!
+# nuqneH, tlhIngan maH!
+# 
+# This is an example of chained call, which is not spectacular at all!
+# generate_greeting is a global variable with value [Function  0x8b10820]
+# Its offset in memory is 5 (remember we defined 4 global variables above ?)
 

@@ -22,3 +22,11 @@ script
 	myglobvar2 = 1 and 1
 	print("1 and 1 = ", myglobvar2, '\n')
 end
+
+# Example command and output :
+#
+# $ tinyaml 2.data.script 
+# Hello, World !
+# 1 and 0 = 0
+# 1 and 1 = 1
+

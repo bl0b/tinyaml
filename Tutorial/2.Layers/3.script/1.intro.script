@@ -82,3 +82,8 @@ script
 	print("Hello, world.\n")
 end
 
+# Example command and output :
+#
+# $ tinyaml 1.intro.script 
+# Hello, world.
+

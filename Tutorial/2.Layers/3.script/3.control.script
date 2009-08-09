@@ -16,10 +16,25 @@ script
 	end
 
 	# now display the first ten values of the sequence using a while loop
-	i=1
+	i=0
 	while i<=10 do
-		print("fibonacci(",i,") = ", fibonacci(i), '\n')
 		i=i+1
+		print("fibonacci(",i,") = ", fibonacci(i), '\n')
 	end
 end
+
+# Example command and output :
+# 
+# $ tinyaml 3.control.script
+# fibonacci(1) = 1
+# fibonacci(2) = 1
+# fibonacci(3) = 2
+# fibonacci(4) = 3
+# fibonacci(5) = 5
+# fibonacci(6) = 8
+# fibonacci(7) = 13
+# fibonacci(8) = 21
+# fibonacci(9) = 34
+# fibonacci(10) = 55
+# fibonacci(11) = 89
 
