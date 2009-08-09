@@ -167,15 +167,20 @@ script
 	addTo("Map","new",
 		function() local r asm newSymTab -$r end return r end)
 	addTo("Map","size",
-		function(st) asm +$st symTabSz -$st end return st end)
+		function(st) asm +$st symTabSz dec -$st end return st end)
 	addTo("Map", "has_key",
 		function(st, k)
 			asm +$st +$k getSym push -1 nEq -$k end
 			return k	
 		end)
+	addTo("Map", "getIndex",
+		function(st, k)
+			asm +$st +$k getSym -$k end
+			return k	
+		end)
 	addTo("Map", "set",
 		function(st, k, v)
-			asm +$st +$v +$k mapSet end
+			asm +$v +$st +$k mapSet end
 		end)
 	addTo("Map", "getByName",
 		function(st, k)
