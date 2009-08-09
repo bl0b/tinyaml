@@ -63,6 +63,7 @@ asm
 	compileStateNext
 end
 
+
 compile ex_div
 asm
 	# We tell the compiler to recursively compile the first child of the current node
@@ -74,6 +75,7 @@ asm
 	compileStateNext
 end
 
+
 compile ex_mul
 asm
 	astCompileChild 0
@@ -81,6 +83,7 @@ asm
 	<< mul >>
 	compileStateNext
 end
+
 
 compile ex_sub
 asm
@@ -90,11 +93,21 @@ asm
 	compileStateNext
 end
 
+
 compile ex_add
 asm
 	astCompileChild 0
 	astCompileChild 1
 	<< add >>
+	compileStateNext
+end
+
+
+compile ex_minus
+asm
+	<< push 0 >>
+	astCompileChild 0
+	<< sub >>
 	compileStateNext
 end
 
