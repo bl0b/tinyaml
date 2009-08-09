@@ -12,6 +12,7 @@ language
 	meta_sym ::= sym.
 	meta_oc_arg =	( meta_oc_float
 			| meta_oc_int
+			| meta_oc_char
 			| meta_oc_string
 			| meta_oc_label
 			| meta_oc_envsym
@@ -19,6 +20,7 @@ language
 			).
 
 	meta_oc_int ::= ( meta_int | "i" meta_inline ).
+	meta_oc_char ::= ( meta_float | "c" meta_inline ).
 	meta_oc_float ::= ( meta_float | "f" meta_inline ).
 	meta_oc_string ::= ( meta_string | "s" meta_inline ).
 	meta_oc_label ::= ( meta_label_arg | "l" meta_inline ).
@@ -28,6 +30,7 @@ language
 	meta_int ::= int.
 	meta_float ::= float.
 	meta_string ::= string.
+	meta_char ::= char.
 	meta_label_arg ::= ( "@" sym | /[+-][0-9]+/ ).
 	meta_envsym_arg ::= "&" sym.
 end
@@ -48,6 +51,7 @@ compile meta_value asm compileStateDown end
 
 
 compile meta_int asm astGetChildString 0 toI write_ocInt "push" compileStateNext end
+compile meta_char asm astGetChildString 0 chr write_ocChar "push" compileStateNext end
 compile meta_float asm astGetChildString 0 toF write_ocFloat "push" compileStateNext end
 compile meta_string asm astGetChildString 0 write_ocString "push" compileStateNext end
 compile meta_label_arg asm astGetChildString 0 write_ocString "push" compileStateNext end
@@ -74,6 +78,14 @@ asm
 	astCompileChild 1
 	astCompileChild 0
 	write_oc "write_ocInt"
+	compileStateNext
+end
+
+compile meta_oc_char
+asm
+	astCompileChild 1
+	astCompileChild 0
+	write_oc "write_ocChar"
 	compileStateNext
 end
 

@@ -139,12 +139,14 @@ lib
         opcode write_label
         opcode write_oc:String
         opcode write_ocInt:String
+        opcode write_ocChar:String
         opcode write_ocFloat:String
         opcode write_ocLabel:String
         opcode write_ocString:String
         opcode write_ocEnvSym:String
         opcode write_oc
         opcode write_ocInt
+        opcode write_ocChar
         opcode write_ocFloat
         opcode write_ocLabel
         opcode write_ocString

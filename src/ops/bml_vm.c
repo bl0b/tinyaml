@@ -153,8 +153,15 @@ void _VM_CALL vm_op_ord_Char(vm_t vm, word_t chr) {
 
 void _VM_CALL vm_op_chr(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
-	vm_push_data(vm, DataChar, d->data);
+	if(d->type==DataInt) {
+		vm_push_data(vm, DataChar, d->data);
+	} else if(d->type==DataString||d->type==DataObjStr) {
+		char c;
+		sscanf((unsigned char*)d->data, "%c", &c);
+		vm_push_data(vm, DataChar, c);
+	} else {
+		assert(d->type==DataString||d->type==DataObjStr||d->type==DataInt);
+	}
 }
 
 void _VM_CALL vm_op_ord(vm_t vm, word_t unused) {

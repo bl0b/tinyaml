@@ -134,6 +134,21 @@ void _VM_CALL vm_op_write_ocString(vm_t vm, word_t unused) {
 	vm_op_write_ocString_String(vm,(const char*)d->data);
 }
 
+void _VM_CALL vm_op_write_ocChar_String(vm_t vm, const char* name) {
+	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
+	const char argstr[16];
+	assert(arg->type==DataChar);
+	sprintf(argstr,"%c",(char)arg->data);
+	/*vm_printf("vm_op_write_ocString_String %s %s\n",name,argstr);*/
+	opcode_chain_add_opcode(vm->result, OpcodeArgChar, name, argstr, -1, -1);
+}
+
+void _VM_CALL vm_op_write_ocChar(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataString||d->type==DataObjStr);
+	vm_op_write_ocChar_String(vm,(const char*)d->data);
+}
+
 void _VM_CALL vm_op_write_ocInt_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	char argstr[512];

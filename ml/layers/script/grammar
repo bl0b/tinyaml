@@ -7,6 +7,7 @@ language
  script_loc ::= "local"  sym ("," sym)*.
  script_id ::= sym.
  script_string ::= string.
+ script_char ::= char.
 
  script_glob_fun ::= "function" sym script_fun_decl.
  script_anon_fun ::= "function" script_fun_decl.
@@ -39,8 +40,8 @@ language
  script_call_ret_any ::= script_call.
 
  script_print ::= "print" "(" script_expr_list ")".
- p_ScriptExpr = ( script_anon_array | script_anon_map | script_string | script_anon_fun | b_expr | m_expr | script_call_ret_any | script_var ).
- p_ScriptExpr1 = ( script_anon_array | script_anon_map | script_string | script_anon_fun | b_expr | m_expr | script_call_ret_1 | script_var ).
+ p_ScriptExpr = ( script_anon_array | script_anon_map | script_string | script_char | script_anon_fun | b_expr | m_expr | script_call_ret_any | script_var ).
+ p_ScriptExpr1 = ( script_anon_array | script_anon_map | script_string | script_char | script_anon_fun | b_expr | m_expr | script_call_ret_1 | script_var ).
 
  script_anon_array ::= "[" script_anon_array_item_list? script_anon_array_end.
  script_anon_array_item_list = ( script_anon_array_item_list "," script_anon_array_item | script_anon_array_item ).

@@ -134,6 +134,28 @@ void _VM_CALL vm_op_setClosure(vm_t vm, word_t unused) {
 /*! \addtogroup vcop_data
  * @{
  */
+/*void _VM_CALL vm_op_toC(vm_t vm, word_t unused) {*/
+	/*_IFC conv;*/
+	/*vm_data_t d = _vm_pop(vm);*/
+	/*switch(d->type) {*/
+	/*case DataInt:*/
+	/*case DataChar:*/
+		/*vm_push_data(vm,DataChar,d->data);*/
+		/*break;*/
+	/*case DataFloat:*/
+		/*conv.i=d->data;*/
+		/*vm_push_data(vm,DataChar,f2i(conv.f));*/
+		/*break;*/
+	/*case DataString:*/
+		/*vm_push_data(vm,DataChar,(unsigned char*)(d->data)[0]);*/
+		/*break;*/
+	/*default:*/
+		/*vm_printerrf("[VM:WRN] can't convert to char.\n");*/
+		/*vm_push_data(vm,DataInt,0);*/
+	/*};*/
+/*}*/
+
+
 void _VM_CALL vm_op_toI(vm_t vm, word_t unused) {
 	_IFC conv;
 	vm_data_t d = _vm_pop(vm);

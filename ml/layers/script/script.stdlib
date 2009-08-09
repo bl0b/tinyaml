@@ -35,6 +35,9 @@ script
 
 	exportGroup("String")
 
+	export("chr", function(i) asm +$i chr -$i end return i end)
+	export("ord", function(i) asm +$i ord -$i end return i end)
+
 	addTo("String","compare",strcmp)
 	addTo("String","length",
 		function(l)
@@ -165,6 +168,25 @@ script
 		function() local r asm newSymTab -$r end return r end)
 	addTo("Map","size",
 		function(st) asm +$st symTabSz -$st end return st end)
+	addTo("Map", "has_key",
+		function(st, k)
+			asm +$st +$k getSym push -1 nEq -$k end
+			return k	
+		end)
+	addTo("Map", "set",
+		function(st, k, v)
+			asm +$st +$v +$k mapSet end
+		end)
+	addTo("Map", "getByName",
+		function(st, k)
+			asm +$st +$k mapGet -$k end
+			return k
+		end)
+	addTo("Map", "getByIndex",
+		function(st, k)
+			asm +$st +$k arrayGet -$k end
+			return k
+		end)
 
 	exportGroup("Thread")
 	function _tn(prio, thread)

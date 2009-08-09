@@ -32,6 +32,7 @@ walker exprListType {
 	on script_anon_fun asm %inc_exprs() compileStateNext end
 
 	on script_int asm %inc_exprs() compileStateNext end
+	on script_char asm %inc_exprs() compileStateNext end
 	on script_float asm %inc_exprs() compileStateNext end
 	on script_string asm %inc_exprs() compileStateNext end
 

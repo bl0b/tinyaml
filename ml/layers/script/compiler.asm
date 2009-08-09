@@ -111,14 +111,14 @@ asm
 		]]
 
 		#+$glob_dic symTabSz -$sz
-		+$cur_fname envGet &_GSTGet -$sz
+		+$cur_fname envGet &_GSTGet call -$sz
 
 		# do "cur_fname = ...fun..."
 		astCompileChild 1
 
 	#	push "Symbol '" +$cur_fname push "' has index " +$sz push "\n" print 5
 
-		<< setmem i(+$cur_fname envGet &_GSTGet call) >>
+		<< setmem i(+$sz) >>
 
 		push "" -$cur_fname
 	}
@@ -216,8 +216,8 @@ asm
 			%funcDeclGet(+$cur_fname) +(FuncDecl.parameters) symTabSz sub 2 -$argc
 			# check that supargc>=0
 	
-			+$cur_fname push "_vastart_loop" strcat -$fun_lbl
-			+$cur_fname push "_vastart_done" strcat -$endfun_lbl
+			%gen_label(+$cur_fname push "_vastart_loop" strcat) -$fun_lbl
+			%gen_label(+$cur_fname push "_vastart_done" strcat) -$endfun_lbl
 
 			# throw if failed
 			%gen_label(+$cur_fname push "_chk_argc_pass" strcat) -$supargc
@@ -243,36 +243,9 @@ asm
 				leave 1
 				#setmem i(push -1 +$argc sub)			# set array
 			>>
-	
-	#	# start count
-	#<<
-	#	enter 2
-	#	arrayNew
-	#	arrayResv (+$argc)
-	#	-$fun_lbl
-	#	push 0 -$locsz
-	#	# get -1-count -th arg
-	#(:	+$fun_lbl 
-	#	push -1 +$locsz sub getmem
-	#	+$locsz
-	#	arraySet
-	#	+$locsz inc -$locsz
-	#	+$locsz inf (+$argc) SZ jmp @_loop
-	#>>	
-	#
-	#
-	#
-	#		# store array counter max
-	#		-$supargc
-	#		# now copy
-	#		push 1 write_ocInt "enter"
-	#		push 0 write_ocInt "push"
-	#		push -1 write_
-	#		push 1 write_ocInt "leave"
-			
 
 		][
-			%gen_label(push "check_argc_pass") -$supargc
+			%gen_label(+$cur_fname push "check_argc_pass" strcat) -$supargc
 			# throw if failed
 			<< push i(%funcDeclGet(+$cur_fname) +(FuncDecl.parameters) symTabSz dec)
 			   eq
@@ -727,6 +700,13 @@ end
 compile script_int
 asm
 	<< push i(astGetChildString 0 toI) >>
+	compileStateNext
+end
+
+
+compile script_char
+asm
+	<< push c(astGetChildString 0 chr) >>
 	compileStateNext
 end
 
