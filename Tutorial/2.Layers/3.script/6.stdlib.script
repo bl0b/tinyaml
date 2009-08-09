@@ -1,0 +1,121 @@
+# This tutorial is just a sneak peek at the minimalistic standard library
+# bundled with the script language.
+
+require "script.wc"
+
+script
+	global a, b, c
+
+	# Demonstrating few String routines
+
+	a = "Hello,"
+	a = String.append(a, " world !")
+	print("String a is ", String.length(a), " characters long and contains :\n", a, '\n')
+	print("the character at position 3 in a is : ", String.charAt(a, 3), '\n')
+	String.setCharAt(a, 8, '@')
+	print("a now contains : ", a, "\n")
+
+	# Compiler routines won't be described here. Wait for the next section.
+
+	# Array routines
+
+	a = [1,2,3]
+	b = Array.new(1,2,3)	# equivalent to line above
+
+	print("size(a) = ", Array.size(a), ", size(b) = ", Array.size(b), '\n')
+	print("Now displaying contents of arrays using Array.foreach :\n")
+	# Oh, and we'll be using a function generator instead of writing the same function body twice, and replace 'a' with 'b' in the latter
+	function gen_disp(array_name)
+		return function(index, value)
+				print(array_name, '[', index, "] = ", value, '\n')
+			end
+	end
+	Array.foreach(a, gen_disp('a'))
+
+	# We now apply a function to each item in the array b :
+	Array.apply(b, function(index, value) return value+10.0^(index+1) end)
+
+	Array.foreach(b, gen_disp('b'))
+
+	# We can also easily reduce the array items to one value :
+	b = Array.reduce(a, function(a, b) return a+b end)
+	# There's a variation of this function if you need an initial value :
+	b = Array.reducei(a, function(a, b) return a+b end, 0)
+	print("The sum of the items in a is ", b, '\n')
+
+
+	# Map routines
+
+	a = { foo:23, bar:42 }
+	print("Map a has ", Map.size(a), " elements.\n")
+
+	# Maps can be accessed as arrays. The order of field declaration is
+	# preserved. Note that Array.foreach starts with the empty element
+	# present at the beginning of each map.
+	Array.foreach(a, function(index, value) print("a[", index, "] = ", value, '\n') end)
+	# A fatal error will occur if you try to access a field that doesn't
+	# exist. You must use Map.has_key to ensure it does.
+	print("DEBUG ", Map.has_key(a, "pouet"), " ", Map.has_key(a, "foo"), "\n")
+	if Map.has_key(a, "baz") then
+		print("OK, a contains key 'baz'.\n")
+	else
+		print("OOPS, no 'baz' in map a ! Fixing that at once.\n")
+		Map.set(a, "baz", "Wibble")
+	end
+	# data in maps can be accessed either by name (symbol) or index.
+	c = "baz"
+	b = Map.getByName(a, c)		# get 'baz' by name dynamically
+	c = Map.getByIndex(a, 3)	# get 'baz' by index (if you're sure of the index value !)
+	c = Map.getByIndex(a, Map.getIndex(a, "baz"))	# get 'baz' by index, dynamically resolved
+	print("a.baz = ", a.baz, " (by name, static), ", b, " (by name, dynamic), ", c, " (by index)\n")
+
+	# Thread routines
+	function my_th()
+		local i
+		print(Thread.PID(), "Thread starting.\n")
+		i=0
+		while i<1000 do
+			i=i+1
+		end
+		print(Thread.PID(), "Thread ended.\n")
+	end
+
+	# Give the priority and the function object to start a thread
+	print("[MAIN] Creating a new thread...\n")
+	a = Thread.new(50, my_th)
+	print("[MAIN] Have created thread ", a, "\n")
+	# Now wait for it to terminate
+	Thread.join(a)
+
+	print("[MAIN] OK, that's all for now.\n")
+end
+
+# Example command and output :
+#
+# $ tinyaml 6.stdlib.script 
+# String a is 14 characters long and contains :
+# Hello, world !
+# the character at position 3 in a is : l
+# a now contains : Hello, w@rld !
+# size(a) = 3, size(b) = 3
+# Now displaying contents of arrays using Array.foreach :
+# a[0] = 1
+# a[1] = 2
+# a[2] = 3
+# b[0] = 11.000000
+# b[1] = 102.000000
+# b[2] = 1003.000000
+# The sum of the items in a is 6
+# Map a has 2 elements.
+# a[0] = [Erroneous data 0 0]
+# a[1] = 23
+# a[2] = 42
+# DEBUG 0 1
+# OOPS, no 'baz' in map a ! Fixing that at once.
+# a.baz = Wibble (by name, static), Wibble (by name, dynamic), Wibble (by index)
+# [MAIN] Creating a new thread...
+# [MAIN] Have created thread [Thread  0x95e6690]
+# [Thread  0x95e6690]Thread starting.
+# [Thread  0x95e6690]Thread ended.
+# [MAIN] OK, that's all for now.
+
