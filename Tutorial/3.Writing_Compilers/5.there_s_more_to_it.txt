@@ -1,0 +1,34 @@
+There's one topic that hasn't been covered by this tutorial.
+
+The compiler is not the only way to walk the AST during compilation. You can
+write other walkers as required.
+It was simply not required to write the arithmetic interpreter, hence it hasn't
+been covered yet.
+
+The syntax is quite simple :
+
+walker MY_SPECIALIZED_WALKER_NAME { ...walker_body... }
+
+MY_SPECIALIZED_WALKER_NAME is any symbol.
+
+walker_body is composed of :
+
+- an initialization routine :
+	init <code_bloc>
+- a termination routine :
+	terminate <code_bloc>
+- a default visit routine :
+	default <code_bloc>
+- any number of visit methods :
+	on <node_name> <code_bloc>
+
+<code_bloc> can be any defined code bloc, such as asm..end or script..end.
+
+Each visit method has to update the compile state just as in any compiler visit method, except it will only affect this walker's state.
+
+Walkers can be invoked using the opcode doWalk "walkername", and doWalk, which will pop the walker name from the data stack.
+
+It is perfectly legal to do recursive walking a user-defined walker, using doWalk and walkChild. walkChild can either take an int parameter, the index of child to start recursive walk on, or pop it from the data stack.
+
+Please refer to ml/layers/script/*.walker for real-world examples.
+For instance, analyseFuncDecl.walker fills a function description structure before its body is actually compiled.
