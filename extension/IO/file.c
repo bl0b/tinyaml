@@ -13,6 +13,9 @@ int _VM_CALL _fill_buf0(FILE*f, char*buf) {
 int _VM_CALL _fill_bufNL(FILE*f, char*buf) {
 	int i;
 	for(i=0;i<BUFSZ&&fread(buf, 1, 1, f)==1&&*buf&&*buf!='\r'&&*buf!='\n';i+=1) buf+=1;
+	if(i<BUFSZ) {
+		*buf=0;
+	}
 	return i;
 }
 
