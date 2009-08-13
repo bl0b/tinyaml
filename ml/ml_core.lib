@@ -165,7 +165,15 @@ lib
         opcode _langDef:String
         opcode _langPlug:String         # pop plug
 
-        opcode compileString
+        opcode compileString		# compile in the current compiler context
+        opcode compileStringToThread:Int # pop buffer, push thread
+                                         # with given prio
+        opcode compileStringToThread	# pop int(prio), pop buffer,
+                                        # push thread
+        opcode compileFileToThread:Int	# pop filename, push thread
+                                        # with given prio
+        opcode compileFileToThread	# pop int(prio), pop filename,
+                                        # push thread
 
         opcode doWalk:String            # walk current node with named
         opcode doWalk                   # walker, or pop name from stack

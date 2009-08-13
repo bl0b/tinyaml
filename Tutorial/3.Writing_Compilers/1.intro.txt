@@ -20,4 +20,5 @@ The code for the interpreter will be divided into three sections for clarity :
 - 3.compiler.asm : all the routines to compile the AST nodes into tinyaml
                    wordcode.
 
-- 4.main.asm : a small file that bundles the rest together.
+- 4.main.asm : a small file that bundles the rest together and implements the
+               interpreter.

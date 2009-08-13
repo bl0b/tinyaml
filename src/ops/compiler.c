@@ -372,6 +372,48 @@ void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
 	line_number_bias=lnb_backup;
 }
 
+void _VM_CALL vm_op_compileStringToThread_Int(vm_t vm, word_t prio) {
+	vm_data_t d = _vm_pop(vm);
+	const char*buffer = (const char*)d->data;
+	program_t p;
+	thread_t t;
+
+	assert(d->type==DataString||d->type==DataObjStr);
+
+	p = vm_compile_buffer(vm, buffer);
+	program_set_source(p, buffer);
+	t = vm_add_thread(vm, p, 0, prio, 0);
+	vm_push_data(vm,DataObjThread,(word_t)t);
+}
+
+
+void _VM_CALL vm_op_compileStringToThread(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	vm_op_compileStringToThread_Int(vm, d->data);
+}
+
+void _VM_CALL vm_op_compileFileToThread_Int(vm_t vm, word_t prio) {
+	vm_data_t d = _vm_pop(vm);
+	const char*filename = (const char*)d->data;
+	program_t p;
+	thread_t t;
+
+	assert(d->type==DataString||d->type==DataObjStr);
+
+	p = vm_compile_file(vm, filename);
+	program_set_source(p, filename);
+	t = vm_add_thread(vm, p, 0, prio, 0);
+	vm_push_data(vm,DataObjThread,(word_t)t);
+}
+
+void _VM_CALL vm_op_compileFileToThread(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	assert(d->type==DataInt);
+	vm_op_compileFileToThread_Int(vm, d->data);
+}
+
+
 /*@}*/
 
 /*! \addtogroup vcop_st
