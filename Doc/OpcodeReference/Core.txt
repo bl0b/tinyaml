@@ -1,0 +1,799 @@
+Stack contents are topmost last.
+
+add
+	Description :  Arithmetic addition of two values. The result is Float if at least one value is Float, Int otherwise.
+	Stack in : Int/Float (a) , Int/Float (b)
+	Stack out : Int/Float (a+b)
+__addCompileMethod:Label
+	Description : Add a node visit method for node name (name) to the compiler.
+	Stack in : String (name)
+	Stack out : -
+add:Float
+	Description : Arithmetic addition of two values. Result is Float. 
+	Stack in : Int/Float (a)
+	Stack out : Float (a+arg)
+add:Int
+	Description : Arithmetic addition of two values. Result is Float if the other value is Float, Int otherwise.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a+b)
+addSym
+	Description : Add a symbol to a symbol table.
+	Stack in : SymTab (symbol table), String (symbol)
+	Stack out : -
+and
+	Description : Boolean and.
+	Stack in : Int (a), Int (b)
+	Stack out : Int (a&&b)
+and:Int
+	Description : Boolean and.
+	Stack in : Int (a)
+	Stack out : Int (a&&arg)
+arrayGet
+	Description : Get element in an array.
+	Stack in : Array (a), Int (i)
+	Stack out : any (a[i])
+arrayGet:Int
+	Description : Get element in an array.
+	Stack in : Array (a)
+	Stack out : any (a[arg])
+arrayNew
+	Description : Spawn a new array.
+	Stack in : -
+	Stack out : Array
+arrayResv
+	Description : Reserve space in an array.
+	Stack in : Array (a), Int (size)
+	Stack out : -
+arrayResv:Int
+	Description : Reserve space in an array. 
+	Stack in : Array (a)
+	Stack out : -
+arraySet
+	Description : Set element in an array.
+	Stack in : Array (a), any (value), Int (index)
+	Stack out : Array (a)
+arraySet:Int
+	Description : Set element in an array.
+	Stack in : Array (a), any (value)
+	Stack out : Array (a)
+arraySize
+	Description : Get actual size of an array.
+	Stack in : Array (a)
+	Stack out : Int (size(a))
+astCompileChild
+	Description : Recursively compile n-th child of the current node.
+	Stack in : Int (n)
+	Stack out : -
+astCompileChild:Int
+	Description : Recursively compile arg-th child of the current node. 
+	Stack in : -
+	Stack out : -
+astGetChildrenCount
+	Description : Get the children count for current node. 
+	Stack in : -
+	Stack out : Int (count)
+astGetChildString
+	Description : Get the n-th child string (node name or immediate string if leaf) in current node.
+	Stack in : Int (n)
+	Stack out : String
+astGetChildString:Int
+	Description : Get the arg-th child string (node name or immediate string if leaf) in current node.
+	Stack in : -
+	Stack out : String
+astGetCol
+	Description : Get the column where this node originated in source text.
+	Stack in : -
+	Stack out : Int (column)
+astGetOp
+	Description : Get the current node name.
+	Stack in : -
+	Stack out : String
+astGetRow
+	Description : Get the line number where this node originated in source text.
+	Stack in : -
+	Stack out : Int (line number)
+call
+	Description : Call a dynamic function object.
+	Stack in : DynFun (function)
+	Stack out : ? (function return values if any)
+call:Label
+	Description : Call a static function at label.
+	Stack in : -
+	Stack out : ? (function return values if any)
+call_vc
+	Description : Call a dynamic function object with a Virtual Closure.
+	Stack in : Array/VObj (closure), DynFun (function)
+	Stack out : ? (function return values if any)
+charAt
+	Description : Get character at n-th position in string s.
+	Stack in : String (s), Int (n)
+	Stack out : Char
+charAt:Int
+	Description : Get character at arg-th position in string s.
+	Stack in : String (s)
+	Stack out : Char
+chr
+	Description : Convert Int into Char.
+	Stack in : Int
+	Stack out : Char
+chr:Int
+	Description : Convert Int into Char.
+	Stack in : -
+	Stack out : Char
+clone
+	Description : Clone a value. Some objects may actually clone to themselves.
+	Stack in : any (value)
+	Stack out : any (value clone)
+compileFileToThread
+	Description : Compile the file filename in a new compilation context and spawn a thread object running the newly compiled program with priority value prio.
+	Stack in : String (filename), Int (prio)
+	Stack out : Thread
+compileFileToThread:Int
+	Description : Compile the file filename in a new compilation context and spawn a thread object running the newly compiled program with priority value arg.
+	Stack in : String (filename)
+	Stack out : Thread
+compileStateDone
+	Description : Tell the compiler or walker the compilation is done and successful.
+	Stack in : -
+	Stack out : -
+compileStateDown
+	Description : Tell the compiler or walker to enter the current node and process all children in sequence. 
+	Stack in : -
+	Stack out : -
+compileStateError
+	Description : Tell the compiler or walker the compilation has failed. 
+	Stack in : -
+	Stack out : -
+compileStateNext
+	Description : Tell the compiler or walker to process next node (also synonym for state Done if last node in tree). 
+	Stack in : -
+	Stack out : -
+compileStateUp
+	Description : Tell the compiler or walker to exit this node and process the next sibling of the parent node.
+	Stack in : -
+	Stack out : -
+compileString
+	Description : Compile the given string in the current compilation context.
+	Stack in : String
+	Stack out : -
+compileStringToThread
+	Description : Compile the string s in a new compilation context and spawn a thread object running the newly compiled program with priority value prio.
+	Stack in : String (s), Int (prio)
+	Stack out : Thread
+compileStringToThread:Int
+	Description : Compile the string s in a new compilation context and spawn a thread object running the newly compiled program with priority value arg.
+	Stack in : String (s)
+	Stack out : Thread
+cos
+	Description : Compute cosinus of value.
+	Stack in : Float (x)
+	Stack out : Float (cos(x))
+crit_begin
+	Description : Start a critical section (thread can't be preempted).
+	Stack in : -
+	Stack out : -
+crit_end
+	Description : End a critical section (thread can be preempted). 
+	Stack in : -
+	Stack out : -
+dec
+	Description : Decrease value. 
+	Stack in : Int (v)
+	Stack out : Int (v-1)
+div
+	Description : 
+	Stack in :
+	Stack out :
+div:Float
+	Description : 
+	Stack in :
+	Stack out :
+div:Int
+	Description : 
+	Stack in :
+	Stack out :
+doWalk
+	Description : 
+	Stack in :
+	Stack out :
+doWalk:String
+	Description : 
+	Stack in :
+	Stack out :
+dup:Int
+	Description : 
+	Stack in :
+	Stack out :
+dynFunAddClosure
+	Description : 
+	Stack in :
+	Stack out :
+dynFunNew:Label
+	Description : 
+	Stack in :
+	Stack out :
+enter:Int
+	Description : 
+	Stack in :
+	Stack out :
+envAdd
+	Description : 
+	Stack in :
+	Stack out :
+envGet
+	Description : 
+	Stack in :
+	Stack out :
+envGet:EnvSym
+	Description : 
+	Stack in :
+	Stack out :
+envLookup
+	Description : 
+	Stack in :
+	Stack out :
+envSet:EnvSym
+	Description : 
+	Stack in :
+	Stack out :
+eq
+	Description : 
+	Stack in :
+	Stack out :
+exp
+	Description : 
+	Stack in :
+	Stack out :
+getClosure
+	Description : 
+	Stack in :
+	Stack out :
+getClosure:Int
+	Description : 
+	Stack in :
+	Stack out :
+getClosure:Int
+	Description : 
+	Stack in :
+	Stack out :
+getException
+	Description : 
+	Stack in :
+	Stack out :
+getmem
+	Description : 
+	Stack in :
+	Stack out :
+getmem:Int
+	Description : 
+	Stack in :
+	Stack out :
+getPid
+	Description : 
+	Stack in :
+	Stack out :
+getSym
+	Description : 
+	Stack in :
+	Stack out :
+getSymName
+	Description : 
+	Stack in :
+	Stack out :
+_get_timeslice
+	Description : 
+	Stack in :
+	Stack out :
+inc
+	Description : 
+	Stack in :
+	Stack out :
+inf
+	Description : 
+	Stack in :
+	Stack out :
+infEq
+	Description : 
+	Stack in :
+	Stack out :
+instCatcher:Label
+	Description : 
+	Stack in :
+	Stack out :
+jmp:Label
+	Description : 
+	Stack in :
+	Stack out :
+joinThread
+	Description : 
+	Stack in :
+	Stack out :
+killThread
+	Description : 
+	Stack in :
+	Stack out :
+_langDef:String
+	Description : 
+	Stack in :
+	Stack out :
+_langPlug:String
+	Description : 
+	Stack in :
+	Stack out :
+leave:Int
+	Description : 
+	Stack in :
+	Stack out :
+lockMtx
+	Description : 
+	Stack in :
+	Stack out :
+lockMtx:Int
+	Description : 
+	Stack in :
+	Stack out :
+log
+	Description : 
+	Stack in :
+	Stack out :
+log:Float
+	Description : 
+	Stack in :
+	Stack out :
+mapGet
+	Description : 
+	Stack in :
+	Stack out :
+mapGet:String
+	Description : 
+	Stack in :
+	Stack out :
+mapHasKey
+	Description : 
+	Stack in :
+	Stack out :
+mapHasKey:String
+	Description : 
+	Stack in :
+	Stack out :
+mapNew
+	Description : 
+	Stack in :
+	Stack out :
+mapSet
+	Description : 
+	Stack in :
+	Stack out :
+mapSet:String
+	Description : 
+	Stack in :
+	Stack out :
+mod
+	Description : 
+	Stack in :
+	Stack out :
+mod:Float
+	Description : 
+	Stack in :
+	Stack out :
+mod:Int
+	Description : 
+	Stack in :
+	Stack out :
+mul
+	Description : 
+	Stack in :
+	Stack out :
+mul:Float
+	Description : 
+	Stack in :
+	Stack out :
+mul:Int
+	Description : 
+	Stack in :
+	Stack out :
+nEq
+	Description : 
+	Stack in :
+	Stack out :
+newMtx
+	Description : 
+	Stack in :
+	Stack out :
+newSymTab
+	Description : 
+	Stack in :
+	Stack out :
+newThread
+	Description : 
+	Stack in :
+	Stack out :
+newThread:Label
+	Description : 
+	Stack in :
+	Stack out :
+not
+	Description : 
+	Stack in :
+	Stack out :
+onCompInit
+	Description : 
+	Stack in :
+	Stack out :
+onCompTerm
+	Description : 
+	Stack in :
+	Stack out :
+or
+	Description : 
+	Stack in :
+	Stack out :
+ord
+	Description : 
+	Stack in :
+	Stack out :
+ord:Char
+	Description : 
+	Stack in :
+	Stack out :
+or:Int
+	Description : 
+	Stack in :
+	Stack out :
+pop
+	Description : 
+	Stack in :
+	Stack out :
+_pop_curNode
+	Description : 
+	Stack in :
+	Stack out :
+pop:Int
+	Description : 
+	Stack in :
+	Stack out :
+popN
+	Description : 
+	Stack in :
+	Stack out :
+pow
+	Description : 
+	Stack in :
+	Stack out :
+pp_curNode
+	Description : 
+	Stack in :
+	Stack out :
+print
+	Description : 
+	Stack in :
+	Stack out :
+print:Int
+	Description : 
+	Stack in :
+	Stack out :
+push:Char
+	Description : 
+	Stack in :
+	Stack out :
+push:Float
+	Description : 
+	Stack in :
+	Stack out :
+push:Int
+	Description : 
+	Stack in :
+	Stack out :
+push:String
+	Description : 
+	Stack in :
+	Stack out :
+regGet
+	Description : 
+	Stack in :
+	Stack out :
+regGet:Int
+	Description : 
+	Stack in :
+	Stack out :
+regSet
+	Description : 
+	Stack in :
+	Stack out :
+regSet:Int
+	Description : 
+	Stack in :
+	Stack out :
+ret:Int
+	Description : 
+	Stack in :
+	Stack out :
+retval:Int
+	Description : 
+	Stack in :
+	Stack out :
+setCharAt
+	Description : 
+	Stack in :
+	Stack out :
+setCharAt:Int
+	Description : 
+	Stack in :
+	Stack out :
+setClosure
+	Description : 
+	Stack in :
+	Stack out :
+setClosure:Int
+	Description : 
+	Stack in :
+	Stack out :
+setmem
+	Description : 
+	Stack in :
+	Stack out :
+setmem:Int
+	Description : 
+	Stack in :
+	Stack out :
+_set_timeslice
+	Description : 
+	Stack in :
+	Stack out :
+_set_timeslice:Int
+	Description : 
+	Stack in :
+	Stack out :
+shl
+	Description : 
+	Stack in :
+	Stack out :
+shl:Int
+	Description : 
+	Stack in :
+	Stack out :
+shr
+	Description : 
+	Stack in :
+	Stack out :
+shr:Int
+	Description : 
+	Stack in :
+	Stack out :
+sin
+	Description : 
+	Stack in :
+	Stack out :
+SNZ
+	Description : 
+	Stack in :
+	Stack out :
+sqrt
+	Description : 
+	Stack in :
+	Stack out :
+stackNew
+	Description : 
+	Stack in :
+	Stack out :
+stackPeek
+	Description : 
+	Stack in :
+	Stack out :
+stackPeek:Int
+	Description : 
+	Stack in :
+	Stack out :
+stackPop
+	Description : 
+	Stack in :
+	Stack out :
+stackPop:Int
+	Description : 
+	Stack in :
+	Stack out :
+stackPush
+	Description : 
+	Stack in :
+	Stack out :
+stackSize
+	Description : 
+	Stack in :
+	Stack out :
+strcat
+	Description : 
+	Stack in :
+	Stack out :
+strcat:String
+	Description : 
+	Stack in :
+	Stack out :
+strcmp
+	Description : 
+	Stack in :
+	Stack out :
+strcmp:String
+	Description : 
+	Stack in :
+	Stack out :
+strdup
+	Description : 
+	Stack in :
+	Stack out :
+strdup:String
+	Description : 
+	Stack in :
+	Stack out :
+strlen
+	Description : 
+	Stack in :
+	Stack out :
+sub
+	Description : 
+	Stack in :
+	Stack out :
+sub:Float
+	Description : 
+	Stack in :
+	Stack out :
+sub:Int
+	Description : 
+	Stack in :
+	Stack out :
+substr
+	Description : 
+	Stack in :
+	Stack out :
+sup
+	Description : 
+	Stack in :
+	Stack out :
+supEq
+	Description : 
+	Stack in :
+	Stack out :
+swap:Int
+	Description : 
+	Stack in :
+	Stack out :
+symTabSz
+	Description : 
+	Stack in :
+	Stack out :
+SZ
+	Description : 
+	Stack in :
+	Stack out :
+tan
+	Description : 
+	Stack in :
+	Stack out :
+throw
+	Description : 
+	Stack in :
+	Stack out :
+toF
+	Description : 
+	Stack in :
+	Stack out :
+toI
+	Description : 
+	Stack in :
+	Stack out :
+toS
+	Description : 
+	Stack in :
+	Stack out :
+uninstCatcher:Label
+	Description : 
+	Stack in :
+	Stack out :
+unlockMtx
+	Description : 
+	Stack in :
+	Stack out :
+unlockMtx:Int
+	Description : 
+	Stack in :
+	Stack out :
+_vm_prog_get_globals
+	Description : 
+	Stack in :
+	Stack out :
+vshl
+	Description : 
+	Stack in :
+	Stack out :
+vshr
+	Description : 
+	Stack in :
+	Stack out :
+walkChild
+	Description : 
+	Stack in :
+	Stack out :
+walkChild:Int
+	Description : 
+	Stack in :
+	Stack out :
+write_data
+	Description : 
+	Stack in :
+	Stack out :
+write_label
+	Description : 
+	Stack in :
+	Stack out :
+write_label:String
+	Description : 
+	Stack in :
+	Stack out :
+write_oc
+	Description : 
+	Stack in :
+	Stack out :
+write_ocChar
+	Description : 
+	Stack in :
+	Stack out :
+write_ocChar:String
+	Description : 
+	Stack in :
+	Stack out :
+write_ocEnvSym
+	Description : 
+	Stack in :
+	Stack out :
+write_ocEnvSym:String
+	Description : 
+	Stack in :
+	Stack out :
+write_ocFloat
+	Description : 
+	Stack in :
+	Stack out :
+write_ocFloat:String
+	Description : 
+	Stack in :
+	Stack out :
+write_ocInt
+	Description : 
+	Stack in :
+	Stack out :
+write_ocInt:String
+	Description : 
+	Stack in :
+	Stack out :
+write_ocLabel
+	Description : 
+	Stack in :
+	Stack out :
+write_ocLabel:String
+	Description : 
+	Stack in :
+	Stack out :
+write_ocString
+	Description : 
+	Stack in :
+	Stack out :
+write_oc:String
+	Description : 
+	Stack in :
+	Stack out :
+write_ocString:String
+	Description : 
+	Stack in :
+	Stack out :
+xor
+	Description : 
+	Stack in :
+	Stack out :
+xor:Int
+	Description : 
+	Stack in :
+	Stack out :
+yield
+	Description : 
+	Stack in :
+	Stack out :
+
