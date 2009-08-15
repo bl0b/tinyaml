@@ -1,0 +1,42 @@
+# Here we demonstrate the handling of exceptions in the script language
+# That's a very basic handling at the moment.
+# This tutorial assumes you already have knowledge of exception handling in OO languages.
+
+require "script.wc"
+
+script
+	global a, b
+
+	function divide(x, y)
+		if y=0 then
+			throw DivisionByZero		# Exceptions are just a symbol. They carry no data.
+		else
+			if y=1 then
+				throw UselessDivision	# Any arbitrary symbol may be defined.
+			end
+		end
+		return x/y
+	end
+
+	b=0.0
+	while b<2.0 do
+		try
+			a = divide(1, b)
+		catch
+			DivisionByZero:			# A catch bloc starts with the exception name slash symbol followed by a colon.
+				print("BANG !\n")
+			UselessDivision:		# It ends with the next exception name OR the keyword `end'.
+				print("Foobar.\n")
+		end
+		b=b+1
+	end
+
+
+end
+
+# Example command and output :
+#
+# $ tinyaml 5.exceptions.script 
+# BANG !
+# Foobar.
+

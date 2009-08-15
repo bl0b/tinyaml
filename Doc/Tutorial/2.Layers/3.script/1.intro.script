@@ -1,0 +1,89 @@
+# Here we demonstrate the script layer.
+
+# This layer defines a script language which you can use anywhere an asm..end bloc can appear.
+# To use the script language, just write a script..end bloc instead of an asm..end bloc.
+
+# Script language allows the definition of global variables which are shared with the glob..end
+# bloc of the symbolic asm layer. This means that the same data can be accessed by the asm and the
+# script languages.
+# You can refer to the grammar in file ml/layers/script/grammar for the detailed syntax.
+# Here is a short list of the other script language features :
+#
+# - function declaration :
+#	function FUNC_NAME ( ARG_LIST ) ... end
+#		FUNC_NAME is a symbol.
+#		ARG_LIST is a list of symbols. The last argument may be followed by `...', in which case
+#		the function accepts supplemental arguments and the last argument will be set to an array
+#		containing all the supplemental arguments (empty array if none).
+#		Run-time checks are performed to ensure there are as many values provided as arguments defined
+#		when a function is called.
+#
+# - function return :
+#	return EXPRESSION_LIST
+#		EXPRESSION_LIST is a list of expressions. It is perfectly legal to return multiple values.
+#		If an expression list includes one or more calls, the returned values will be all inserted
+#		in the list. This means that the expression list (x, foobar(), y) may expand to
+#		(x, foo_ret1, foo_ret2, y) if foobar() returns (foo_ret1, foo_ret2).
+#
+# - expressions :
+#	- immediate values :
+#		- integers
+#		- floating points
+#		- strings
+#
+#	- arithmetic : (operators sorted by decreasing precedence)
+#		-a, a/b, a*b, a-b, a+b.
+#		
+#	- boolean : (operators sorted by decreasing precedence)
+#		not a, a and b, a or b.
+#
+#	- comparisons :
+#		a=b, a!=b, a<b, a<=b, a>b, a>=b
+#
+#	- anonymous functions :
+#		function (...) ... end
+#
+#	- call :
+#		FUNC_NAME ( EXPRESSION_LIST )
+#
+# - instructions :
+#	- print things :
+#		print(...)
+#	- if then else :
+#		if COND then ... end
+#		if COND then ... else ... end
+#	- loops :
+#		while COND do ... end
+#	- embedded assembly :
+#		asm ... end
+#	- assignment :
+#		VARIABLES_LIST = EXPRESSION_LIST
+#		there must be as many terms in the expression list as in the variables list
+#	- call :
+#		FUNC_NAME ( EXPRESSION_LIST )
+#		Used as an instruction, any returned values will be silently discarded.
+#		Used as a boolean or arithmetic expression, exactly ONE return value is expected.
+#
+# - exception handling :
+#	raise an exception :
+#		throw SYMBOL
+#	try..catch bloc :
+#		try
+#			...
+#		catch
+#			SYMBOL: ...
+#			SYMBOL: ...
+#		end
+
+
+require "script.wc"
+
+script
+	print("Hello, world.\n")
+end
+
+# Example command and output :
+#
+# $ tinyaml 1.intro.script 
+# Hello, world.
+

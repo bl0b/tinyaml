@@ -1,0 +1,40 @@
+# The bloc "language...end" delimits new grammar rules to be appended to the
+# current tinyaml syntax.
+#
+# The syntax for grammar rule definition is that of tinyap, which is
+# extensively described at :
+# http://beublo23.free.fr/doxygen/tinyap/Tutorial.html#t_gram
+# You are strongly encouraged to read this documentation before reading this
+# tutorial any further.
+# Also, the section about AST walking in the tinyap tutorial will provide
+# insights about the compilation process. Read it at :
+# http://beublo23.free.fr/doxygen/tinyap/Tutorial.html#t_walk
+#
+
+# FIXME : change grammar to match the example in the tinyap tute. Better.
+
+language
+	ex_number ::= /[0-9]+/.
+
+	ex_expr_print ::= ex_expr.
+
+	ex_expr_list ::= ex_expr_print+.
+
+	ex_expr ::= expr4.
+
+	ex_minus ::= "-" ex_number.
+	ex_div ::= ( ex_div "/" expr0 | expr0 "/" expr0 ).
+	ex_mul ::= ( ex_mul "*" expr1 | expr1 "*" expr1 ).
+	ex_sub ::= ( ex_sub "-" expr2 | expr2 "-" expr2 ).
+	ex_add ::= ( ex_add "+" expr3 | expr3 "+" expr3 ).
+
+	expr0 = ( ex_minus | ex_number | "(" ex_expr ")" ).
+	expr1 = ( ex_div | expr0 ).
+	expr2 = ( ex_mul | expr1 ).
+	expr3 = ( ex_sub | expr2 ).
+	expr4 = ( ex_add | expr3 ).
+
+end
+
+plug ex_expr_list into p_ProgramTopLevel
+

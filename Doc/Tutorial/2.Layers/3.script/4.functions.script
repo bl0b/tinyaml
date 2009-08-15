@@ -1,0 +1,56 @@
+# Here we demonstrate more advanced usage of functions in the script language.
+require "script.wc"
+
+script
+	# Please note that we define four (4) variables.
+	global hello_en, hello_fr, hello_klingon, ofs
+
+	# Function that return a function
+	function generate_greeting(hello_var)
+		# The returned value is an anonymous function
+		return function(whom)
+			# Notice that we use in this function the variable
+			# hello_var that comes from the enclosing local scope.
+			# The value of hello_var is actually duplicated in the
+			# local scope of this anonymous function so it still
+			# exists after generate_greeting has returned (and
+			# freed its allocated local values).
+			print(hello_var, ", ", whom, "!\n")
+		end
+	end
+
+	hello_en = generate_greeting("Hello")
+	hello_fr = generate_greeting("Bonjour")
+	hello_klingon = generate_greeting("nuqneH")
+
+	# We can then use the global variables as functions.
+	hello_fr("Monde ")
+	hello_en("World")
+	hello_klingon("tlhIngan maH")
+
+	print('\n')
+
+	# We can also chain calls, provided that the (SINGLE) returned value is a function.
+	generate_greeting("This is an example of chained call")("which is not spectacular at all")
+
+	# Actually, each global function definition creates the corresponding
+	# global variable.
+	print("generate_greeting is a global variable with value ", generate_greeting, '\n')
+
+	# We now fetch the offset of this variable in program's data segment,
+	# for display purposes.
+	asm $generate_greeting -$ofs end
+	print("Its offset in memory is ", ofs, " (remember we defined 4 global variables above ?)\n")
+end
+
+# Example command and output :
+#
+# $ tinyaml 4.functions.script
+# Bonjour, Monde !
+# Hello, World!
+# nuqneH, tlhIngan maH!
+# 
+# This is an example of chained call, which is not spectacular at all!
+# generate_greeting is a global variable with value [Function  0x8b10820]
+# Its offset in memory is 5 (remember we defined 4 global variables above ?)
+
