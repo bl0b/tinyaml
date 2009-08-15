@@ -29,35 +29,35 @@ and:Int
 	Stack in : Int (a)
 	Stack out : Int (a&&arg)
 arrayGet
-	Description : Get element in an array.
-	Stack in : Array (a), Int (i)
+	Description : Get element by index in an Array/Map.
+	Stack in : Array/Map (a), Int (i)
 	Stack out : any (a[i])
 arrayGet:Int
-	Description : Get element in an array.
-	Stack in : Array (a)
+	Description : Get element by index in an Array/Map.
+	Stack in : Array/Map (a)
 	Stack out : any (a[arg])
 arrayNew
-	Description : Spawn a new array.
+	Description : Spawn a new Array.
 	Stack in : -
 	Stack out : Array
 arrayResv
-	Description : Reserve space in an array.
+	Description : Reserve space in an Array.
 	Stack in : Array (a), Int (size)
 	Stack out : -
 arrayResv:Int
-	Description : Reserve space in an array. 
+	Description : Reserve space in an Array. 
 	Stack in : Array (a)
 	Stack out : -
 arraySet
-	Description : Set element in an array.
-	Stack in : Array (a), any (value), Int (index)
-	Stack out : Array (a)
+	Description : Set element in an Array/Map.
+	Stack in : Array/Map (a), any (value), Int (index)
+	Stack out : Array/Map (a)
 arraySet:Int
-	Description : Set element in an array.
-	Stack in : Array (a), any (value)
-	Stack out : Array (a)
+	Description : Set element in an Array/Map.
+	Stack in : Array/Map (a), any (value)
+	Stack out : Array/Map (a)
 arraySize
-	Description : Get actual size of an array.
+	Description : Get actual size of an Array.
 	Stack in : Array (a)
 	Stack out : Int (size(a))
 astCompileChild
@@ -169,11 +169,11 @@ cos
 	Stack in : Float (x)
 	Stack out : Float (cos(x))
 crit_begin
-	Description : Start a critical section (thread can't be preempted).
+	Description : Start a critical section (thread can't be interrupted).
 	Stack in : -
 	Stack out : -
 crit_end
-	Description : End a critical section (thread can be preempted). 
+	Description : End a critical section (thread can be interrupted). 
 	Stack in : -
 	Stack out : -
 dec
@@ -181,453 +181,449 @@ dec
 	Stack in : Int (v)
 	Stack out : Int (v-1)
 div
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Divide two values. Like any other arithmetic operator, result is Float if at least one value is Float, Int otherwise.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a/b)
 div:Float
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Divide two values.
+	Stack in : Int/Float (a)
+	Stack out : Float (a/arg)
 div:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Divide two values. Result is Float if value is Float, Int otherwise.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a/arg)
 doWalk
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Walk the current subtree with a user-defined walker.
+	Stack in : String (walkername)
+	Stack out : -
 doWalk:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Walk the current subtree with a user-defined walker.
+	Stack in : -
+	Stack out : -
 dup:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Push again arg-th value in data stack onto stack top.
+	Stack in : -
+	Stack out : any
 dynFunAddClosure
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Add an enclosed value to a function object.
+	Stack in : DynFun, any (value)
+	Stack out : DynFun (the same object)
 dynFunNew:Label
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Create a function object pointing to code at given label.
+	Stack in : -
+	Stack out : DynFun
 enter:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Allocate arg variables in local variables stack.
+	Stack in : -
+	Stack out : -
 envAdd
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Add a value to the VM environment.
+	Stack in : any (value), String (key)
+	Stack out : -
 envGet
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get a value from the VM environment. Access is done via hashtable. Dynamic but slower.
+	Stack in : String (key)
+	Stack out : any (env[key])
 envGet:EnvSym
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get a value from the VM environment. Indexed access (symbol name is resolved when program is loaded/compiled). Static but faster.
+	Stack in : -
+	Stack out : any (env[key])
 envLookup
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Lookup index of key in the VM environment.
+	Stack in : String (key)
+	Stack out : Int (index)
 envSet:EnvSym
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value for _existing_ key in the VM environment. Indexed access.
+	Stack in : any (value)
+	Stack out : -
 eq
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a==b)
 exp
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Exponential function.
+	Stack in : Int/Float (x)
+	Stack out : Float (e^x)
 getClosure
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get n-th enclosed value in function object.
+	Stack in : DynFun, Int (n)
+	Stack out : any
 getClosure:Int
-	Description : 
-	Stack in :
-	Stack out :
-getClosure:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get arg-th enclosed value in current context.
+	Stack in : -
+	Stack out : any
 getException
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get exception value that was raised.
+	Stack in : -
+	Stack out : any
 getmem
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get value at offset n in thread locals (n<0) or program data segment (n>=0).
+	Stack in : Int (n)
+	Stack out : any
 getmem:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get value at offset arg in thread locals (arg<0) or program data segment (n>=0).
+	Stack in : -
+	Stack out : any
 getPid
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get current thread object.
+	Stack in : -
+	Stack out : Thread
 getSym
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get symbol offset by name in a symbol table.
+	Stack in : SymTab, String
+	Stack out : Int (-1 if not found, > 0 otherwise)
 getSymName
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get symbol name by offset in a symbol table.
+	Stack in : SymTab, Int
+	Stack out : String
 _get_timeslice
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get the current value of the scheduler's time slice.
+	Stack in : -
+	Stack out : Int
 inc
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Increase value.
+	Stack in : Int (i)
+	Stack out : Int (i+1)
 inf
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a<b)
 infEq
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a<=b)
 instCatcher:Label
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Install an exception catch bloc starting at label.
+	Stack in : -
+	Stack out : -
 jmp:Label
-	Description : 
-	Stack in :
-	Stack out :
+	Description :  Jump to label.
+	Stack in : -
+	Stack out : -
 joinThread
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Wait for given thread to terminate. 
+	Stack in : Thread
+	Stack out : -
 killThread
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Terminate given thread at once.
+	Stack in : Thread
+	Stack out : -
 _langDef:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Add given rules to the VM grammar. 
+	Stack in : -
+	Stack out : -
 _langPlug:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Plug node named arg into given node. Refer to tinyap documentation for details.
+	Stack in : String (node name to plug into)
+	Stack out : -
 leave:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : deallocate variables from locals stack.
+	Stack in : -
+	Stack out : -
 lockMtx
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Lock a Mutex. Will interrupt thread if mutex is already locked.
+	Stack in : Mutex
+	Stack out : -
 lockMtx:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Lock Mutex at offset arg in memory (locals if arg<0, data segment if n>=0). Prevents race condition that exists in equivalent sequence "getmem N lockMtx". Will interrupt thread if mutex is already locked.
+	Stack in : -
+	Stack out : -
 log
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Natural logarithm function.
+	Stack in : Int/Float (a)
+	Stack out : Float (log(a))
 log:Float
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Natural logarithm function.
+	Stack in : -
+	Stack out : Float (log(arg))
 mapGet
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get value by key in Map.
+	Stack in : Map (m), String (key)
+	Stack out : any (m[key])
 mapGet:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get value by key in Map.
+	Stack in : Map (m)
+	Stack out : any (m[arg])
 mapHasKey
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Test if map contains key k.
+	Stack in : Map (m), String (k)
+	Stack out : Int (1 if m has key, 0 otherwise)
 mapHasKey:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Test if map contains key arg.
+	Stack in : Map (m)
+	Stack out : Int (1 if m has key, 0 otherwise)
 mapNew
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Spawn a new Map object.
+	Stack in : -
+	Stack out : Map
 mapSet
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value for key k in a Map.
+	Stack in : any (value), Map (m), String (k)
+	Stack out : -
 mapSet:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value for key arg in a Map.
+	Stack in : any (value), Map (m)
+	Stack out : -
 mod
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Arithmetic modulo of two values. Result is Float if at least one value is Float, Int otherwise.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a mod b)
 mod:Float
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Arithmetic modulo of two values. Result is Float.
+	Stack in : Int/Float (a)
+	Stack out : Float (a mod arg)
 mod:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Arithmetic modulo of two values. Result is Float if given value is Float, Int otherwise.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a mod arg)
 mul
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Multiply two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a*b)
 mul:Float
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Multiply two numeric values.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a*arg)
 mul:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Multiply two numeric values.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a*arg)
 nEq
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a!=b)
 newMtx
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Spawn a new Mutex object.
+	Stack in : -
+	Stack out : Mutex
 newSymTab
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Spawn a new symbol table object.
+	Stack in : -
+	Stack out : SymTab
 newThread
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Create a new thread using a dynamic function object with priority p.
+	Stack in : Int (p), DynFun
+	Stack out : Thread
 newThread:Label
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Create a new thread using label with priority p.
+	Stack in : Int (p)
+	Stack out : Thread
 not
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Boolean negation.
+	Stack in : Int (x)
+	Stack out : Int (!x)
 onCompInit
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Register a dynamic function to be run when a new compilation context is initialized.
+	Stack in : DynFun
+	Stack out : -
 onCompTerm
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Register a dynamic function to be run when a compilation context is terminated. 
+	Stack in : DynFun
+	Stack out : -
 or
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Boolean or. 
+	Stack in : Int (a), Int (b)
+	Stack out : Int (a||b)
 ord
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Convert Char to Int.
+	Stack in : Char
+	Stack out : Int
 ord:Char
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Convert Char to Int.
+	Stack in : -
+	Stack out : Int
 or:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Boolean or.
+	Stack in : Int (a)
+	Stack out : Int (a||arg)
 pop
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Pop value from data stack.
+	Stack in : any
+	Stack out : -
 _pop_curNode
-	Description : 
-	Stack in :
-	Stack out :
+	Description : DEPRECATED. DO NOT USE.
+	Stack in : -
+	Stack out : -
 pop:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Pop arg values from data stack.
+	Stack in : any [arg times]
+	Stack out : -
 popN
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Pop n values from data stack. 
+	Stack in : any [n times], Int (n)
+	Stack out : -
 pow
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Power function.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a to the power of b)
 pp_curNode
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Prettyprint current AST node.
+	Stack in : -
+	Stack out : -
 print
-	Description : 
-	Stack in :
-	Stack out :
+	Description : print n values to standard output. 
+	Stack in : any [n times], Int (n)
+	Stack out : -
 print:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : print arg values to standard output. 
+	Stack in : any [arg times]
+	Stack out : -
 push:Char
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Push immediate value onto data stack.
+	Stack in : -
+	Stack out : Char
 push:Float
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Push immediate value onto data stack.
+	Stack in : -
+	Stack out : Float
 push:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Push immediate value onto data stack.
+	Stack in : -
+	Stack out : Int
 push:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Push immediate value onto data stack.
+	Stack in : -
+	Stack out : String
 regGet
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get value of n-th register in current thread.
+	Stack in : Int (n)
+	Stack out : any (thread_registers[n])
 regGet:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get value of arg-th register in current thread.
+	Stack in : -
+	Stack out : any (thread_registers[arg])
 regSet
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value of n-th register in current thread.
+	Stack in : any (v), Int (n)
+	Stack out : - (thread_registers[arg]=v)
 regSet:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value of arg-th register in current thread.
+	Stack in : any (v)
+	Stack out : - (thread_registers[arg]=v)
 ret:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Clean the data stack and return from call or terminate thread if no call to return from.
+	Stack in : any [arg times]
+	Stack out : -
 retval:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Clean the data stack, retaining topmost value and return from call or terminate thread if no call to return from.
+	Stack in : any [arg times], any (return value)
+	Stack out : any (return value)
 setCharAt
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set character at position n in string.
+	Stack in : String, Char, Int (n)
+	Stack out : -
 setCharAt:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description :Set character at position arg in string. 
+	Stack in : String, Char
+	Stack out : -
 setClosure
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value of n-th enclosed value in current context. 
+	Stack in : any (value), Int (index)
+	Stack out : -
 setClosure:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value of arg-th enclosed value in current context.
+	Stack in : any (value)
+	Stack out : -
 setmem
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value at offset n in memory (locals if n<0, data segment if n>=0).
+	Stack in : any (value), Int (offset)
+	Stack out : -
 setmem:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set value at offset arg in memory (locals if arg<0, data segment if arg>=0).
+	Stack in : any (value)
+	Stack out : -
 _set_timeslice
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set the value of the scheduler's time slice.
+	Stack in : Int
+	Stack out : -
 _set_timeslice:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Set the value of the scheduler's time slice. 
+	Stack in : -
+	Stack out : -
 shl
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Bitwise left shift.
+	Stack in : Int (x), Int (n)
+	Stack out : Int (x<<n)
 shl:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Bitwise left shift.
+	Stack in : Int (x)
+	Stack out : Int (x<<arg)
 shr
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Bitwise right shift.
+	Stack in : Int (x), Int (n)
+	Stack out : Int (x>>n)
 shr:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Bitwise right shift.
+	Stack in : Int (x)
+	Stack out : Int (x>>arg)
 sin
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Sine function.
+	Stack in : Int/Float (x)
+	Stack out : Float (sin(x))
 SNZ
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Skip next instruction if value is Non-Zero.
+	Stack in : Int (value)
+	Stack out : -
 sqrt
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Square root function.
+	Stack in : Int/Float (x)
+	Stack out : Float (sqrt(x))
 stackNew
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Spawn a new Stack object.
+	Stack in : -
+	Stack out : Stack
 stackPeek
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Peek n-th value in stack.
+	Stack in : Stack, Int (n)
+	Stack out : any
 stackPeek:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Peek arg-th value in stack.
+	Stack in : Stack
+	Stack out : any
 stackPop
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Pop value from top of stack.
+	Stack in : Stack
+	Stack out : -
 stackPop:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Pop arg values from top of stack. 
+	Stack in : Stack
+	Stack out : -
 stackPush
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Push value onto top of stack. 
+	Stack in : Stack, any (value)
+	Stack out : -
 stackSize
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get size of stack object. 
+	Stack in : Stack
+	Stack out : Int (size)
 strcat
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Concatenate two strings.
+	Stack in : String (a), String (b)
+	Stack out : String (strcat(a, b))
 strcat:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Concatenate two strings.
+	Stack in : String (a)
+	Stack out : String (strcat(a, arg))
 strcmp
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compare two strings.
+	Stack in : String (a), String (b)
+	Stack out : Int (strcmp(a, b))
 strcmp:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compare two strings.
+	Stack in : String (a)
+	Stack out : Int (strcmp(a, arg))
 strdup
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Duplicate a string.
+	Stack in : String (a)
+	Stack out : String (strdup(a))
 strdup:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Duplicate a string.
+	Stack in : -
+	Stack out : String (strdup(arg))
 strlen
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get length of string.
+	Stack in : String
+	Stack out : Int
 sub
 	Description : 
 	Stack in :
