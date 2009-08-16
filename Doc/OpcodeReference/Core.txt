@@ -542,16 +542,16 @@ _set_timeslice:Int
 	Stack out : -
 shl
 	Description : Bitwise left shift.
-	Stack in : Int (x), Int (n)
-	Stack out : Int (x<<n)
+	Stack in : Int (x)
+	Stack out : Int (x<<1)
 shl:Int
 	Description : Bitwise left shift.
 	Stack in : Int (x)
 	Stack out : Int (x<<arg)
 shr
 	Description : Bitwise right shift.
-	Stack in : Int (x), Int (n)
-	Stack out : Int (x>>n)
+	Stack in : Int (x)
+	Stack out : Int (x>>1)
 shr:Int
 	Description : Bitwise right shift.
 	Stack in : Int (x)
@@ -625,171 +625,171 @@ strlen
 	Stack in : String
 	Stack out : Int
 sub
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Substract two numeric values. Result is Float if at least one value is Float, Int otherwise.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a-b)
 sub:Float
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Substract two numeric values. Result is Float.
+	Stack in : Int/Float (a)
+	Stack out : Float (a-arg)
 sub:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Substract two numeric values. Result is Float if given value is Float, Int otherwise.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a-arg)
 substr
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get a substring from a string.
+	Stack in : String (s), Int (start), Int (end)
+	Stack out : String (s[start:end])
 sup
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a>b)
 supEq
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a>=b)
 swap:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Swap top with another value in data stack.
+	Stack in : any (swapval), any [arg-1 times] (unchanged), any (top)
+	Stack out : any (top), any [arg-1 times] (unchanged), any (swapval)
 symTabSz
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get the size of a symbol table.
+	Stack in : SymTab
+	Stack out : Int (size)
 SZ
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Skip next instruction if value is Zero.
+	Stack in : Int (value)
+	Stack out : -
 tan
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Compute trigonometric tangent of value.
+	Stack in : Float (value)
+	Stack out : Float (tan(value))
 throw
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Raise an exception.
+	Stack in : any (exception)
+	Stack out : -
 toF
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Convert value to Float. 
+	Stack in : Int/Float/String (value)
+	Stack out : Float (value)
 toI
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Convert value to Int.
+	Stack in : Int/Char/Float/String (value)
+	Stack out : Int (value)
 toS
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Convert value to String.
+	Stack in : any (value)
+	Stack out : String (value)
 uninstCatcher:Label
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Uninstall the last exception catch bloc installed and jump to label.
+	Stack in : -
+	Stack out : -
 unlockMtx
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Unlock a Mutex. Will interrupt thread if a thread with higher priority is waiting for this lock. 
+	Stack in : Mutex
+	Stack out : -
 unlockMtx:Int
-	Description : 
+	Description : Unlock a mutex at offset arg in memory (locals if arg<0, data segment if arg>=0). Will interrupt thread if a thread with higher priority is waiting for this lock. 
 	Stack in :
 	Stack out :
 _vm_prog_get_globals
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Get the globals SymTab for the currently compiled program.
+	Stack in : -
+	Stack out : SymTab
 vshl
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Variable bitwise left shift.
+	Stack in : Int (x), Int (count)
+	Stack out : Int (x<<count)
 vshr
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Variable bitwise right shift.
+	Stack in : Int (x), Int (count)
+	Stack out : Int (x>>count)
 walkChild
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Recursively walk a child node with current user-defined walker.
+	Stack in : Int (node index)
+	Stack out : -
 walkChild:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Recursively walk a child node with current user-defined walker. 
+	Stack in : -
+	Stack out : -
 write_data
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Append to the data segment of the currently compiled program.
+	Stack in : Int/Float/String (data)
+	Stack out : -
 write_label
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Create a label at current code offset in the currently compiled program.
+	Stack in : String (label)
+	Stack out : -
 write_label:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Create a label at current code offset in the currently compiled program.
+	Stack in : -
+	Stack out : -
 write_oc
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode without argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode name)
+	Stack out : -
 write_ocChar
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with Char argument at current code offset in the currently compiled program. 
+	Stack in : Char (opcode argument), String (opcode name)
+	Stack out : -
 write_ocChar:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with Char argument at current code offset in the currently compiled program. 
+	Stack in : Char (opcode argument)
+	Stack out : -
 write_ocEnvSym
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with EnvSym argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode argument), String (opcode name)
+	Stack out : -
 write_ocEnvSym:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with EnvSym argument at current code offset in the currently compiled program.
+	Stack in : String (opcode argument)
+	Stack out : -
 write_ocFloat
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with Float argument at current code offset in the currently compiled program. 
+	Stack in : Float (opcode argument), String (opcode name)
+	Stack out : -
 write_ocFloat:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with Float argument at current code offset in the currently compiled program. 
+	Stack in : Float (opcode argument)
+	Stack out : -
 write_ocInt
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with Int argument at current code offset in the currently compiled program. 
+	Stack in : Int (opcode argument), String (opcode name)
+	Stack out : -
 write_ocInt:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with Int argument at current code offset in the currently compiled program. 
+	Stack in : Int (opcode argument)
+	Stack out : -
 write_ocLabel
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with Label argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode argument), String (opcode name)
+	Stack out : -
 write_ocLabel:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with Label argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode argument)
+	Stack out : -
 write_ocString
-	Description : 
-	Stack in :
+	Description : Write an opcode with String argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode argument), String (opcode name)
 	Stack out :
 write_oc:String
-	Description : 
+	Description : Write an opcode without argument at current code offset in the currently compiled program. 
 	Stack in :
 	Stack out :
 write_ocString:String
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Write an opcode with String argument at current code offset in the currently compiled program.
+	Stack in : String (opcode argument)
+	Stack out : -
 xor
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Boolean exclusive or.
+	Stack in : Int (a), Int (b)
+	Stack out : Int ((a or b) and not (a and b))
 xor:Int
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Boolean exclusive or.
+	Stack in : Int (a), Int (b)
+	Stack out : Int ((a or b) and not (a and b))
 yield
-	Description : 
-	Stack in :
-	Stack out :
+	Description : Tell the scheduler to interrupt thread execution and resume next thread.
+	Stack in : -
+	Stack out : -
 
