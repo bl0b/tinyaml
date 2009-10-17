@@ -1,794 +1,794 @@
-Stack contents are topmost last.
+   ** Note : stack contents are topmost last.
 
-add
+A add
 	Description :  Arithmetic addition of two values. The result is Float if at least one value is Float, Int otherwise.
 	Stack in : Int/Float (a) , Int/Float (b)
 	Stack out : Int/Float (a+b)
-__addCompileMethod:Label
+C __addCompileMethod:Label
 	Description : Add a node visit method for node name (name) to the compiler.
 	Stack in : String (name)
 	Stack out : -
-add:Float
+A add:Float
 	Description : Arithmetic addition of two values. Result is Float. 
 	Stack in : Int/Float (a)
 	Stack out : Float (a+arg)
-add:Int
+A add:Int
 	Description : Arithmetic addition of two values. Result is Float if the other value is Float, Int otherwise.
 	Stack in : Int/Float (a)
 	Stack out : Int/Float (a+b)
-addSym
+D addSym
 	Description : Add a symbol to a symbol table.
 	Stack in : SymTab (symbol table), String (symbol)
 	Stack out : -
-and
+A and
 	Description : Boolean and.
 	Stack in : Int (a), Int (b)
 	Stack out : Int (a&&b)
-and:Int
+A and:Int
 	Description : Boolean and.
 	Stack in : Int (a)
 	Stack out : Int (a&&arg)
-arrayGet
+D arrayGet
 	Description : Get element by index in an Array/Map.
 	Stack in : Array/Map (a), Int (i)
 	Stack out : any (a[i])
-arrayGet:Int
+D arrayGet:Int
 	Description : Get element by index in an Array/Map.
 	Stack in : Array/Map (a)
 	Stack out : any (a[arg])
-arrayNew
+D arrayNew
 	Description : Spawn a new Array.
 	Stack in : -
 	Stack out : Array
-arrayResv
+D arrayResv
 	Description : Reserve space in an Array.
 	Stack in : Array (a), Int (size)
 	Stack out : -
-arrayResv:Int
+D arrayResv:Int
 	Description : Reserve space in an Array. 
 	Stack in : Array (a)
 	Stack out : -
-arraySet
+D arraySet
 	Description : Set element in an Array/Map.
 	Stack in : Array/Map (a), any (value), Int (index)
 	Stack out : Array/Map (a)
-arraySet:Int
+D arraySet:Int
 	Description : Set element in an Array/Map.
 	Stack in : Array/Map (a), any (value)
 	Stack out : Array/Map (a)
-arraySize
+D arraySize
 	Description : Get actual size of an Array.
 	Stack in : Array (a)
 	Stack out : Int (size(a))
-astCompileChild
+C astCompileChild
 	Description : Recursively compile n-th child of the current node.
 	Stack in : Int (n)
 	Stack out : -
-astCompileChild:Int
+C astCompileChild:Int
 	Description : Recursively compile arg-th child of the current node. 
 	Stack in : -
 	Stack out : -
-astGetChildrenCount
+C astGetChildrenCount
 	Description : Get the children count for current node. 
 	Stack in : -
 	Stack out : Int (count)
-astGetChildString
+C astGetChildString
 	Description : Get the n-th child string (node name or immediate string if leaf) in current node.
 	Stack in : Int (n)
 	Stack out : String
-astGetChildString:Int
+C astGetChildString:Int
 	Description : Get the arg-th child string (node name or immediate string if leaf) in current node.
 	Stack in : -
 	Stack out : String
-astGetCol
+C astGetCol
 	Description : Get the column where this node originated in source text.
 	Stack in : -
 	Stack out : Int (column)
-astGetOp
+C astGetOp
 	Description : Get the current node name.
 	Stack in : -
 	Stack out : String
-astGetRow
+C astGetRow
 	Description : Get the line number where this node originated in source text.
 	Stack in : -
 	Stack out : Int (line number)
-call
+F call
 	Description : Call a dynamic function object.
 	Stack in : DynFun (function)
 	Stack out : ? (function return values if any)
-call:Label
+F call:Label
 	Description : Call a static function at label.
 	Stack in : -
 	Stack out : ? (function return values if any)
-call_vc
+F call_vc
 	Description : Call a dynamic function object with a Virtual Closure.
 	Stack in : Array/VObj (closure), DynFun (function)
 	Stack out : ? (function return values if any)
-charAt
+D charAt
 	Description : Get character at n-th position in string s.
 	Stack in : String (s), Int (n)
 	Stack out : Char
-charAt:Int
+D charAt:Int
 	Description : Get character at arg-th position in string s.
 	Stack in : String (s)
 	Stack out : Char
-chr
+D chr
 	Description : Convert Int into Char.
 	Stack in : Int
 	Stack out : Char
-chr:Int
+D chr:Int
 	Description : Convert Int into Char.
 	Stack in : -
 	Stack out : Char
-clone
+D clone
 	Description : Clone a value. Some objects may actually clone to themselves.
 	Stack in : any (value)
 	Stack out : any (value clone)
-compileFileToThread
+C compileFileToThread
 	Description : Compile the file filename in a new compilation context and spawn a thread object running the newly compiled program with priority value prio.
 	Stack in : String (filename), Int (prio)
 	Stack out : Thread
-compileFileToThread:Int
+C compileFileToThread:Int
 	Description : Compile the file filename in a new compilation context and spawn a thread object running the newly compiled program with priority value arg.
 	Stack in : String (filename)
 	Stack out : Thread
-compileStateDone
+C compileStateDone
 	Description : Tell the compiler or walker the compilation is done and successful.
 	Stack in : -
 	Stack out : -
-compileStateDown
+C compileStateDown
 	Description : Tell the compiler or walker to enter the current node and process all children in sequence. 
 	Stack in : -
 	Stack out : -
-compileStateError
+C compileStateError
 	Description : Tell the compiler or walker the compilation has failed. 
 	Stack in : -
 	Stack out : -
-compileStateNext
+C compileStateNext
 	Description : Tell the compiler or walker to process next node (also synonym for state Done if last node in tree). 
 	Stack in : -
 	Stack out : -
-compileStateUp
+C compileStateUp
 	Description : Tell the compiler or walker to exit this node and process the next sibling of the parent node.
 	Stack in : -
 	Stack out : -
-compileString
+C compileString
 	Description : Compile the given string in the current compilation context.
 	Stack in : String
 	Stack out : -
-compileStringToThread
+C compileStringToThread
 	Description : Compile the string s in a new compilation context and spawn a thread object running the newly compiled program with priority value prio.
 	Stack in : String (s), Int (prio)
 	Stack out : Thread
-compileStringToThread:Int
+C compileStringToThread:Int
 	Description : Compile the string s in a new compilation context and spawn a thread object running the newly compiled program with priority value arg.
 	Stack in : String (s)
 	Stack out : Thread
-cos
+A cos
 	Description : Compute cosinus of value.
 	Stack in : Float (x)
 	Stack out : Float (cos(x))
-crit_begin
+F crit_begin
 	Description : Start a critical section (thread can't be interrupted).
 	Stack in : -
 	Stack out : -
-crit_end
+F crit_end
 	Description : End a critical section (thread can be interrupted). 
 	Stack in : -
 	Stack out : -
-dec
+A dec
 	Description : Decrease value. 
 	Stack in : Int (v)
 	Stack out : Int (v-1)
-div
+A div
 	Description : Divide two values. Like any other arithmetic operator, result is Float if at least one value is Float, Int otherwise.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int/Float (a/b)
-div:Float
+A div:Float
 	Description : Divide two values.
 	Stack in : Int/Float (a)
 	Stack out : Float (a/arg)
-div:Int
+A div:Int
 	Description : Divide two values. Result is Float if value is Float, Int otherwise.
 	Stack in : Int/Float (a)
 	Stack out : Int/Float (a/arg)
-doWalk
+C doWalk
 	Description : Walk the current subtree with a user-defined walker.
 	Stack in : String (walkername)
 	Stack out : -
-doWalk:String
+C doWalk:String
 	Description : Walk the current subtree with a user-defined walker.
 	Stack in : -
 	Stack out : -
-dup:Int
+D dup:Int
 	Description : Push again arg-th value in data stack onto stack top.
 	Stack in : -
 	Stack out : any
-dynFunAddClosure
+D dynFunAddClosure
 	Description : Add an enclosed value to a function object.
 	Stack in : DynFun, any (value)
 	Stack out : DynFun (the same object)
-dynFunNew:Label
+D dynFunNew:Label
 	Description : Create a function object pointing to code at given label.
 	Stack in : -
 	Stack out : DynFun
-enter:Int
+D enter:Int
 	Description : Allocate arg variables in local variables stack.
 	Stack in : -
 	Stack out : -
-envAdd
+D envAdd
 	Description : Add a value to the VM environment.
 	Stack in : any (value), String (key)
 	Stack out : -
-envGet
+D envGet
 	Description : Get a value from the VM environment. Access is done via hashtable. Dynamic but slower.
 	Stack in : String (key)
 	Stack out : any (env[key])
-envGet:EnvSym
+D envGet:EnvSym
 	Description : Get a value from the VM environment. Indexed access (symbol name is resolved when program is loaded/compiled). Static but faster.
 	Stack in : -
 	Stack out : any (env[key])
-envLookup
+D envLookup
 	Description : Lookup index of key in the VM environment.
 	Stack in : String (key)
 	Stack out : Int (index)
-envSet:EnvSym
+D envSet:EnvSym
 	Description : Set value for _existing_ key in the VM environment. Indexed access.
 	Stack in : any (value)
 	Stack out : -
-eq
+A eq
 	Description : Compare two numeric values.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int (a==b)
-exp
+A exp
 	Description : Exponential function.
 	Stack in : Int/Float (x)
 	Stack out : Float (e^x)
-getClosure
+D getClosure
 	Description : Get n-th enclosed value in function object.
 	Stack in : DynFun, Int (n)
 	Stack out : any
-getClosure:Int
+D getClosure:Int
 	Description : Get arg-th enclosed value in current context.
 	Stack in : -
 	Stack out : any
-getException
+D getException
 	Description : Get exception value that was raised.
 	Stack in : -
 	Stack out : any
-getmem
+D getmem
 	Description : Get value at offset n in thread locals (n<0) or program data segment (n>=0).
 	Stack in : Int (n)
 	Stack out : any
-getmem:Int
+D getmem:Int
 	Description : Get value at offset arg in thread locals (arg<0) or program data segment (n>=0).
 	Stack in : -
 	Stack out : any
-getPid
+D getPid
 	Description : Get current thread object.
 	Stack in : -
 	Stack out : Thread
-getSym
+D getSym
 	Description : Get symbol offset by name in a symbol table.
 	Stack in : SymTab, String
 	Stack out : Int (-1 if not found, > 0 otherwise)
-getSymName
+D getSymName
 	Description : Get symbol name by offset in a symbol table.
 	Stack in : SymTab, Int
 	Stack out : String
-_get_timeslice
+D _get_timeslice
 	Description : Get the current value of the scheduler's time slice.
 	Stack in : -
 	Stack out : Int
-inc
+A inc
 	Description : Increase value.
 	Stack in : Int (i)
 	Stack out : Int (i+1)
-inf
+A inf
 	Description : Compare two numeric values.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int (a<b)
-infEq
+A infEq
 	Description : Compare two numeric values.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int (a<=b)
-instCatcher:Label
+F instCatcher:Label
 	Description : Install an exception catch bloc starting at label.
 	Stack in : -
 	Stack out : -
-jmp:Label
+F jmp:Label
 	Description :  Jump to label.
 	Stack in : -
 	Stack out : -
-joinThread
+F joinThread
 	Description : Wait for given thread to terminate. 
 	Stack in : Thread
 	Stack out : -
-killThread
+F killThread
 	Description : Terminate given thread at once.
 	Stack in : Thread
 	Stack out : -
-_langDef:String
+C _langDef:String
 	Description : Add given rules to the VM grammar. 
 	Stack in : -
 	Stack out : -
-_langPlug:String
+C _langPlug:String
 	Description : Plug node named arg into given node. Refer to tinyap documentation for details.
 	Stack in : String (node name to plug into)
 	Stack out : -
-leave:Int
+D leave:Int
 	Description : deallocate variables from locals stack.
 	Stack in : -
 	Stack out : -
-lockMtx
+F lockMtx
 	Description : Lock a Mutex. Will interrupt thread if mutex is already locked.
 	Stack in : Mutex
 	Stack out : -
-lockMtx:Int
+F lockMtx:Int
 	Description : Lock Mutex at offset arg in memory (locals if arg<0, data segment if n>=0). Prevents race condition that exists in equivalent sequence "getmem N lockMtx". Will interrupt thread if mutex is already locked.
 	Stack in : -
 	Stack out : -
-log
+A log
 	Description : Natural logarithm function.
 	Stack in : Int/Float (a)
 	Stack out : Float (log(a))
-log:Float
+A log:Float
 	Description : Natural logarithm function.
 	Stack in : -
 	Stack out : Float (log(arg))
-mapGet
+D mapGet
 	Description : Get value by key in Map.
 	Stack in : Map (m), String (key)
 	Stack out : any (m[key])
-mapGet:String
+D mapGet:String
 	Description : Get value by key in Map.
 	Stack in : Map (m)
 	Stack out : any (m[arg])
-mapHasKey
+D mapHasKey
 	Description : Test if map contains key k.
 	Stack in : Map (m), String (k)
 	Stack out : Int (1 if m has key, 0 otherwise)
-mapHasKey:String
+D mapHasKey:String
 	Description : Test if map contains key arg.
 	Stack in : Map (m)
 	Stack out : Int (1 if m has key, 0 otherwise)
-mapNew
+D mapNew
 	Description : Spawn a new Map object.
 	Stack in : -
 	Stack out : Map
-mapSet
+D mapSet
 	Description : Set value for key k in a Map.
 	Stack in : any (value), Map (m), String (k)
 	Stack out : -
-mapSet:String
+D mapSet:String
 	Description : Set value for key arg in a Map.
 	Stack in : any (value), Map (m)
 	Stack out : -
-mod
+A mod
 	Description : Arithmetic modulo of two values. Result is Float if at least one value is Float, Int otherwise.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int/Float (a mod b)
-mod:Float
+A mod:Float
 	Description : Arithmetic modulo of two values. Result is Float.
 	Stack in : Int/Float (a)
 	Stack out : Float (a mod arg)
-mod:Int
+A mod:Int
 	Description : Arithmetic modulo of two values. Result is Float if given value is Float, Int otherwise.
 	Stack in : Int/Float (a)
 	Stack out : Int/Float (a mod arg)
-mul
+A mul
 	Description : Multiply two numeric values.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int/Float (a*b)
-mul:Float
+A mul:Float
 	Description : Multiply two numeric values.
 	Stack in : Int/Float (a)
 	Stack out : Int/Float (a*arg)
-mul:Int
+A mul:Int
 	Description : Multiply two numeric values.
 	Stack in : Int/Float (a)
 	Stack out : Int/Float (a*arg)
-nEq
+A nEq
 	Description : Compare two numeric values.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int (a!=b)
-newMtx
+D newMtx
 	Description : Spawn a new Mutex object.
 	Stack in : -
 	Stack out : Mutex
-newSymTab
+D newSymTab
 	Description : Spawn a new symbol table object.
 	Stack in : -
 	Stack out : SymTab
-newThread
+D newThread
 	Description : Create a new thread using a dynamic function object with priority p.
 	Stack in : Int (p), DynFun
 	Stack out : Thread
-newThread:Label
+D newThread:Label
 	Description : Create a new thread using label with priority p.
 	Stack in : Int (p)
 	Stack out : Thread
-not
+A not
 	Description : Boolean negation.
 	Stack in : Int (x)
 	Stack out : Int (!x)
-onCompInit
+C onCompInit
 	Description : Register a dynamic function to be run when a new compilation context is initialized.
 	Stack in : DynFun
 	Stack out : -
-onCompTerm
+C onCompTerm
 	Description : Register a dynamic function to be run when a compilation context is terminated. 
 	Stack in : DynFun
 	Stack out : -
-or
+A or
 	Description : Boolean or. 
 	Stack in : Int (a), Int (b)
 	Stack out : Int (a||b)
-ord
+D ord
 	Description : Convert Char to Int.
 	Stack in : Char
 	Stack out : Int
-ord:Char
+D ord:Char
 	Description : Convert Char to Int.
 	Stack in : -
 	Stack out : Int
-or:Int
+A or:Int
 	Description : Boolean or.
 	Stack in : Int (a)
 	Stack out : Int (a||arg)
-pop
+D pop
 	Description : Pop value from data stack.
 	Stack in : any
 	Stack out : -
-_pop_curNode
+C _pop_curNode
 	Description : DEPRECATED. DO NOT USE.
 	Stack in : -
 	Stack out : -
-pop:Int
+D pop:Int
 	Description : Pop arg values from data stack.
 	Stack in : any [arg times]
 	Stack out : -
-popN
+D popN
 	Description : Pop n values from data stack. 
 	Stack in : any [n times], Int (n)
 	Stack out : -
-pow
+A pow
 	Description : Power function.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int/Float (a to the power of b)
-pp_curNode
+C pp_curNode
 	Description : Prettyprint current AST node.
 	Stack in : -
 	Stack out : -
-print
+D print
 	Description : print n values to standard output. 
 	Stack in : any [n times], Int (n)
 	Stack out : -
-print:Int
+D print:Int
 	Description : print arg values to standard output. 
 	Stack in : any [arg times]
 	Stack out : -
-push:Char
+D push:Char
 	Description : Push immediate value onto data stack.
 	Stack in : -
 	Stack out : Char
-push:Float
+D push:Float
 	Description : Push immediate value onto data stack.
 	Stack in : -
 	Stack out : Float
-push:Int
+D push:Int
 	Description : Push immediate value onto data stack.
 	Stack in : -
 	Stack out : Int
-push:String
+D push:String
 	Description : Push immediate value onto data stack.
 	Stack in : -
 	Stack out : String
-regGet
+D regGet
 	Description : Get value of n-th register in current thread.
 	Stack in : Int (n)
 	Stack out : any (thread_registers[n])
-regGet:Int
+D regGet:Int
 	Description : Get value of arg-th register in current thread.
 	Stack in : -
 	Stack out : any (thread_registers[arg])
-regSet
+D regSet
 	Description : Set value of n-th register in current thread.
 	Stack in : any (v), Int (n)
 	Stack out : - (thread_registers[arg]=v)
-regSet:Int
+D regSet:Int
 	Description : Set value of arg-th register in current thread.
 	Stack in : any (v)
 	Stack out : - (thread_registers[arg]=v)
-ret:Int
+F ret:Int
 	Description : Clean the data stack and return from call or terminate thread if no call to return from.
 	Stack in : any [arg times]
 	Stack out : -
-retval:Int
+F retval:Int
 	Description : Clean the data stack, retaining topmost value and return from call or terminate thread if no call to return from.
 	Stack in : any [arg times], any (return value)
 	Stack out : any (return value)
-setCharAt
+D setCharAt
 	Description : Set character at position n in string.
 	Stack in : String, Char, Int (n)
 	Stack out : -
-setCharAt:Int
+D setCharAt:Int
 	Description :Set character at position arg in string. 
 	Stack in : String, Char
 	Stack out : -
-setClosure
+D setClosure
 	Description : Set value of n-th enclosed value in current context. 
 	Stack in : any (value), Int (index)
 	Stack out : -
-setClosure:Int
+D setClosure:Int
 	Description : Set value of arg-th enclosed value in current context.
 	Stack in : any (value)
 	Stack out : -
-setmem
+D setmem
 	Description : Set value at offset n in memory (locals if n<0, data segment if n>=0).
 	Stack in : any (value), Int (offset)
 	Stack out : -
-setmem:Int
+D setmem:Int
 	Description : Set value at offset arg in memory (locals if arg<0, data segment if arg>=0).
 	Stack in : any (value)
 	Stack out : -
-_set_timeslice
+D _set_timeslice
 	Description : Set the value of the scheduler's time slice.
 	Stack in : Int
 	Stack out : -
-_set_timeslice:Int
+D _set_timeslice:Int
 	Description : Set the value of the scheduler's time slice. 
 	Stack in : -
 	Stack out : -
-shl
+A shl
 	Description : Bitwise left shift.
 	Stack in : Int (x)
 	Stack out : Int (x<<1)
-shl:Int
+A shl:Int
 	Description : Bitwise left shift.
 	Stack in : Int (x)
 	Stack out : Int (x<<arg)
-shr
+A shr
 	Description : Bitwise right shift.
 	Stack in : Int (x)
 	Stack out : Int (x>>1)
-shr:Int
+A shr:Int
 	Description : Bitwise right shift.
 	Stack in : Int (x)
 	Stack out : Int (x>>arg)
-sin
+A sin
 	Description : Sine function.
 	Stack in : Int/Float (x)
 	Stack out : Float (sin(x))
-SNZ
+F SNZ
 	Description : Skip next instruction if value is Non-Zero.
 	Stack in : Int (value)
 	Stack out : -
-sqrt
+A sqrt
 	Description : Square root function.
 	Stack in : Int/Float (x)
 	Stack out : Float (sqrt(x))
-stackNew
+D stackNew
 	Description : Spawn a new Stack object.
 	Stack in : -
 	Stack out : Stack
-stackPeek
+D stackPeek
 	Description : Peek n-th value in stack.
 	Stack in : Stack, Int (n)
 	Stack out : any
-stackPeek:Int
+D stackPeek:Int
 	Description : Peek arg-th value in stack.
 	Stack in : Stack
 	Stack out : any
-stackPop
+D stackPop
 	Description : Pop value from top of stack.
 	Stack in : Stack
 	Stack out : -
-stackPop:Int
+D stackPop:Int
 	Description : Pop arg values from top of stack. 
 	Stack in : Stack
 	Stack out : -
-stackPush
+D stackPush
 	Description : Push value onto top of stack. 
 	Stack in : Stack, any (value)
 	Stack out : -
-stackSize
+D stackSize
 	Description : Get size of stack object. 
 	Stack in : Stack
 	Stack out : Int (size)
-strcat
+D strcat
 	Description : Concatenate two strings.
 	Stack in : String (a), String (b)
 	Stack out : String (strcat(a, b))
-strcat:String
+D strcat:String
 	Description : Concatenate two strings.
 	Stack in : String (a)
 	Stack out : String (strcat(a, arg))
-strcmp
+D strcmp
 	Description : Compare two strings.
 	Stack in : String (a), String (b)
 	Stack out : Int (strcmp(a, b))
-strcmp:String
+D strcmp:String
 	Description : Compare two strings.
 	Stack in : String (a)
 	Stack out : Int (strcmp(a, arg))
-strdup
+D strdup
 	Description : Duplicate a string.
 	Stack in : String (a)
 	Stack out : String (strdup(a))
-strdup:String
+D strdup:String
 	Description : Duplicate a string.
 	Stack in : -
 	Stack out : String (strdup(arg))
-strlen
+D strlen
 	Description : Get length of string.
 	Stack in : String
 	Stack out : Int
-sub
+A sub
 	Description : Substract two numeric values. Result is Float if at least one value is Float, Int otherwise.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int/Float (a-b)
-sub:Float
+A sub:Float
 	Description : Substract two numeric values. Result is Float.
 	Stack in : Int/Float (a)
 	Stack out : Float (a-arg)
-sub:Int
+A sub:Int
 	Description : Substract two numeric values. Result is Float if given value is Float, Int otherwise.
 	Stack in : Int/Float (a)
 	Stack out : Int/Float (a-arg)
-substr
+D substr
 	Description : Get a substring from a string.
 	Stack in : String (s), Int (start), Int (end)
 	Stack out : String (s[start:end])
-sup
+A sup
 	Description : Compare two numeric values.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int (a>b)
-supEq
+A supEq
 	Description : Compare two numeric values.
 	Stack in : Int/Float (a), Int/Float (b)
 	Stack out : Int (a>=b)
-swap:Int
+D swap:Int
 	Description : Swap top with another value in data stack.
 	Stack in : any (swapval), any [arg-1 times] (unchanged), any (top)
 	Stack out : any (top), any [arg-1 times] (unchanged), any (swapval)
-symTabSz
+D symTabSz
 	Description : Get the size of a symbol table.
 	Stack in : SymTab
 	Stack out : Int (size)
-SZ
+F SZ
 	Description : Skip next instruction if value is Zero.
 	Stack in : Int (value)
 	Stack out : -
-tan
+A tan
 	Description : Compute trigonometric tangent of value.
 	Stack in : Float (value)
 	Stack out : Float (tan(value))
-throw
+F throw
 	Description : Raise an exception.
 	Stack in : any (exception)
 	Stack out : -
-toF
+D toF
 	Description : Convert value to Float. 
 	Stack in : Int/Float/String (value)
 	Stack out : Float (value)
-toI
+D toI
 	Description : Convert value to Int.
 	Stack in : Int/Char/Float/String (value)
 	Stack out : Int (value)
-toS
+D toS
 	Description : Convert value to String.
 	Stack in : any (value)
 	Stack out : String (value)
-uninstCatcher:Label
+F uninstCatcher:Label
 	Description : Uninstall the last exception catch bloc installed and jump to label.
 	Stack in : -
 	Stack out : -
-unlockMtx
+F unlockMtx
 	Description : Unlock a Mutex. Will interrupt thread if a thread with higher priority is waiting for this lock. 
 	Stack in : Mutex
 	Stack out : -
-unlockMtx:Int
+F unlockMtx:Int
 	Description : Unlock a mutex at offset arg in memory (locals if arg<0, data segment if arg>=0). Will interrupt thread if a thread with higher priority is waiting for this lock. 
 	Stack in :
 	Stack out :
-_vm_prog_get_globals
+C _vm_prog_get_globals
 	Description : Get the globals SymTab for the currently compiled program.
 	Stack in : -
 	Stack out : SymTab
-vshl
+A vshl
 	Description : Variable bitwise left shift.
 	Stack in : Int (x), Int (count)
 	Stack out : Int (x<<count)
-vshr
+A vshr
 	Description : Variable bitwise right shift.
 	Stack in : Int (x), Int (count)
 	Stack out : Int (x>>count)
-walkChild
+C walkChild
 	Description : Recursively walk a child node with current user-defined walker.
 	Stack in : Int (node index)
 	Stack out : -
-walkChild:Int
+C walkChild:Int
 	Description : Recursively walk a child node with current user-defined walker. 
 	Stack in : -
 	Stack out : -
-write_data
+C write_data
 	Description : Append to the data segment of the currently compiled program.
 	Stack in : Int/Float/String (data)
 	Stack out : -
-write_label
+C write_label
 	Description : Create a label at current code offset in the currently compiled program.
 	Stack in : String (label)
 	Stack out : -
-write_label:String
+C write_label:String
 	Description : Create a label at current code offset in the currently compiled program.
 	Stack in : -
 	Stack out : -
-write_oc
+C write_oc
 	Description : Write an opcode without argument at current code offset in the currently compiled program. 
 	Stack in : String (opcode name)
 	Stack out : -
-write_ocChar
+C write_ocChar
 	Description : Write an opcode with Char argument at current code offset in the currently compiled program. 
 	Stack in : Char (opcode argument), String (opcode name)
 	Stack out : -
-write_ocChar:String
+C write_ocChar:String
 	Description : Write an opcode with Char argument at current code offset in the currently compiled program. 
 	Stack in : Char (opcode argument)
 	Stack out : -
-write_ocEnvSym
+C write_ocEnvSym
 	Description : Write an opcode with EnvSym argument at current code offset in the currently compiled program. 
 	Stack in : String (opcode argument), String (opcode name)
 	Stack out : -
-write_ocEnvSym:String
+C write_ocEnvSym:String
 	Description : Write an opcode with EnvSym argument at current code offset in the currently compiled program.
 	Stack in : String (opcode argument)
 	Stack out : -
-write_ocFloat
+C write_ocFloat
 	Description : Write an opcode with Float argument at current code offset in the currently compiled program. 
 	Stack in : Float (opcode argument), String (opcode name)
 	Stack out : -
-write_ocFloat:String
+C write_ocFloat:String
 	Description : Write an opcode with Float argument at current code offset in the currently compiled program. 
 	Stack in : Float (opcode argument)
 	Stack out : -
-write_ocInt
+C write_ocInt
 	Description : Write an opcode with Int argument at current code offset in the currently compiled program. 
 	Stack in : Int (opcode argument), String (opcode name)
 	Stack out : -
-write_ocInt:String
+C write_ocInt:String
 	Description : Write an opcode with Int argument at current code offset in the currently compiled program. 
 	Stack in : Int (opcode argument)
 	Stack out : -
-write_ocLabel
+C write_ocLabel
 	Description : Write an opcode with Label argument at current code offset in the currently compiled program. 
 	Stack in : String (opcode argument), String (opcode name)
 	Stack out : -
-write_ocLabel:String
+C write_ocLabel:String
 	Description : Write an opcode with Label argument at current code offset in the currently compiled program. 
 	Stack in : String (opcode argument)
 	Stack out : -
-write_ocString
+C write_ocString
 	Description : Write an opcode with String argument at current code offset in the currently compiled program. 
 	Stack in : String (opcode argument), String (opcode name)
 	Stack out :
-write_oc:String
+C write_oc:String
 	Description : Write an opcode without argument at current code offset in the currently compiled program. 
 	Stack in :
 	Stack out :
-write_ocString:String
+C write_ocString:String
 	Description : Write an opcode with String argument at current code offset in the currently compiled program.
 	Stack in : String (opcode argument)
 	Stack out : -
-xor
+A xor
 	Description : Boolean exclusive or.
 	Stack in : Int (a), Int (b)
 	Stack out : Int ((a or b) and not (a and b))
-xor:Int
+A xor:Int
 	Description : Boolean exclusive or.
 	Stack in : Int (a), Int (b)
 	Stack out : Int ((a or b) and not (a and b))
-yield
+F yield
 	Description : Tell the scheduler to interrupt thread execution and resume next thread.
 	Stack in : -
 	Stack out : -

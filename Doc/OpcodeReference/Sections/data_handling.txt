@@ -1,0 +1,348 @@
+addSym
+	Description : Add a symbol to a symbol table.
+	Stack in : SymTab (symbol table), String (symbol)
+	Stack out : -
+arrayGet
+	Description : Get element by index in an Array/Map.
+	Stack in : Array/Map (a), Int (i)
+	Stack out : any (a[i])
+arrayGet:Int
+	Description : Get element by index in an Array/Map.
+	Stack in : Array/Map (a)
+	Stack out : any (a[arg])
+arrayNew
+	Description : Spawn a new Array.
+	Stack in : -
+	Stack out : Array
+arrayResv
+	Description : Reserve space in an Array.
+	Stack in : Array (a), Int (size)
+	Stack out : -
+arrayResv:Int
+	Description : Reserve space in an Array. 
+	Stack in : Array (a)
+	Stack out : -
+arraySet
+	Description : Set element in an Array/Map.
+	Stack in : Array/Map (a), any (value), Int (index)
+	Stack out : Array/Map (a)
+arraySet:Int
+	Description : Set element in an Array/Map.
+	Stack in : Array/Map (a), any (value)
+	Stack out : Array/Map (a)
+arraySize
+	Description : Get actual size of an Array.
+	Stack in : Array (a)
+	Stack out : Int (size(a))
+charAt
+	Description : Get character at n-th position in string s.
+	Stack in : String (s), Int (n)
+	Stack out : Char
+charAt:Int
+	Description : Get character at arg-th position in string s.
+	Stack in : String (s)
+	Stack out : Char
+chr
+	Description : Convert Int into Char.
+	Stack in : Int
+	Stack out : Char
+chr:Int
+	Description : Convert Int into Char.
+	Stack in : -
+	Stack out : Char
+clone
+	Description : Clone a value. Some objects may actually clone to themselves.
+	Stack in : any (value)
+	Stack out : any (value clone)
+dup:Int
+	Description : Push again arg-th value in data stack onto stack top.
+	Stack in : -
+	Stack out : any
+dynFunAddClosure
+	Description : Add an enclosed value to a function object.
+	Stack in : DynFun, any (value)
+	Stack out : DynFun (the same object)
+dynFunNew:Label
+	Description : Create a function object pointing to code at given label.
+	Stack in : -
+	Stack out : DynFun
+enter:Int
+	Description : Allocate arg variables in local variables stack.
+	Stack in : -
+	Stack out : -
+envAdd
+	Description : Add a value to the VM environment.
+	Stack in : any (value), String (key)
+	Stack out : -
+envGet
+	Description : Get a value from the VM environment. Access is done via hashtable. Dynamic but slower.
+	Stack in : String (key)
+	Stack out : any (env[key])
+envGet:EnvSym
+	Description : Get a value from the VM environment. Indexed access (symbol name is resolved when program is loaded/compiled). Static but faster.
+	Stack in : -
+	Stack out : any (env[key])
+envLookup
+	Description : Lookup index of key in the VM environment.
+	Stack in : String (key)
+	Stack out : Int (index)
+envSet:EnvSym
+	Description : Set value for _existing_ key in the VM environment. Indexed access.
+	Stack in : any (value)
+	Stack out : -
+getClosure
+	Description : Get n-th enclosed value in function object.
+	Stack in : DynFun, Int (n)
+	Stack out : any
+getClosure:Int
+	Description : Get arg-th enclosed value in current context.
+	Stack in : -
+	Stack out : any
+getException
+	Description : Get exception value that was raised.
+	Stack in : -
+	Stack out : any
+getmem
+	Description : Get value at offset n in thread locals (n<0) or program data segment (n>=0).
+	Stack in : Int (n)
+	Stack out : any
+getmem:Int
+	Description : Get value at offset arg in thread locals (arg<0) or program data segment (n>=0).
+	Stack in : -
+	Stack out : any
+getPid
+	Description : Get current thread object.
+	Stack in : -
+	Stack out : Thread
+getSym
+	Description : Get symbol offset by name in a symbol table.
+	Stack in : SymTab, String
+	Stack out : Int (-1 if not found, > 0 otherwise)
+getSymName
+	Description : Get symbol name by offset in a symbol table.
+	Stack in : SymTab, Int
+	Stack out : String
+_get_timeslice
+	Description : Get the current value of the scheduler's time slice.
+	Stack in : -
+	Stack out : Int
+leave:Int
+	Description : deallocate variables from locals stack.
+	Stack in : -
+	Stack out : -
+mapGet
+	Description : Get value by key in Map.
+	Stack in : Map (m), String (key)
+	Stack out : any (m[key])
+mapGet:String
+	Description : Get value by key in Map.
+	Stack in : Map (m)
+	Stack out : any (m[arg])
+mapHasKey
+	Description : Test if map contains key k.
+	Stack in : Map (m), String (k)
+	Stack out : Int (1 if m has key, 0 otherwise)
+mapHasKey:String
+	Description : Test if map contains key arg.
+	Stack in : Map (m)
+	Stack out : Int (1 if m has key, 0 otherwise)
+mapNew
+	Description : Spawn a new Map object.
+	Stack in : -
+	Stack out : Map
+mapSet
+	Description : Set value for key k in a Map.
+	Stack in : any (value), Map (m), String (k)
+	Stack out : -
+mapSet:String
+	Description : Set value for key arg in a Map.
+	Stack in : any (value), Map (m)
+	Stack out : -
+newMtx
+	Description : Spawn a new Mutex object.
+	Stack in : -
+	Stack out : Mutex
+newSymTab
+	Description : Spawn a new symbol table object.
+	Stack in : -
+	Stack out : SymTab
+newThread
+	Description : Create a new thread using a dynamic function object with priority p.
+	Stack in : Int (p), DynFun
+	Stack out : Thread
+newThread:Label
+	Description : Create a new thread using label with priority p.
+	Stack in : Int (p)
+	Stack out : Thread
+ord
+	Description : Convert Char to Int.
+	Stack in : Char
+	Stack out : Int
+ord:Char
+	Description : Convert Char to Int.
+	Stack in : -
+	Stack out : Int
+pop
+	Description : Pop value from data stack.
+	Stack in : any
+	Stack out : -
+pop:Int
+	Description : Pop arg values from data stack.
+	Stack in : any [arg times]
+	Stack out : -
+popN
+	Description : Pop n values from data stack. 
+	Stack in : any [n times], Int (n)
+	Stack out : -
+print
+	Description : print n values to standard output. 
+	Stack in : any [n times], Int (n)
+	Stack out : -
+print:Int
+	Description : print arg values to standard output. 
+	Stack in : any [arg times]
+	Stack out : -
+push:Char
+	Description : Push immediate value onto data stack.
+	Stack in : -
+	Stack out : Char
+push:Float
+	Description : Push immediate value onto data stack.
+	Stack in : -
+	Stack out : Float
+push:Int
+	Description : Push immediate value onto data stack.
+	Stack in : -
+	Stack out : Int
+push:String
+	Description : Push immediate value onto data stack.
+	Stack in : -
+	Stack out : String
+regGet
+	Description : Get value of n-th register in current thread.
+	Stack in : Int (n)
+	Stack out : any (thread_registers[n])
+regGet:Int
+	Description : Get value of arg-th register in current thread.
+	Stack in : -
+	Stack out : any (thread_registers[arg])
+regSet
+	Description : Set value of n-th register in current thread.
+	Stack in : any (v), Int (n)
+	Stack out : - (thread_registers[arg]=v)
+regSet:Int
+	Description : Set value of arg-th register in current thread.
+	Stack in : any (v)
+	Stack out : - (thread_registers[arg]=v)
+setCharAt
+	Description : Set character at position n in string.
+	Stack in : String, Char, Int (n)
+	Stack out : -
+setCharAt:Int
+	Description :Set character at position arg in string. 
+	Stack in : String, Char
+	Stack out : -
+setClosure
+	Description : Set value of n-th enclosed value in current context. 
+	Stack in : any (value), Int (index)
+	Stack out : -
+setClosure:Int
+	Description : Set value of arg-th enclosed value in current context.
+	Stack in : any (value)
+	Stack out : -
+setmem
+	Description : Set value at offset n in memory (locals if n<0, data segment if n>=0).
+	Stack in : any (value), Int (offset)
+	Stack out : -
+setmem:Int
+	Description : Set value at offset arg in memory (locals if arg<0, data segment if arg>=0).
+	Stack in : any (value)
+	Stack out : -
+_set_timeslice
+	Description : Set the value of the scheduler's time slice.
+	Stack in : Int
+	Stack out : -
+_set_timeslice:Int
+	Description : Set the value of the scheduler's time slice. 
+	Stack in : -
+	Stack out : -
+stackNew
+	Description : Spawn a new Stack object.
+	Stack in : -
+	Stack out : Stack
+stackPeek
+	Description : Peek n-th value in stack.
+	Stack in : Stack, Int (n)
+	Stack out : any
+stackPeek:Int
+	Description : Peek arg-th value in stack.
+	Stack in : Stack
+	Stack out : any
+stackPop
+	Description : Pop value from top of stack.
+	Stack in : Stack
+	Stack out : -
+stackPop:Int
+	Description : Pop arg values from top of stack. 
+	Stack in : Stack
+	Stack out : -
+stackPush
+	Description : Push value onto top of stack. 
+	Stack in : Stack, any (value)
+	Stack out : -
+stackSize
+	Description : Get size of stack object. 
+	Stack in : Stack
+	Stack out : Int (size)
+strcat
+	Description : Concatenate two strings.
+	Stack in : String (a), String (b)
+	Stack out : String (strcat(a, b))
+strcat:String
+	Description : Concatenate two strings.
+	Stack in : String (a)
+	Stack out : String (strcat(a, arg))
+strcmp
+	Description : Compare two strings.
+	Stack in : String (a), String (b)
+	Stack out : Int (strcmp(a, b))
+strcmp:String
+	Description : Compare two strings.
+	Stack in : String (a)
+	Stack out : Int (strcmp(a, arg))
+strdup
+	Description : Duplicate a string.
+	Stack in : String (a)
+	Stack out : String (strdup(a))
+strdup:String
+	Description : Duplicate a string.
+	Stack in : -
+	Stack out : String (strdup(arg))
+strlen
+	Description : Get length of string.
+	Stack in : String
+	Stack out : Int
+substr
+	Description : Get a substring from a string.
+	Stack in : String (s), Int (start), Int (end)
+	Stack out : String (s[start:end])
+swap:Int
+	Description : Swap top with another value in data stack.
+	Stack in : any (swapval), any [arg-1 times] (unchanged), any (top)
+	Stack out : any (top), any [arg-1 times] (unchanged), any (swapval)
+symTabSz
+	Description : Get the size of a symbol table.
+	Stack in : SymTab
+	Stack out : Int (size)
+toF
+	Description : Convert value to Float. 
+	Stack in : Int/Float/String (value)
+	Stack out : Float (value)
+toI
+	Description : Convert value to Int.
+	Stack in : Int/Char/Float/String (value)
+	Stack out : Int (value)
+toS
+	Description : Convert value to String.
+	Stack in : any (value)
+	Stack out : String (value)
