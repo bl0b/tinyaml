@@ -173,7 +173,7 @@ top_srcdir = ../../..
 TINYAML = ../../../src/tinyaml_static
 layerdir = $(pkgdatadir)
 layer_DATA = script_compiler.wc script.wc
-EXTRA_DIST = analyzeFuncDecl.walker compiler.asm exprListType.walker functions.asm globals grammar header.asm main.asm script.stdlib structs
+EXTRA_DIST = analyzeFuncDecl.walker compiler.asm exprListType.walker functions.asm globals grammar main.asm script.stdlib structs
 layer_prereq = ../metasm/metasm.wc ../symasm/symasm.wc ../procasm/procasm.wc
 all: all-am
 
