@@ -114,6 +114,7 @@ MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
+OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
@@ -185,7 +186,7 @@ tinyap_LIBS = @tinyap_LIBS@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = src include extension ml tests Tutorial
+SUBDIRS = src include extension ml tests Doc
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = tinyaml.pc.in tinyaml.ld.conf gen_pc.pl thread_states.dot
 all: all-recursive

@@ -260,6 +260,9 @@ void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index) {
 	index<<=1;
 	/*vm_printf("%i:%X\n", env->data.data[index],env->data.data[index+1]);*/
 	vm_push_data(vm,env->data.data[index],env->data.data[index+1]);
+	/*vm_push_data(vm,*/
+		/*(vm_data_type_t) dynarray_get(&env->data, index),*/
+		/*dynarray_get(&env->data, index+1));*/
 }
 
 

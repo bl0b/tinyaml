@@ -21,7 +21,7 @@
 
 #include "vm_types.h"
 #include "containers.h"
-#include <tinyape.h>
+#include <tinyap/tinyape.h>
 
 
 /*! \weakgroup dynarray_t

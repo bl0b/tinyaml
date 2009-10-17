@@ -31,7 +31,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = Tutorial/1.Basics/extras
+subdir = Doc/Tutorial/1.Basics/extras
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -87,6 +87,7 @@ MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
+OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
@@ -171,9 +172,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  Tutorial/1.Basics/extras/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  Doc/Tutorial/1.Basics/extras/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  Tutorial/1.Basics/extras/Makefile
+	  $(AUTOMAKE) --gnu  Doc/Tutorial/1.Basics/extras/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

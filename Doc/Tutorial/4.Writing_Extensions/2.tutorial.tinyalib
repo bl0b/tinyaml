@@ -1,0 +1,87 @@
+# The sole purpose of this extension library is to demonstrate how to write typical opcodes in C.
+
+lib
+	# First, we have to open the shared library
+	file "Tutorial"
+
+
+	# How to print things on screen
+
+		# hello accepts no argument.
+		# simply display a "hello, world" message using the standard tinyaml way.
+		opcode hello
+
+	# How to handle arguments
+
+		# consume accepts Int or Float or String
+		opcode withArg:Int
+		opcode withArg:Float
+		opcode withArg:String
+
+	# How to push/pop things onto/from stack
+
+		# consume anything, report data type and value
+		opcode consume
+
+		# Array handling
+		opcode maxInArray	# can't accept an Array argument. Will pop it from the stack
+					# expect all items to be Int, and will push the max value.
+
+		# Creating an Array
+		opcode makeFibo:Int	# statically tell how long the array will be
+		opcode makeFibo		# dynamically tell how long the array will be
+
+		# Creating a Map
+		opcode exampleMap
+
+	# Special argument types :
+
+		# How to use Label and EnvSym arguments
+
+			# getLabelOfs accepts a @Label argument
+			opcode getLabelOfs:Label
+
+			# getEnvSymOfsAndValue accepts an &EnvSym argument
+			opcode getEnvSymOfsAndValue:EnvSym
+end
+
+# There can be "driver code" after the lib..end bloc, so let's write some code here.
+# For real case examples of driver code, see extensions IO or RTC.
+
+# Anything after the lib..end bloc will be compiled in a second pass, so we can use
+# any opcode we just defined above.
+
+require "symasm.wc"
+
+glob
+	fibo = 0
+	i = 0
+	map = 0
+end
+
+asm
+	hello
+
+	push 23 consume
+	push 4.2 consume
+	push "Toto" consume
+
+	getLabelOfs @_fibo_loop
+
+	push 10 makeFibo -$fibo
+_fibo_loop:
+	+$i +$fibo arraySize inf [
+		push "fibo(" +$i push ") = " +$fibo +$i arrayGet push "\n" print 5
+		+$i inc -$i
+		jmp @_fibo_loop
+	]
+
+	exampleMap -$map
+	+$map mapGet "hello"
+	push '\n' print 2
+
+	push "Hi, symofs !"
+	push "TutoTest"
+	envAdd	# will be tested in test.asm
+end
+

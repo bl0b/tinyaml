@@ -60,3 +60,7 @@ perform usual conversions :
 - 5.test.asm          : a simple example demonstrating the use of the new
                         opcodes.
 
+Then you can take a look at the extension MessageQueue which demonstrates the
+definition of new managed types (i.e. allocated by the VM and collected by it)
+and how to implement blocking opcodes (interrupt the thread, but not the VM).
+
