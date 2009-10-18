@@ -1,5 +1,5 @@
 require "procasm.wc"
-include "header.asm"
+#include "header.asm"
 include "grammar"
 include "globals"
 include "structs"
