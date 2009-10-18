@@ -1,0 +1,236 @@
+ Functions |
+__________/
+
+
+
+%_TCPServer(ip, port, client_callback, q_len)
+
+	- purpose :
+		Create a new TCP server thread.
+
+	- arguments :
+		ip : numerical IP to listen on
+		port : numerical port to listen on
+		client_callback : function(client_session_file, client_ip, client_port)
+				Used to handle the whole client session (i.e. implement
+				the protocol).
+		q_len : queue length to use in listening socket.
+
+	- returns :
+		File (the TCP server)
+
+%__IO__term()
+
+	- purpose :
+		Terminate the IO subsystem.
+
+	- arguments : none.
+
+	- returns : none.
+
+
+
+ Opcodes |
+________/
+
+
+
+fopen:String
+	Description : Open a file with mode specified by arg.
+	Stack in : String (filepath)
+	Stack out : File
+
+fopen
+	Description : Open a file.
+	Stack in : String (filepath), String (mode)
+	Stack out : File
+
+udpopen
+	Description : open an UDP socket.
+	Stack in : Int (IP), Int (port)
+	Stack out : File
+
+tcpopen
+	Description : open a TCP socket.
+	Stack in : Int (IP), Int (port)
+	Stack out : File
+
+isOpen
+	Description : tells if the given File is open.
+	Stack in : File
+	Stack out : Int (1 if File is open, 0 otherwise)
+
+atEOF
+	Description : tells if we are at the end of the given File.
+	Stack in : File
+	Stack out : Int (1 if at EOF, 0 otherwise)
+
+tell
+	Description : get the current position in the File.
+		Buffers and Files are seekable. Sockets and pipes are not seekable.
+	Stack in : File
+	Stack out : Int (current position)
+
+seek:Char
+	Description : seek to offset from :
+		if arg=='S' : start of File,
+		if arg=='E' : end of File,
+		if arg=='C' : current position in File.
+		Buffers and Files are seekable. Sockets and pipes are not seekable.
+	Stack in : Int (offset), File
+	Stack out : -
+
+flush
+	Description : flush File's r/w buffers.
+	Stack in : File
+	Stack out : -
+
+string2ip
+	Description : convert IP from String representation to numeric (Int) representation.
+	Stack in : String (IP)
+	Stack out : Int (IP)
+
+ip2string
+	Description : convert IP from numeric (Int) representation to String representation.
+	Stack in : Int (IP)
+	Stack out : String (IP)
+
+popen:String
+	Description : open a piped process with r/w mode given in arg.
+	Stack in : String (command)
+	Stack out : File
+
+popen
+	Description : open a piped process.
+	Stack in : String (command), String (mode)
+	Stack out : File
+
+close
+	Description : close an open File.
+	Stack in : File
+	Stack out : -
+
+_fpack:Char
+	Description : write a value to File using format given in arg.
+		Valid format values (and associated valid data types) are :
+			'S' : text string			[String]
+			'I' : text int (decimal)		[Int]
+			'X' : text int (hexadecimal)		[Int]
+			'F' : text float			[Float]
+			'C' : single character			[Char]
+			's' : binary string (null-terminated)	[String]
+			'i' : binary int (32-bit)		[Int]
+			'f' : binary float (32-bit)		[Float]
+			'b' : binary byte (8-bit)		[Int]
+		NOTA : push "foobar" _fpack 'S'  is equivalent to  push "foobar" push 1 fprint
+	Stack in : any (data), File
+	Stack out : File
+
+_fpack
+	Description : write a value to File. See _fpack:Char for details.
+	Stack in : File, any (data), Char (format)
+	Stack out : File
+
+_funpack:Char
+	Description : read value from File. See _fpack:Char for format details.
+	Stack in : File
+	Stack out : any (read data)
+
+_funpack
+	Description : read value from File. See _fpack:Char for format details.
+	Stack in : File, Char (format)
+	Stack out : any (read data)
+
+fprint
+	Description : write text data to file.
+	Stack in : any... (data), File, Int (data count)
+	Stack out : -
+
+fsize
+	Description : stat given filepath and return its size.
+	Stack in : String (filepath)
+	Stack out : Int (filesize)
+
+ftype
+	Description : stat given filepath and return its type.
+	Stack in : String (filepath)
+	Stack out : String (filetype)
+
+readlink
+	Description : get link target for given filepath.
+	Stack in : String (filepath)
+	Stack out : String (target path)
+
+symlink
+	Description : create a symbolic link.
+	Stack in : String (link path), String (target path)
+
+rename
+	Description : rename a file.
+	Stack in : String (source filepath), String (dest filepath)
+	Stack out : -
+
+unlink
+	Description : remove a file entry.
+	Stack in : String (filepath)
+	Stack out : -
+
+fsource
+	Description : get the data source name of given File (filepath or network host)
+	Stack in : File
+	Stack out : String (data source name)
+
+mkdir
+	Description : create a directory.
+	Stack in : String (path)
+	Stack out : -
+
+getcwd
+	Description : get current working directory.
+	Stack in : -
+	Stack out : String (cwd)
+
+chdir
+	Description : change the working directory.
+	Stack in : String (new cwd path)
+	Stack out : -
+
+opendir
+	Description : open a directory for reading.
+	Stack in : String (path)
+	Stack out : File (open directory)
+
+readdir
+	Description : read a directory entry.
+	Stack in : File (open directory)
+	Stack out : String (name of next entry or empty string if at end of directory)
+
+stdout
+	Description : get stdout handle.
+	Stack in : -
+	Stack out : File (stdout, write-only)
+
+stderr
+	Description : get stderr handle.
+	Stack in : -
+	Stack out : File (stderr, write-only)
+
+stdin
+	Description : get stdin handle.
+	Stack in : -
+	Stack out : File (stdin, read-only)
+
+__tcpserver
+	Description : create a new TCP server thread.
+		This opcode is for internal use only. Use exported function
+		_TCPServer(ip, port, client_callback, q_len) instead.
+	Stack in : Int (q_len), Int (listen port), Int (listen IP)
+	Stack out : File (TCP server)
+
+__accept
+	Description : wait for a new TCP connection.
+		This opcode is for internal use only. Use exported function
+		_TCPServer(ip, port, client_callback, q_len) instead.
+		client_callback(client_session_file, client_ip, client_port)
+		will be executed when a new connection has been accepted.
+
