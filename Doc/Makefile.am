@@ -1,1 +1,1 @@
-SUBDIR=OpcodeReference Tutorial
+SUBDIRS=OpcodeReference Tutorial

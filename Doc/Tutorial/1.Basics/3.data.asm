@@ -1,5 +1,23 @@
 # Here we define and use global and local data
 
+# New syntax here :
+# data [...] end
+#	append data to the data segment (i.e. declare data space). Only immediate types
+#	Int, Float, and String can be declared here.
+#	Each piece of data can be followed by "rep <int>" (without quotes) to allocate
+#	many slots at once, all initialized to the data value.
+
+# New opcodes here :
+# - getmem <int> : push value from the given offset in data segment (offset>=0) or
+#                  locals stack (offset<0) onto the data stack.
+# - setmem <int> : set value at given offset in data segment (offset>=0) or locals
+#                  stack (offset<0) to value taken from the top of the data stack.
+# - add : pop two values (int/float) from data stack and push their sum.
+# - mul : pop two values (int/float) from data stack and push their product.
+#   (There also exists sub and div.)
+# - enter <int> : allocate temporary space on the locals stack.
+# - leave <int> : free space in locals stack.
+#
 
 data					# this keyword starts a global data definition bloc.
 					# all data defined here goes straigth in a data segment, starting at offset 0.

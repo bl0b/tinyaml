@@ -1,5 +1,20 @@
 # Here we will demonstrate the use of labels and jumps
 
+# New syntax here :
+# @label
+#	reference a label in an opcode argument
+# label:
+#	define a label in an asm..end bloc
+
+# New opcodes here :
+# - jmp <label> : push a value onto the data stack.
+# - SZ : "Skip (next instruction if value on top of stack, expected to be an integer, is) Zero".
+#        If top of stack is 0, equivalent to a jump AFTER the next instruction. Equivalent to NOP otherwise.
+# - SNZ : "Skip (next instruction if value on top of stack, expected to be an integer, is) Not Zero".
+#        If top of stack is 0, equivalent to NOP. Equivalent to a jump AFTER the next instruction otherwise.
+# - chr : convert int on top of stack into a character.
+#
+
 asm
 start:				# label is simply defined by identifier followed by colon
 	jmp @label1		# reads as "jump at label1"

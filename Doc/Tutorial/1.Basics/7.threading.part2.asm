@@ -7,6 +7,13 @@
 # All *_data functions define a critical section so their execution is atomic
 # to the scheduler, but for the final ret instruction.
 
+# New opcodes here :
+# _get_timeslice
+#	Push current timeslice value (number of instructions a thread will execute
+#	before execution switches to the next running thread) onto the data stack.
+# _set_timeslice
+#	Set the timeslice value with popping an integer from the data stack.
+
 data
 	0	# thread 1
 	0	# thread 2

@@ -12,14 +12,14 @@
 # Here we will demonstrate the definition of environment variables, and their
 # use is demonstrated in the main file (6.requiring_and_including_files.asm).
 
-# The new opcodes to handle environment variables are :
+# The opcodes to handle environment variables are :
 # - envAdd : create/set an environment variable.
-#            use : push value, push symbolic_name, envAdd.
+#            use : push value, push "symbolic_name", envAdd.
 #                  push value, envAdd "symbolic_name".
 # - envGet : get the value of the given environment variable.
 #            use : envGet &symbolic_name.
 #            The variable must exist prior to compiling the file containing this
-#            instruction !
+#            instruction ! (names are translated into their index number)
 # - envSet : set the value of the given environment variable.
 #            use : push value, envSet &symbolic name.
 #            The variable must exist prior to compiling the file containing this

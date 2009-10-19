@@ -4,6 +4,33 @@
 # - static functions, defined with a label.
 # - dynamic functions, which are objects in memory (still defined from a label anyway).
 #   These objects can enclose data for future use (this is of much use in the script layer which we'll see later on).
+#   Closures are implemented in tinyaml as a third adressing space (after data segment and locals stack), behaving
+#   much like a data segment embedded in the function object.
+
+# New opcodes here :
+# dup <negative int>
+#	duplicate n-th value in data stack.
+#	For instance if stack contains (topmost last) 1 "Foo", after dup 0 it
+#	would contain 1 "Foo" "Foo", and after dup -1 it would contain 1 "Foo" 1.
+# swap <positive int>
+#	swap top value and n-th value in stack.
+#
+# Dynamic function related opcodes :
+# dynFunNew <label>
+#	create a new dynamic function object with body code located at label.
+# call
+#	pop a function object from the data stack and perform a call on its body.
+#	if the function has a closure, it is also pushed into the execution context.
+# dynFunAddClosure
+#	pop a value and peek a function object from/at the top of the data stack,
+#	and add a copy of the value to the function closure.
+# getClosure <positive int>
+#	similar to getmem <int> with current closure instead of data segment as
+#	the data source.
+# setClosure <positive int>
+#	similar to setmem <int> with current closure instead of data segment as
+#	the data source.
+#	
 
 data
 	0				# We'll use this slot to store a dynamic function
@@ -17,15 +44,18 @@ asm
 
 _my_hello:				# we'll use this label as a function with one argument
 	push "Hello, "			# we want to print "Hello, <arg>\n"
-	dup -1				# this opcode duplicates data at given offset in data stack at the top of stack. Offset must be negative.
+	dup -1				# this opcode duplicates data at given offset in data stack
+					# at the top of stack. Offset must be negative.
 	push "\n"
 	print 3
-	pop				# remove the argument from top of stack (print 3 has already removed everything else, remember ?)
+	pop				# remove the argument from top of stack (print 3 has already
+					# removed everything else, remember ?)
 	ret 0				# return from function
 
 _my_hello2:				# we'll use this label as a function with one argument
 	push "Hello, "			# we want to print "Hello, <arg>\n"
-	swap 1				# this opcode exchanges data at top and given offset in data stack. Offset must be positive.
+	swap 1				# this opcode exchanges data at top and given offset in data
+					# stack. Offset must be positive.
 	push "\n"
 	print 3
 	ret 0				# return from function

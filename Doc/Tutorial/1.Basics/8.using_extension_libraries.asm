@@ -31,6 +31,18 @@
 #
 # This is covered in more detail in section 4, Writing extensions.
 
+# New syntax here :
+# loadlib LIBNAME
+#	loads the library called LIBNAME.
+
+# New opcodes here :
+# msgQueueNew
+# msgQueueReaderNew
+# msgQueueWrite
+# msgQueueRead
+#	see Doc/OpcodeReference/extensions/MessageQueue.txt.
+# arrayNew
+#	create a new array object and push it onto the data stack.
 
 
 loadlib MessageQueue						# We want to use the MQ extension.

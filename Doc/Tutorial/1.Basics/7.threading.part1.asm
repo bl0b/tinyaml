@@ -31,36 +31,57 @@
 # time slice or a yield, it will choose the highest priority first. High
 # numbers mean high priority. The default thread priority is 50.
 
-# Opcodes covered here :
-# - newThread : pops the priority level (int) from stack and creates a new
-#               thread. If the instruction is given a label argument, thread
-#               execution will start there. Otherwise, pops a function object
-#               from stack and calls it (no argument given, return value will
-#               be ignored).
-# - getPid : returns the Thread object (PID is not proper here. This name is
-#            kept for historical reasons).
-# - yield : tell the scheduler to skip to next thread in queue.
-# - joinThread : pop thread object from stack and wait till it finishes.
-# - killThread : pop thread object from stack and kill it at once.
-# - crit_begin : starts a critical section (thread can NOT be interrupted
-#                while inside a critical section).
-# - crit_end : ends the critical section.
-# - _set_timeslice : change the timeslice value (any integer > 0). If an
-#                    integer argument is not provided, the value is popped from
-#                    the data stack.
-# - _get_timeslice : pushes the timeslice value onto the data stack.
+# New opcodes here :
+# newThread <label>
+# newThread
+#	pops the priority level (int) from stack and creates a new
+#	thread. If the instruction is given a label argument, thread
+#	execution will start there. Otherwise, a function object is
+#	popped from stack BEFORE the priority value is popped. The function
+#	object is then called without argument and its return value is
+#	ignored.
+# getPid
+#	returns the Thread object (PID is not proper here. This name is
+#	kept for historical reasons).
+# yield
+#	tell the scheduler to skip to next thread in queue.
+# joinThread
+#	pop thread object from stack and wait till it finishes.
+# killThread
+#	pop thread object from stack and kill it at once.
+# crit_begin
+#	starts a critical section (thread can NOT be interrupted
+#	while inside a critical section).
+# crit_end
+#	ends the critical section.
+# _set_timeslice <int>
+# _set_timeslice
+#	change the timeslice value (any integer > 0). If an
+#	integer argument is not provided, the value is popped from
+#	the data stack.
+# _get_timeslice
+#	pushes the timeslice value onto the data stack.
 #
 # Also, basic mutex synchronization instructions :
-# - newMtx : create a new mutex object and push it onto the data stack.
-# - lockMtx : lock a mutex object. If an int parameter is given, it is
-#             interpreted as a memory address (as in getmem), otherwise the
-#             mutex object is popped from the data stack.
-#             This instruction may yield the thread until the mutex is free for
-#             locking.
-# - unlockMtx : unlock a mutex object. As in lockMtx, an int parameter may be
-#               given.
-#               This instruction may yield the thread if a higher priority
-#               thread is waiting to lock the mutex.
+# newMtx
+#	create a new mutex object and push it onto the data stack.
+# lockMtx
+#	lock a mutex object. If an int parameter is given, it is
+#	interpreted as a memory address (as in getmem), otherwise the
+#	mutex object is popped from the data stack.
+#	This instruction may yield the thread until the mutex is free for
+#	locking.
+# unlockMtx
+#	unlock a mutex object. As in lockMtx, an int parameter may be given.
+#	This instruction may yield the thread if a higher priority thread is
+#	waiting to lock the mutex.
+#
+# New opcode unrelated to threads :
+# eq
+#	pops two values from the data stack, pushes 1 if they are equal, 0
+#	otherwise.
+# inc
+#	increments the top of the data stack (expected to be an int).
 
 # This tutorial is rather long, so it is divided into three parts :
 # - In part 1 (this file), we demonstrate creating threads, joining them (i.e.
