@@ -1,5 +1,7 @@
 #include "file.h"
 
+void couldnt(const char* what, const char* where);
+
 void _VM_CALL vm_op_isOpen(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	file_t f = (file_t)d->data;
@@ -45,6 +47,7 @@ void _VM_CALL vm_op_seek_Char(vm_t vm, word_t whence) {
 	case 'C': w=SEEK_CUR; break;
 	default:;
 		vm_fatal("Bad seek origin");
+		w=-1; /* make compiler happy. compiler doesn't know that vm_fatal will longjmp. */
 	};
 	fseek(f->descr.f, (int)d->data, w);
 }
@@ -64,11 +67,10 @@ void _VM_CALL vm_op_tell(vm_t vm, word_t whence) {
 void _VM_CALL vm_op_opendir(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	const char* path = (const char*)d->data;
-	file_t f;
 
 	assert(d->type==DataString||d->type==DataObjStr);
 
-	vm_push_data(vm, DataObjUser, dir_new(vm, path));
+	vm_push_data(vm, DataObjUser, (word_t) dir_new(vm, path));
 }
 
 
@@ -77,7 +79,6 @@ void _VM_CALL vm_op_opendir(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_readdir(vm_t vm, word_t unused) {
 	vm_data_type_t dt;
 	file_t f;
-	word_t x;
 	vm_peek_data(vm, 0, &dt, (word_t*)&f);
 	assert(dt==DataObjUser && f->magic==0x6106D123);
 
@@ -105,11 +106,10 @@ void _VM_CALL vm_op_readdir(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_fopen_String(vm_t vm, const char* mode) {
 	vm_data_t d = _vm_pop(vm);
-	int fd;
+	/*int fd;*/
 	const char* fpath = (const char*)d->data;
 	file_t f;
 	FILE*F;
-	int flags=0;
 	word_t fflags=FISOPEN|FISSEEKABLE;
 	assert(d->type==DataString||d->type==DataObjStr);
 	assert(mode[0]!=0);
@@ -152,9 +152,7 @@ void _VM_CALL vm_op_fopen_String(vm_t vm, const char* mode) {
 	/*}*/
 	F = fopen(fpath, mode);
 	if(F==NULL) {
-		char buf[1024];
-		sprintf(buf, "Couldn't open file '%s'.", fpath);
-		vm_fatal(buf);
+		couldnt("open file", fpath);
 	}
 	f = file_new(vm, fpath, F,  fflags);
 	vm_push_data(vm, DataObjUser, (word_t)f);
@@ -177,15 +175,13 @@ static inline void addr2str(char* buf, struct sockaddr_in* sa) {
 
 static inline file_t sock_init(vm_t vm, int type) {
 	struct sockaddr_in sa;
-	unsigned long int ip;
 	int sock;
 	FILE*F;
-	unsigned short port;
 	vm_data_t d;
 	char buf[22];
 	/* create socket */
 	if((sock = socket(PF_INET, type, 0))==-1) {
-		vm_fatal("Couldn't open socket.");
+		couldnt("open socket", NULL);
 	}
 	/* set port */
 	d = _vm_pop(vm);
@@ -199,7 +195,7 @@ static inline file_t sock_init(vm_t vm, int type) {
 	sa.sin_family = AF_INET;
 	/* connect */
 	if(connect(sock, (struct sockaddr*)&sa, sizeof(struct sockaddr_in))==-1) {
-		vm_fatal("Couldn't connect socket.");
+		couldnt("connect socket", inet_ntoa(sa.sin_addr));
 	}
 	addr2str(buf, &sa);
 	F = fdopen(sock, "r+");
@@ -268,7 +264,6 @@ void _VM_CALL vm_op_close(vm_t vm, word_t unused) {
 static inline void __funpack(vm_t vm, unsigned char fmt, int stack_ofs) {
 	vm_data_type_t dt;
 	file_t f;
-	word_t x;
 	vm_peek_data(vm, stack_ofs, &dt, (word_t*)&f);
 	assert(dt==DataObjUser && f->magic==0x6106F11E);
 
@@ -418,7 +413,7 @@ void _VM_CALL vm_op_fsize(vm_t vm, word_t unused) {
 	assert(d->type==DataString||d->type==DataObjStr);
 	if(stat((const char*)d->data, &st)) {
 		/* stat error */
-		vm_fatal("Couldn't stat file.");
+		couldnt("stat file", (const char*)d->data);
 	}
 	vm_push_data(vm, DataInt, (word_t)st.st_size);
 }
@@ -429,13 +424,13 @@ void _VM_CALL vm_op_ftype(vm_t vm, word_t unused) {
 	assert(d->type==DataString||d->type==DataObjStr);
 	if(stat((const char*)d->data, &st)) {
 		/* stat error */
-		vm_fatal("Couldn't stat file.");
+		couldnt("stat file", (const char*)d->data);
 	}
 	if(S_ISREG(st.st_mode)) {
 		vm_push_data(vm, DataString, (word_t)"file");
 	} else if(S_ISDIR(st.st_mode)) {
 		vm_push_data(vm, DataString, (word_t)"dir");
-	} else if(S_ISLINK(st.st_mode)) {
+	} else if(S_ISLNK(st.st_mode)) {
 		vm_push_data(vm, DataString, (word_t)"link");
 	} else if(S_ISFIFO(st.st_mode)) {
 		vm_push_data(vm, DataString, (word_t)"fifo");
@@ -450,7 +445,9 @@ void _VM_CALL vm_op_readlink(vm_t vm, word_t unused) {
 	char buf[1024];
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataString||d->type==DataObjStr);
-	readlink((const char*)d->data, buf, 1024);
+	if(readlink((const char*)d->data, buf, 1024)==-1) {
+		couldnt("read symbolic link", (const char*)d->data);
+	}
 	vm_push_data(vm, DataObjStr, (word_t) vm_string_new(buf));
 }
 
@@ -459,7 +456,9 @@ void _VM_CALL vm_op_symlink(vm_t vm, word_t unused) {
 	vm_data_t src = _vm_pop(vm);
 	assert(dest->type==DataString||dest->type==DataObjStr);
 	assert(src->type==DataString||src->type==DataObjStr);
-	symlink((const char*)src->data, (const char*)dest->data);
+	if(symlink((const char*)src->data, (const char*)dest->data)==-1) {
+		couldnt("create symbolic link", (const char*)dest->data);
+	}
 }
 
 void _VM_CALL vm_op_rename(vm_t vm, word_t unused) {
@@ -467,13 +466,17 @@ void _VM_CALL vm_op_rename(vm_t vm, word_t unused) {
 	vm_data_t src = _vm_pop(vm);
 	assert(dest->type==DataString||dest->type==DataObjStr);
 	assert(src->type==DataString||src->type==DataObjStr);
-	rename((const char*)src->data, (const char*)dest->data);
+	if(rename((const char*)src->data, (const char*)dest->data)==-1) {
+		couldnt("rename file", (const char*)dest->data);
+	}
 }
 
 void _VM_CALL vm_op_unlink(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataString||d->type==DataObjStr);
-	unlink((const char*)d->data);
+	if(unlink((const char*)d->data)==-1) {
+		couldnt("unlink file", (const char*)d->data);
+	}
 }
 
 void _VM_CALL vm_op_fsource(vm_t vm, word_t unused) {
@@ -486,19 +489,25 @@ void _VM_CALL vm_op_fsource(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_mkdir(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataString||d->type==DataObjStr);
-	mkdir((const char*)d->data, 0777);	/* trust umask */
+	if(mkdir((const char*)d->data, 0777)==-1) {	/* trust umask */
+		couldnt("create directory", (const char*)d->data);
+	}
 }
 
 void _VM_CALL vm_op_getcwd(vm_t vm, word_t unused) {
 	char buf[1024];
-	getcwd(buf, 1024);
+	if(getcwd(buf, 1024)==NULL) {
+		couldnt("get current working directory", NULL);
+	}
 	vm_push_data(vm, DataObjStr, (word_t) vm_string_new(buf));
 }
 
 void _VM_CALL vm_op_chdir(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataString||d->type==DataObjStr);
-	chdir((const char*)d->data);
+	if(chdir((const char*)d->data)==-1) {
+		couldnt("chdir to", (const char*)d->data);
+	}
 }
 
 void _VM_CALL vm_op_stdout(vm_t vm, word_t unused) {
@@ -531,16 +540,13 @@ void _VM_CALL vm_op___IO__init(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op___tcpserver(vm_t vm, word_t unused) {
 	struct sockaddr_in sa;
-	unsigned long int ip;
 	int sock;
 	int backlog;
-	FILE*F;
-	unsigned short port;
 	vm_data_t d;
 	char buf[22];
 	/* create socket */
 	if((sock = socket(PF_INET, SOCK_STREAM, 0))==-1) {
-		vm_fatal("Couldn't open socket.");
+		couldnt("open socket", NULL);
 	}
 	/* set backlog */
 	d = _vm_pop(vm);

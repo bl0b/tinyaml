@@ -31,7 +31,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = Doc/OpcodeReference/Extensions
+subdir = tests
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -159,7 +159,20 @@ tinyap_LIBS = @tinyap_LIBS@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = IO.txt RTC.txt MessageQueue.txt
+EXTRA_DIST = \
+		accents.asm \
+                msg.asm \
+                rtc.asm \
+                rtc2.script \
+                struc.routines \
+                test_exception.asm \
+                test_exception.script \
+                test.asm \
+                test.script \
+		test_IO.asm \
+		test_tcpserver.asm \
+                test_struc.asm
+
 all: all-am
 
 .SUFFIXES:
@@ -172,9 +185,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  Doc/OpcodeReference/Extensions/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  tests/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  Doc/OpcodeReference/Extensions/Makefile
+	  $(AUTOMAKE) --gnu  tests/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

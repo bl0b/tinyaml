@@ -4,5 +4,5 @@ layer_DATA=metasm.wc
 EXTRA_DIST=metasm.melang
 
 metasm.wc: metasm.melang $(TINYAML)
-	$(TINYAML) -c $< -s $@
+	$(TINYAML) -q -c $< -s $@
 

@@ -17,10 +17,12 @@
  */
 
 #include "vm_types.h"
+#include "vm.h"
 #include "abstract_io.h"
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+#include <errno.h>
 
 
 struct _reader_t {
@@ -67,6 +69,16 @@ struct _buffer_writer_t {
 
 
 
+void couldnt(const char* what, const char* where) {
+	char error_buf[4096];
+	sprintf(error_buf, "Couldn't %s %s (%s).", what?what:"", where?where:"", strerror(errno));
+	vm_fatal(error_buf);
+}
+
+
+
+
+
 #define _(_s,_d,_sym,_a) struct _##_s##_##_d##_t* _sym = (struct _##_s##_##_d##_t*)_a
 
 void file_close(reader_t r) {
@@ -100,7 +112,9 @@ const char* file_read_string(reader_t r) {
 	_(file,reader,fr,r);
 	memset(_rdr_buffy,0,BUFFY_SZ);
 	while(i<BUFFY_SZ&&c!=0) {
-		fread(_rdr_buffy+i,1,1,fr->f);
+		if(fread(_rdr_buffy+i,1,1,fr->f)!=1) {
+			couldnt("read", "");
+		}
 		c=*(_rdr_buffy+i);
 		i+=1;
 	}

@@ -114,6 +114,7 @@ file_t file_clone(vm_t vm, file_t f);
 file_t file_new(vm_t vm, const char* source, FILE*f, int flags);
 
 file_t buffer_new(vm_t vm, const char* source, FILE*f, int flags);
+file_t dir_new(vm_t vm, const char* source);
 
 void cmd_pack(vm_t vm, file_t f, char fmt, word_t data);
 

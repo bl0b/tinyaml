@@ -31,7 +31,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = Doc/OpcodeReference/Extensions
+subdir = Doc/OpcodeReference/Sections
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -159,7 +159,7 @@ tinyap_LIBS = @tinyap_LIBS@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = IO.txt RTC.txt MessageQueue.txt
+EXTRA_DIST = arith_math_boolean_and_bin.txt compiler.txt data_handling.txt flow_control_and_threading.txt
 all: all-am
 
 .SUFFIXES:
@@ -172,9 +172,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  Doc/OpcodeReference/Extensions/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  Doc/OpcodeReference/Sections/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  Doc/OpcodeReference/Extensions/Makefile
+	  $(AUTOMAKE) --gnu  Doc/OpcodeReference/Sections/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

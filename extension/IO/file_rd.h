@@ -68,25 +68,30 @@ static inline char* _read_str(file_t f) {
 
 static inline long int _read_int(file_t f) {
 	long int ret;
-	fscanf(f->descr.f, "%li", &ret);
+	if(fscanf(f->descr.f, "%li", &ret)!=1) {
+		vm_fatal("Couldn't read int.");
+	}
 	return ret;
 }
 
 static inline word_t _read_hexint(file_t f) {
 	word_t ret;
-	fscanf(f->descr.f, "%lX", &ret);
+	if(fscanf(f->descr.f, "%lX", &ret)!=1) {
+		vm_fatal("Couldn't read hexadecimal int.");
+	}
 	return ret;
 }
 
 static inline float _read_float(file_t f) {
 	float ret;
-	fscanf(f->descr.f, "%f", (float*)&ret);
+	if(fscanf(f->descr.f, "%f", (float*)&ret)!=1) {
+		vm_fatal("Couldn't read float.");
+	}
 	return ret;
 }
 
 static inline word_t _unpack(file_t f, char fmt) {
 	union { int i; word_t w; float f; const char* s; } conv;
-	char strbuf[65536];
 	switch(fmt) {
 	case 'S' : conv.s = _read_str(f); break;
 	case 'I' : conv.i = _read_int(f); break;
@@ -96,7 +101,7 @@ static inline word_t _unpack(file_t f, char fmt) {
 	case 'b' : conv.w = _read_byte(f); break;
 	case 's' : conv.s = _read_binstr(f); break;
 	case 'i' : /* see below */
-	case 'f' : conv.w = _read_word(f); break;
+	case 'f' : conv.w = _read_bin_word(f); break;
 	default: vm_fatal("Unhandled format character.");
 	};
 	return conv.w;
