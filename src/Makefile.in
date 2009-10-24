@@ -255,7 +255,6 @@ tinyaml_SOURCES = tinyaml.c
 tinyaml_LDADD = libtinyaml.la -lreadline
 tinyaml_LDFLAGS = -Wl,--export-dynamic
 tinyaml_CFLAGS = $(tinyap_CFLAGS) -I ../include
-TINYAP_STATIC = $(shell pkg-config tinyap --variablename=staticlink)
 all: all-am
 
 .SUFFIXES:
@@ -777,7 +776,7 @@ tinyaml_static: $(libtinyaml_la_SOURCES) tinyaml.c
 	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) -ltinyap -lreadline -o tinyaml_static
 
 tinyaml_full_static : $(libtinyaml_la_SOURCES) tinyaml.c
-	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) ${TINYAP_STATIC} /usr/lib/libreadline.a /usr/lib/libncurses.a -o tinyaml_full_static
+	$(CC) -ggdb -ldl -lm -pthread $(tinyap_CFLAGS) -DTINYAML_EXT_DIR="\"$(pkglibdir)\"" -DTINYAML_DATA_DIR="\"$(pkgdatadir)\"" -I ../include/ -Wl,--export-dynamic -pg tinyaml.c $(libtinyaml_la_SOURCES) `pkg-config tinyap --variable=staticlink` /usr/lib/libreadline.a /usr/lib/libncurses.a -o tinyaml_full_static
 
 all: tinyaml_static tinyaml_full_static
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
