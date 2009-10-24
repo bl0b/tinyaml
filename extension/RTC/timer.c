@@ -44,7 +44,7 @@ int __selfcall=0;
 
 typedef struct __task_t {
 	PQMessage_Fields;
-	void*(*task)(float,void*);
+	void*(*task)(float_t,void*);
 	void*arg;
 }* task_t;
 
@@ -58,7 +58,7 @@ typedef struct __task_t {
 #define task_date(_node) _node->date
 
 
-task_t new_task(float date,void*(*task)(float,void*),void*arg) {
+task_t new_task(float_t date,void*(*task)(float_t,void*),void*arg) {
 //	node_t ret=(node_t)malloc(sizeof(struct _node));
 	//node_t ret=_alloc(_node);
 	task_t ret=_alloc(struct __task_t);
@@ -88,7 +88,7 @@ void del_task(PQMessage task) {
 
 
 
-void timer_scheduleTask(float date,void*(*task)(float,void*),void*task_arg) {
+void timer_scheduleTask(float_t date,void*(*task)(float_t,void*),void*task_arg) {
 	task_t t;
 	LOCK(mtx);
 //	printf("hop\n");
@@ -103,7 +103,7 @@ void timer_scheduleTask(float date,void*(*task)(float,void*),void*task_arg) {
 
 
 /*
-void timer_addHandler(void*(*task)(float,void*),void*task_arg) {
+void timer_addHandler(void*(*task)(float_t,void*),void*task_arg) {
 	task_t newt=new_task(0,task,task_arg);
 	//list_insertAfter(&perm_handlers,perm_handlers.tail,newt);
 	//pthread_mutex_lock(&mutex);
@@ -111,7 +111,7 @@ void timer_addHandler(void*(*task)(float,void*),void*task_arg) {
 	//pthread_mutex_unlock(&mutex);
 }
 
-void timer_removeHandler(void*(*task)(float,void*)) {
+void timer_removeHandler(void*(*task)(float_t,void*)) {
 	task_t t=perm_handlers.head;
 	while(t&&task_task(t)!=task)
 		t=t->next;
@@ -126,29 +126,29 @@ void timer_removeHandler(void*(*task)(float,void*)) {
 
 #define N_RES 7
 
-float allowed_resolutions[N_RES]= {	1/.128,	1/.256,	1/.512,	1/1.024,1/2.048,1/4.096,1/8.192 };
+float_t allowed_resolutions[N_RES]= {	1/.128,	1/.256,	1/.512,	1/1.024,1/2.048,1/4.096,1/8.192 };
 unsigned long res_to_rtc_freq[N_RES]= {	128,	256,	512,	1024,	2048,	4096,	8192 };
 
 volatile int rtc_fd;
 static pthread_t rtc_thread;
 volatile int timer_is_running=0;
 
-float(*ext_source_read)();
+float_t(*ext_source_read)();
 
 volatile double timer_resolution;
-volatile float  timer_date;
-volatile float  timer_tempo;
+volatile float_t  timer_date;
+volatile float_t  timer_tempo;
 volatile double timer_dbeat;
-volatile float  timer_basedate;
+volatile float_t  timer_basedate;
 
 void*timer_routine(void*arg);
 
 #ifdef __TESTS
 volatile int max_pileup;
-volatile float average_pileup;
-volatile long int n_pileups;
-volatile long int n_ticks;
-volatile long int n_realticks;
+volatile float_t average_pileup;
+volatile long n_pileups;
+volatile long n_ticks;
+volatile long n_realticks;
 #define PILEUP 10
 #endif
 
@@ -233,7 +233,7 @@ void timer_terminate() {
 	pqDestroy(tasks);
 }
 
-void timer_set_date(float date) {
+void timer_set_date(float_t date) {
 	LOCK(mtx);
 	//pthread_mutex_lock(&mutex);
 	timer_date=date;
@@ -242,11 +242,11 @@ void timer_set_date(float date) {
 	//pthread_mutex_unlock(&mutex);
 }
 
-float timer_get_date() {
+float_t timer_get_date() {
 	return timer_date;
 }
 
-void timer_set_tempo(float bpm) {
+void timer_set_tempo(float_t bpm) {
 	if(!bpm) return;
 	LOCK(mtx);
 //	//pthread_mutex_lock(&mutex);
@@ -257,15 +257,15 @@ void timer_set_tempo(float bpm) {
 //	//pthread_mutex_unlock(&mutex);
 }
 
-float timer_get_tempo() {
+float_t timer_get_tempo() {
 	return timer_tempo;
 }
 
-float timer_get_seconds() {
+float_t timer_get_seconds() {
 	return timer_basedate+timer_date*60.f/timer_tempo;
 }
 
-float timer_set_resolution(float ms) {
+float_t timer_set_resolution(float_t ms) {
 	int scbak=__selfcall;
 	int i=0;
 	LOCK(mtx);
@@ -283,12 +283,12 @@ float timer_set_resolution(float ms) {
 }
 
 
-float timer_get_resolution() {
+float_t timer_get_resolution() {
 	return timer_resolution;
 }
 
 
-void timer_set_source(float(*src_rd)()) {
+void timer_set_source(float_t(*src_rd)()) {
 	//pthread_mutex_lock(&mutex);
 	LOCK(mtx);
 	ext_source_read=src_rd;
@@ -310,7 +310,7 @@ void timer_stop() {
 void*timer_routine(void*arg) {
 	int ret;
 #ifdef __TESTS
-	register long int n;
+	register long n;
 #endif
 	unsigned long data;
 	task_t task;
@@ -381,7 +381,7 @@ void*timer_routine(void*arg) {
 
 #ifdef __TESTS
 		if(data>max_pileup) max_pileup=data;
-		average_pileup=(float)(average_pileup*n+data)/(float)(n+1);
+		average_pileup=(float_t)(average_pileup*n+data)/(float_t)(n+1);
 		++n;
 		if(data>PILEUP) ++n_pileups;
 		n_ticks+=data;

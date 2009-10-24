@@ -667,7 +667,7 @@ void remove_ev(PQueue q,struct _pq_year*y,struct _pq_bucket*b,struct _pq_ev*e) {
 					_b=n->bucket;\
 				} while(0)
 
-static inline struct _pq_bucket* find_bucket(struct _pq_year*year,float dt) {
+static inline struct _pq_bucket* find_bucket(struct _pq_year*year,float_t dt) {
 	/* there is always a root */
 	register struct _pq_bst_node*n=year->root;
 	/* left and right children are always defined if they exist, otherwise bucket is defined */
@@ -1499,16 +1499,16 @@ void _dm(PQMessage msg) {
 	if(msg) _free(struct _pq_msg,msg);
 }
 
-int test_queue(PQTime yearSize,int evperbuf,int dichmax,double n_years,double ev_res,int evcount,float*enqPS,float*fwdPS,float*deqPS,int dump) {
+int test_queue(PQTime yearSize,int evperbuf,int dichmax,double n_years,double ev_res,int evcount,float_t*enqPS,float_t*fwdPS,float_t*deqPS,int dump) {
 	clock_t t1,t2;
 	int i,j;
-	float date;
-	float coef;
+	float_t date;
+	float_t coef;
 	int mod;
 	PQMessage msg;
 	int ec=evcount;
 	int k,l;
-	float *rnd;
+	float_t *rnd;
 	PQueue q=pqCreate(yearSize,evperbuf,dichmax,_dm);
 	PQIterator qi;
 
@@ -1633,12 +1633,12 @@ int main(int argc,char**argv) {
 //	char c;
 //	PQTime T;
 	int dichotomax;
-	float yL;
+	float_t yL;
 	int evperbuck;
 	int BIG;
 	int yc;
-	float tr;
-	float eps,dps,fps;
+	float_t tr;
+	float_t eps,dps,fps;
 	int dump;
 	clock_t t1,t2;
 
@@ -1647,7 +1647,7 @@ int main(int argc,char**argv) {
 	/*t1=clock();*/
 	/*while((t2=clock())==t1);*/
 	/*vm_printf("clock resolution : %li/%li=%lf\n",t2-t1,CLOCKS_PER_SEC,((double)(t2-t1))/CLOCKS_PER_SEC);*/
-//	float date;
+//	float_t date;
 	
 //	t3=0;
 //	dump_queue(q);

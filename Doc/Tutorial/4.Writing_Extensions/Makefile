@@ -12,7 +12,7 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
-
+MAKE=colormake
 
 pkgdatadir = $(datadir)/tinyaml
 pkglibdir = $(libdir)/tinyaml
@@ -54,8 +54,8 @@ AUTOHEADER = ${SHELL} /home/damien/bl0b_dev/tinyaml/missing --run autoheader
 AUTOMAKE = ${SHELL} /home/damien/bl0b_dev/tinyaml/missing --run automake-1.10
 AWK = gawk
 CC = colorgcc
-CCDEPMODE = depmode=gcc3
-CFLAGS = -Wall -O3
+CCDEPMODE = depmode=none
+CFLAGS = -g -O2
 CPP = colorgcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -101,7 +101,7 @@ PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 RANLIB = ranlib
 SED = /bin/sed
-SET_MAKE = 
+SET_MAKE = MAKE=colormake
 SHELL = /bin/bash
 STRIP = strip
 VERSION = 0.4
@@ -111,7 +111,7 @@ abs_top_builddir = /home/damien/bl0b_dev/tinyaml
 abs_top_srcdir = /home/damien/bl0b_dev/tinyaml
 ac_ct_CC = colorgcc
 ac_ct_DUMPBIN = 
-am__include = include
+am__include = #
 am__leading_dot = .
 am__quote = 
 am__tar = ${AMTAR} chof - "$$tardir"

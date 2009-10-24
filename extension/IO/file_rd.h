@@ -66,8 +66,8 @@ static inline char* _read_str(file_t f) {
 	return _read_s(f->descr.f, _fill_bufNL);
 }
 
-static inline long int _read_int(file_t f) {
-	long int ret;
+static inline long _read_int(file_t f) {
+	long ret;
 	if(fscanf(f->descr.f, "%li", &ret)!=1) {
 		vm_fatal("Couldn't read int.");
 	}

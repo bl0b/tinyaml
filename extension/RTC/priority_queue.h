@@ -5,6 +5,8 @@
 #include "list.h"
 #include "rtc_alloc.h"
 
+#include "vm_types.h"
+
 typedef float PQTime;
 
 

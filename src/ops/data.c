@@ -45,7 +45,7 @@ void _VM_CALL vm_op_getmem_Int(vm_t vm, int n) {
 }
 
 
-void _VM_CALL vm_op_setmem_Int(vm_t vm, long int n) {
+void _VM_CALL vm_op_setmem_Int(vm_t vm, long n) {
 	thread_t t=vm->current_thread;
 	vm_data_t top = _vm_pop(vm);
 	vm_data_t var=NULL;
@@ -194,7 +194,7 @@ void _VM_CALL vm_op_toF(vm_t vm, word_t unused) {
 		vm_push_data(vm,DataFloat,conv.i);
 		break;
 	default:
-		vm_printerrf("[VM:WRN] can't convert to float.\n");
+		vm_printerrf("[VM:WRN] can't convert to float_t.\n");
 		vm_push_data(vm,DataFloat,0);
 	};
 }

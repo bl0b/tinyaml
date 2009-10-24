@@ -234,8 +234,6 @@ void _VM_CALL vm_op_sub(vm_t vm, word_t immed) {
 	vm_peek_data(vm,-1,&dta,&a);
 	vm_pop_data(vm,1);
 	/*printf("debug sub : a=%li b=%li\n", a, b);*/
-	assert(sizeof(long)==sizeof(size_t));
-	assert(sizeof(size_t)==sizeof(word_t));
 	assert(4==sizeof(word_t));
 	fast_apply_bin_func(dta,a,dtb,b,_sub,_sub,a,dta);
 	/*printf("debug sub : a=%li\n", a);*/
@@ -430,7 +428,7 @@ void _VM_CALL vm_op_nEq(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_sin(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	_IFC conv;
-	float f;
+	float_t f;
 	assert(d->type==DataFloat);
 	conv.i = d->data;
 	conv.f = sinf(conv.f);

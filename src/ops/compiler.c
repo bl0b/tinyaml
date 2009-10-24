@@ -153,7 +153,7 @@ void _VM_CALL vm_op_write_ocInt_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
 	char argstr[512];
 	assert(arg->type==DataInt);
-	sprintf(argstr,"%li",(long int)arg->data);
+	sprintf(argstr,"%li",(long)arg->data);
 	/*vm_printf("vm_op_write_ocInt_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgInt, name, argstr, -1, -1);
 }

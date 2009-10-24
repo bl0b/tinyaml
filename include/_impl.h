@@ -115,7 +115,7 @@ struct _text_seg_t {
  */
 struct _mutex_t {
 	struct _dlist_t pending;
-	long int count;
+	long count;
 	thread_t owner;
 };
 /*@}*/

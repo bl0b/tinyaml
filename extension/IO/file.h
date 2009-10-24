@@ -15,6 +15,7 @@
 #include "vm.h"
 #include "thread.h"
 #include "_impl.h"
+#include "vm_types.h"
 #include "object.h"
 
 typedef struct _file_t* file_t;
@@ -88,7 +89,7 @@ struct _file_t {
 		} client;
 		struct {
 			char* buffer_data;
-			size_t buffer_size;
+			word_t buffer_size;
 		} buffer;
 	} extra;
 };

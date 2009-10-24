@@ -13,13 +13,13 @@
 /*! \brief Magic converting bias, hex version. */
 #define BIAS_HEX ( ((23+127)<<23) + (1<<22) )
 /*! \brief Converting bias as an int */
-#define BIAS_INT ((long int)BIAS_HEX)
+#define BIAS_INT ((long)BIAS_HEX)
 /*! \brief Converting bias as a float */
 #define BIAS_FLOAT ((float)12582912.0f)
 
 /*! \brief union to reinterpret bits in a word as an integer and a float. */
 union _intfloat_conv {
-	long int i;	/*!< \brief bits as integer */
+	long i;	/*!< \brief bits as integer */
 	float f;	/*!< \brief bits as floating point */
 };
 
@@ -27,14 +27,14 @@ union _intfloat_conv {
 typedef union _intfloat_conv _IFC;
 
 /*! \brief Convert from float to int. */
-static inline long int f2i(float f) {
+static inline long f2i(float f) {
 	_IFC c;
 	c.f=f+BIAS_FLOAT;
 	return c.i-BIAS_INT;
 }
 
 /*! \brief Convert from int to float. */
-static inline float i2f(long int i) {
+static inline float i2f(long i) {
 	_IFC c;
 	c.i=i+BIAS_INT;
 	return c.f-BIAS_FLOAT;

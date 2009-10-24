@@ -12,7 +12,7 @@ where OPCODENAME is the name as declared in the corresponding opcode statement
 in the .tinyalib file and ARGUMENTTYPE is one of Int, Float, String, Label,
 EnvSym. For opcodes without arguments, the name is simply vm_op_OPCODENAME.
 
-argument value is encoded as a 32bit integer but can be a (const char*), (float), (int) according to the argument type.
+argument value is encoded as a 32bit integer but can be a (const char*), (float_t), (int) according to the argument type.
 
 */
 
@@ -29,8 +29,8 @@ void _VM_CALL vm_op_withArg_Int(vm_t vm, int i) {
 }
 
 
-void _VM_CALL vm_op_withArg_Float(vm_t vm, float f) {
-	vm_printerrf("withArg : got float %f\n", f);
+void _VM_CALL vm_op_withArg_Float(vm_t vm, float_t f) {
+	vm_printerrf("withArg : got float_t %f\n", f);
 }
 
 

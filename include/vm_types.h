@@ -24,7 +24,17 @@
 #ifndef _BML_VM_TYPES_H_
 #define _BML_VM_TYPES_H_
 
-#if defined(__GNUC__)
+#include "config.h"
+
+#if SIZEOF_VOIDP==4
+#	define __32__
+#elif SIZEOF_VOIDP==8
+#	define __64__
+#else
+#	error Unexpected value of SIZEOF_VOIDP. Check your config.H.
+#endif
+
+#if defined(__GNUC__)&&!defined(__64__)
 #define _VM_CALL __attribute__((fastcall))
 #elif defined(WIN32)||defined(__MSVC__)
 #define _VM_CALL __fastcall
@@ -62,7 +72,14 @@ typedef struct _program_t* program_t;
  */
 
 /*! \brief The basic processing unit. */
-typedef unsigned long int word_t;
+typedef unsigned long word_t;
+
+/*! \brief The basic floating-point processing unit. */
+#if SIZEOF_DOUBLE==SIZEOF_VOIDP
+	typedef double float_t;
+#elif SIZEOF_FLOAT==SIZEOF_VOIDP
+	typedef float float_t;
+#endif
 /*@}*/
 
 /*! \deprecated \brief Just an alias. */

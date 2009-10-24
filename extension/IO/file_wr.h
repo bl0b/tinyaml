@@ -16,7 +16,7 @@ static inline void _write_str(file_t f, const char* str) {
 	fwrite(str, 1, strlen(str), f->descr.f);
 }
 
-static inline void _write_int(file_t f, long int data) {
+static inline void _write_int(file_t f, long data) {
 	fprintf(f->descr.f, "%li", data);
 }
 
