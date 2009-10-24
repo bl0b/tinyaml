@@ -44,7 +44,7 @@ tinyaml_LDFLAGS = -Wl,--export-dynamic
 tinyaml_CFLAGS = $(tinyap_CFLAGS) -I ../include
 
 
-TINYAP_STATIC = $(shell pkg-config tinyap --variablename=staticlink)
+TINYAP_STATIC = $(shell pkg-config tinyap --variable=staticlink)
 
 
 ml_core_gram.c: ../ml/ml_core.gram ../ml/ml_core.lib
