@@ -72,7 +72,11 @@ typedef struct _program_t* program_t;
  */
 
 /*! \brief The basic processing unit. */
+#if SIZEOF_LONG==SIZEOF_VOIDP
 typedef unsigned long word_t;
+#else
+#	error Must have sizeof(long)==sizeof(void*)
+#endif
 
 /*! \brief The basic floating-point processing unit. */
 #if SIZEOF_DOUBLE==SIZEOF_VOIDP
