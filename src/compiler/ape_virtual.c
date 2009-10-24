@@ -31,11 +31,11 @@
 #include "_impl.h"
 
 /* hidden tinyap feature */
-ast_node_t newAtom(const char*data,int row,int col);
-ast_node_t newPair(const ast_node_t a,const ast_node_t d,const int row,const int col);
+ast_node_t newAtom(const char*data,long row,long col);
+ast_node_t newPair(const ast_node_t a,const ast_node_t d,const long row,const long col);
 
 
-extern volatile int _vm_trace;
+extern volatile long _vm_trace;
 const char* state2str(WalkDirection wd);
 
 WalkDirection try_method(const char*op, vm_t vm, wast_t node) {

@@ -101,7 +101,7 @@ void _VM_CALL vm_op_pop_Int(vm_t vm, word_t data) {
 	vm_pop_data(vm,data);
 }
 
-void _VM_CALL vm_op_dup_Int(vm_t vm, int data) {
+void _VM_CALL vm_op_dup_Int(vm_t vm, long data) {
 	vm_data_type_t a;
 	word_t b;
 	vm_peek_data(vm,data,&a,&b);
@@ -182,10 +182,10 @@ void _VM_CALL vm_op_nop(vm_t vm, word_t unused) {
 }
 
 
-void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
+void _VM_CALL vm_op_print_Int(vm_t vm, long n) {
 	vm_data_type_t dt;
 	_IFC tmp;
-	int k=1-n;
+	long k=1-n;
 	while(k<=0) {
 		vm_peek_data(vm,k,&dt,(word_t*)&tmp);
 		switch(dt) {
@@ -243,7 +243,7 @@ void _VM_CALL vm_op_print_Int(vm_t vm, int n) {
 }
 
 
-void _VM_CALL vm_op_print(vm_t vm, int n) {
+void _VM_CALL vm_op_print(vm_t vm, long n) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataInt);
 	/*printf("[[[print %i]]]\n", d->data);*/
@@ -256,7 +256,7 @@ void _VM_CALL vm_op_print(vm_t vm, int n) {
 /*! \addtogroup vcop_ctrl
  * @{
  */
-void _VM_CALL vm_op_SNZ(vm_t vm, int data) {
+void _VM_CALL vm_op_SNZ(vm_t vm, long data) {
 	vm_data_type_t a;
 	word_t b;
 	vm_peek_data(vm,data,&a,&b);
@@ -266,7 +266,7 @@ void _VM_CALL vm_op_SNZ(vm_t vm, int data) {
 	}
 }
 
-void _VM_CALL vm_op_SZ(vm_t vm, int data) {
+void _VM_CALL vm_op_SZ(vm_t vm, long data) {
 	vm_data_type_t a;
 	word_t b;
 	vm_peek_data(vm,data,&a,&b);
@@ -497,7 +497,7 @@ void _VM_CALL vm_op_getException(vm_t vm, word_t unused) {
 
 
 
-void _VM_CALL vm_op_getmem_Int(vm_t vm, int n);
+void _VM_CALL vm_op_getmem_Int(vm_t vm, long n);
 
 
 /*! \addtogroup vcop_thrd

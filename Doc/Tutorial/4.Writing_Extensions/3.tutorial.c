@@ -12,7 +12,7 @@ where OPCODENAME is the name as declared in the corresponding opcode statement
 in the .tinyalib file and ARGUMENTTYPE is one of Int, Float, String, Label,
 EnvSym. For opcodes without arguments, the name is simply vm_op_OPCODENAME.
 
-argument value is encoded as a 32bit integer but can be a (const char*), (float_t), (int) according to the argument type.
+argument value is encoded as a 32bit integer but can be a (const char*), (float_t), (long) according to the argument type.
 
 */
 
@@ -24,8 +24,8 @@ void _VM_CALL vm_op_hello(vm_t vm, word_t unused) {
 }
 
 
-void _VM_CALL vm_op_withArg_Int(vm_t vm, int i) {
-	vm_printerrf("withArg : got int %i\n", i);
+void _VM_CALL vm_op_withArg_Int(vm_t vm, long i) {
+	vm_printerrf("withArg : got long %i\n", i);
 }
 
 
@@ -74,11 +74,11 @@ void _VM_CALL vm_op_consume(vm_t vm, word_t unused) {
 
 
 void _VM_CALL vm_op_maxInArray(vm_t vm, word_t unused) {
-	int max = 0x80000000;
+	long max = 0x80000000;
 	word_t size = 0;
 	word_t i;
 	vm_data_type_t item_type;
-	int item_value;
+	long item_value;
 	vm_data_t d = _vm_pop(vm);
 	/* introducing the dyn(amic) array type */
 	dynarray_t a = (dynarray_t) d->data;
@@ -91,7 +91,7 @@ void _VM_CALL vm_op_maxInArray(vm_t vm, word_t unused) {
 	for(i=0;i<size;i+=2) {
 		/* data in dynarrays is encoded as two words */
 		item_type = (vm_data_type_t) dynarray_get(a, i);
-		item_value = (int) dynarray_get(a, i+1);
+		item_value = (long) dynarray_get(a, i+1);
 		assert(item_type == DataInt);
 		if(max<item_value) {
 			max = item_value;
@@ -105,7 +105,7 @@ void _VM_CALL vm_op_maxInArray(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_makeFibo_Int(vm_t vm, word_t size) {
 	dynarray_t fibo = (dynarray_t) vm_array_new();
 	word_t i;
-	int fi;
+	long fi;
 	/* convert size from data size to word size */
 	size<<=1;
 	/* reserve space so there will be no realloc() */
@@ -153,14 +153,14 @@ void _VM_CALL vm_op_exampleMap(vm_t vm, word_t unused) {
 }
 
 
-void _VM_CALL vm_op_getLabelOfs_Label(vm_t vm, int offset) {
+void _VM_CALL vm_op_getLabelOfs_Label(vm_t vm, long offset) {
 	vm_push_data(vm, DataInt, offset);
 }
 
 
 extern void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index);
 
-void _VM_CALL vm_op_getEnvSymOfsAndValue_EnvSym(vm_t vm, int envsym) {
+void _VM_CALL vm_op_getEnvSymOfsAndValue_EnvSym(vm_t vm, long envsym) {
 	vm_push_data(vm, DataInt, envsym);
 	/*vm_printf("envsym=%i %X\n", envsym, envsym);*/
 	vm_op_envGet_EnvSym(vm, envsym);

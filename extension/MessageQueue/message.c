@@ -46,7 +46,7 @@ msg_q_rd_t mq_rd_new(vm_t vm,msg_q_t,thread_t);	/* constructor */
  */
 
 void mq_deinit(vm_t vm, msg_q_t mq) {
-	int i;
+	long i;
 	/*printf("mq_deinit\n"); fflush(stdout);*/
 	for(i=0;i<FIFO_SZ;i+=1) {
 		if(mq->values[i].type&DataManagedObjectFlag) {
@@ -57,7 +57,7 @@ void mq_deinit(vm_t vm, msg_q_t mq) {
 }
 
 void* mq_clone(vm_t vm, msg_q_t mq) {
-	int i;
+	long i;
 	msg_q_t ret = mq_new();
 	memcpy(ret->values,mq->values,sizeof(struct _data_stack_entry_t)*FIFO_SZ);
 	for(i=0;i<FIFO_SZ;i+=1) {

@@ -38,7 +38,7 @@ void dynarray_init(dynarray_t ret) {
 void dynarray_deinit(dynarray_t zou,void(*callback)(word_t)) {
 	if(zou->data) {
 		if(callback) {
-			int i;
+			long i;
 			for(i=0;i<zou->size;i++) {
 				callback(zou->data[i]);
 			}

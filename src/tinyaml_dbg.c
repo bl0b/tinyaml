@@ -20,7 +20,7 @@
 struct _std_io_to_buf {
 	FILE*f;
 	pthread_t filler;
-	int ateol;
+	long ateol;
 	struct _dynarray_t lines;
 };
 
@@ -77,7 +77,7 @@ void init_outerr() {
 }
 
 void term_outerr() {
-	int i;
+	long i;
 
 	for(i=0;i<StdOut.lines.size;i+=1) {
 		free((char*)StdOut.lines.data[i]);
@@ -98,7 +98,7 @@ void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* o
 
 static void dbg_data_stack_renderer(WINDOW* w,vm_data_t d) {
 	_IFC conv;
-	/*int i;*/
+	/*long i;*/
 	/*const unsigned char*s;*/
 	switch(d->type) {
 	case DataInt:
@@ -180,7 +180,7 @@ static void dbg_catch_stack_renderer(WINDOW* w,struct _call_stack_entry_t* cse) 
 }
 
 
-static void dbg_render_stack(WINDOW* w, generic_stack_t s, word_t skip, word_t count, const char*prefix, void(*renderer)(WINDOW*,void*), int disp_start, int disp_incr) {
+static void dbg_render_stack(WINDOW* w, generic_stack_t s, word_t skip, word_t count, const char*prefix, void(*renderer)(WINDOW*,void*), long disp_start, long disp_incr) {
 	long counter = -skip;
 	long stop = -(skip+count);
 	while(counter>stop) {
@@ -214,8 +214,8 @@ typedef struct _window_t* window_t;
 struct _window_t {
 	WINDOW* w;
 	WINDOW* cliw;
-	void (*renderer)(WINDOW*,int,vm_t,thread_t);
-	int vofs;
+	void (*renderer)(WINDOW*,long,vm_t,thread_t);
+	long vofs;
 };
 
 
@@ -237,10 +237,10 @@ enum {
 
 struct _window_t windows[N_WINDOWS];
 
-int cur_win=0;
+long cur_win=0;
 
 
-void create_window(window_t ww, void (*r)(WINDOW*,int,vm_t,thread_t), int x, int y, int W, int H) {
+void create_window(window_t ww, void (*r)(WINDOW*,long,vm_t,thread_t), long x, long y, long W, long H) {
 	ww->w = subwin(stdscr, H, W, y, x);
 	ww->cliw = subwin(ww->w, H-2, W-2, y+1, x+1);
 	ww->renderer = r;
@@ -252,7 +252,7 @@ void destroy_window(window_t ww) {
 }
 
 
-void print_centered(WINDOW* w, int is_cur, int y, const char* str) {
+void print_centered(WINDOW* w, long is_cur, long y, const char* str) {
 	if(is_cur) {
 		wattron(w,A_STANDOUT|A_UNDERLINE|A_BOLD);
 	}
@@ -270,7 +270,7 @@ void render_win(window_t w, const char* title, vm_t vm, thread_t t) {
 	print_centered(w->w,w==&windows[cur_win],0,title);
 }
 
-/*int window_vofs[N_WINDOWS] = { 0,0,0,0,0,0,0, };*/
+/*long window_vofs[N_WINDOWS] = { 0,0,0,0,0,0,0, };*/
 
 /*WINDOW* call_stack;*/
 /*WINDOW* data_stack;*/
@@ -299,7 +299,7 @@ void render_win(window_t w, const char* title, vm_t vm, thread_t t) {
 #define STATE_STEPPING 2
 #define STATE_DEAD 3
 
-int state=STATE_IDLE;
+long state=STATE_IDLE;
 
 void do_scroll_down() {
 	windows[cur_win].vofs+=1+(!cur_win);
@@ -344,7 +344,7 @@ void do_breakpoints();
 
 
 typedef struct _command_t {
-	int ch;
+	long ch;
 	const char* descr;
 	void (*command)();
 } command_t;
@@ -379,14 +379,14 @@ command_t commands[N_WINDOWS][32] = {
 
 void read_command(vm_t vm, thread_t t);
 
-WINDOW* open_popup(int h, int w) {
+WINDOW* open_popup(long h, long w) {
 	return subwin(stdscr, h, w, (getmaxy(stdscr)-h)>>1, (getmaxx(stdscr)-w)>>1);
 }
 
 
 /* FIXME : unchecked dangerous input. */
-void input_value(const char* prompt, int len, const char* fmt, void* dest) {
-	int h=3, w=5+strlen(prompt)+len;
+void input_value(const char* prompt, long len, const char* fmt, void* dest) {
+	long h=3, w=5+strlen(prompt)+len;
 	WINDOW* popup = open_popup(h, w);
 	mvwprintw(popup,1,1,"%s : ",prompt);
 	box(popup,0,0);
@@ -427,7 +427,7 @@ void do_breakpoints() {
 }
 
 void do_help() {
-	int sz=0,tmp=0;
+	long sz=0,tmp=0;
 	WINDOW* popup;
 	while(commands_all[tmp].ch) { tmp+=1; }
 	while(commands[cur_win][sz].ch) { sz+=1; }
@@ -490,7 +490,7 @@ void do_help() {
 }
 
 
-word_t calc_count(int n, word_t sz) {
+word_t calc_count(long n, word_t sz) {
 	word_t skip = windows[n].vofs;
 	word_t count = sz-skip;
 	if(count>getmaxy(windows[n].cliw)) {
@@ -499,7 +499,7 @@ word_t calc_count(int n, word_t sz) {
 	return count;
 }
 
-static void repaint(vm_t vm, thread_t t, int do_command) {
+static void repaint(vm_t vm, thread_t t, long do_command) {
 	/*word_t ofs;*/
 	const char*label;
 	const char*disasm;
@@ -510,7 +510,7 @@ static void repaint(vm_t vm, thread_t t, int do_command) {
 	clear();
 
 	if(!(vm&&t)) {
-		int i;
+		long i;
 		for(i=0;i<N_WINDOWS;i+=1) {
 			box(windows[i].w,0,0);
 		}
@@ -570,8 +570,8 @@ static void repaint(vm_t vm, thread_t t, int do_command) {
 
 
 void read_command(vm_t vm, thread_t t) {
-	int c;
-	int i;
+	long c;
+	long i;
 	if(state==STATE_RUNNING) {
 		return;
 	}
@@ -603,7 +603,7 @@ extern const vm_engine_t debug_engine;
 
 
 void term() {
-	int i;
+	long i;
 	for(i=0;i<N_WINDOWS;i++) {
 		destroy_window(&windows[i]);
 	}
@@ -615,8 +615,8 @@ void term() {
 
 
 
-void render_code(WINDOW*w, int vofs, vm_t vm, thread_t t) {
-	int i,j,code_start,code_end;
+void render_code(WINDOW*w, long vofs, vm_t vm, thread_t t) {
+	long i,j,code_start,code_end;
 	char* disasm;
 	const char*label;
 	char title[1024];
@@ -661,34 +661,34 @@ void render_code(WINDOW*w, int vofs, vm_t vm, thread_t t) {
 }
 
 
-void render_callstack(WINDOW*w, int vofs, vm_t vm, thread_t t) {
+void render_callstack(WINDOW*w, long vofs, vm_t vm, thread_t t) {
 	dbg_render_stack(w,&t->call_stack, vofs, calc_count(CallStack,gstack_size(&t->call_stack)), "  ", (void(*)(WINDOW*,void*)) dbg_call_stack_renderer, 0, 1);
 }
 
 
-void render_catchstack(WINDOW*w, int vofs, vm_t vm, thread_t t) {
+void render_catchstack(WINDOW*w, long vofs, vm_t vm, thread_t t) {
 	dbg_render_stack(w,&t->catch_stack, vofs, calc_count(CatchStack,gstack_size(&t->catch_stack)), "  ", (void(*)(WINDOW*,void*)) dbg_catch_stack_renderer, 0, 1);
 }
 
 
-void render_datastack(WINDOW*w, int vofs, vm_t vm, thread_t t) {
+void render_datastack(WINDOW*w, long vofs, vm_t vm, thread_t t) {
 	dbg_render_stack(w,&t->data_stack, vofs, calc_count(DataStack,gstack_size(&t->data_stack)), "  ", (void(*)(WINDOW*,void*)) dbg_data_stack_renderer, 0, 1);
 }
 
 
-void render_localsstack(WINDOW*w, int vofs, vm_t vm, thread_t t) {
+void render_localsstack(WINDOW*w, long vofs, vm_t vm, thread_t t) {
 	dbg_render_stack(w,&t->locals_stack, vofs, calc_count(LocalsStack,gstack_size(&t->locals_stack)), "  ", (void(*)(WINDOW*,void*)) dbg_data_stack_renderer, -1, -1);
 }
 
 
-void render_closurestack(WINDOW*w, int vofs, vm_t vm, thread_t t) {
+void render_closurestack(WINDOW*w, long vofs, vm_t vm, thread_t t) {
 	dbg_render_stack(w,&t->closures_stack, vofs, calc_count(ClosureStack,gstack_size(&t->closures_stack)), "  ", (void(*)(WINDOW*,void*)) dbg_closure_stack_renderer, 0, 1);
 }
 
 
-void render_dataseg(WINDOW*w, int vofs, vm_t vm, thread_t t) {
+void render_dataseg(WINDOW*w, long vofs, vm_t vm, thread_t t) {
 	vm_data_t tab;
-	int i, code_end =t->program->data.size>>1;
+	long i, code_end =t->program->data.size>>1;
 	if(code_end>getmaxy(w)+windows[DataSeg].vofs) {
 		code_end=getmaxy(w)+windows[DataSeg].vofs;
 	}
@@ -700,8 +700,8 @@ void render_dataseg(WINDOW*w, int vofs, vm_t vm, thread_t t) {
 }
 
 
-void render_stdout(WINDOW*w, int vofs, vm_t vm, thread_t t) {
-	int i,max;
+void render_stdout(WINDOW*w, long vofs, vm_t vm, thread_t t) {
+	long i,max;
 	wclear(w);
 	max=vofs+getmaxy(w);
 	if(max>StdOut.lines.size) {
@@ -718,8 +718,8 @@ void render_stdout(WINDOW*w, int vofs, vm_t vm, thread_t t) {
 	}
 }
 
-void render_stderr(WINDOW*w, int vofs, vm_t vm, thread_t t) {
-	int i,max;
+void render_stderr(WINDOW*w, long vofs, vm_t vm, thread_t t) {
+	long i,max;
 	wclear(w);
 	max=vofs+getmaxy(w);
 	if(max>StdErr.lines.size) {
@@ -739,7 +739,7 @@ void render_stderr(WINDOW*w, int vofs, vm_t vm, thread_t t) {
 
 
 void init() {
-	int x_sz,y_sz,row2,row3,col,mid;
+	long x_sz,y_sz,row2,row3,col,mid;
 
 	initscr(); noecho(); cbreak(); curs_set(0);
 	flushinp();
@@ -815,8 +815,8 @@ void init() {
 		(_arg_str_short && !strcmp(_arg_str_short,argv[i]))	\
 	))
 
-int do_args(vm_t vm, int argc,const char*argv[]) {
-	int i,k;
+long do_args(vm_t vm, long argc,const char*argv[]) {
+	long i,k;
 	program_t p=NULL;
 	writer_t w=NULL;
 	reader_t r=NULL;
@@ -859,7 +859,7 @@ int do_args(vm_t vm, int argc,const char*argv[]) {
 }
 
 
-int main(int argc, const char**argv) {
+long main(long argc, const char**argv) {
 	init();
 	vm = vm_new();
 	vm_set_engine(vm,debug_engine);
@@ -947,7 +947,7 @@ struct _thread_engine_t {
 	pthread_t thread;
 	pthread_mutex_t mutex;
 	pthread_mutex_t fg_mutex;
-	volatile int is_running;
+	volatile long is_running;
 };
 
 void _VM_CALL dbg_cli_lock(struct _thread_engine_t* e) {

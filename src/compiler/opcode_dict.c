@@ -41,8 +41,8 @@ word_t hash_ptr(void* w) {
 	return ((word_t)w)%HASH_SIZE;
 }
 
-int cmp_ptr(void* w, void* v) {
-	return (int)(w-v);
+long cmp_ptr(void* w, void* v) {
+	return (long)(w-v);
 }
 
 opcode_dict_t opcode_dict_new() {
@@ -67,7 +67,7 @@ opcode_dict_t opcode_dict_optimize(vm_t vm, program_t prog) {
 	const char* name;
 	opcode_arg_t arg_type;
 	opcode_stub_t stub;
-	int i;
+	long i;
 	/*vm_printf("Opcode dictionary :\n");*/
 	for(i=0;i<prog->code.size;i+=2) {
 		stub = (opcode_stub_t)prog->code.data[i];
@@ -82,7 +82,7 @@ opcode_dict_t opcode_dict_optimize(vm_t vm, program_t prog) {
 
 
 void opcode_dict_init(opcode_dict_t od) {
-	int i;
+	long i;
 	for(i=0;i<OpcodeTypeMax;i+=1) {
 		dynarray_init(&od->stub_by_index[i]);
 		init_hashtab(&od->stub_by_name[i],(hash_func) hash_str, (compare_func) strcmp);
@@ -96,7 +96,7 @@ void htab_free_dict(htab_entry_t e) {
 }
 
 void opcode_dict_deinit(opcode_dict_t od) {
-	int i;
+	long i;
 	for(i=0;i<OpcodeTypeMax;i+=1) {
 		dynarray_deinit(&od->stub_by_index[i],NULL);
 		clean_hashtab(&od->stub_by_name[i],htab_free_dict);
@@ -146,17 +146,17 @@ const char* opcode_name_by_stub(opcode_dict_t od, opcode_stub_t stub) {
 }
 
 
-int opcode_dict_link_stubs(opcode_dict_t target, opcode_dict_t src) {
+long opcode_dict_link_stubs(opcode_dict_t target, opcode_dict_t src) {
 	return 0;
 }
 
-int opcode_dict_resolve_stubs(opcode_dict_t src) {
+long opcode_dict_resolve_stubs(opcode_dict_t src) {
 	return 0;
 }
 
 
 void opcode_dict_serialize(opcode_dict_t od, writer_t w) {
-	int i,j,tot;
+	long i,j,tot;
 	const char* name;
 	/* write header */
 	write_string(w,"DIC");
@@ -214,7 +214,7 @@ opcode_stub_t opcode_stub_resolve(opcode_arg_t arg_type, const char* name, void*
 
 
 void opcode_dict_unserialize(opcode_dict_t od, reader_t r, void* dl_handle) {
-	int i,j,tot,typtot;
+	long i,j,tot,typtot;
 	const char* name;
 
 	/* read dict header and check it against "DIC" */

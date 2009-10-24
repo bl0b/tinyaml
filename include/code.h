@@ -22,10 +22,10 @@
 
 
 typedef void _VM_CALL (*opcode_noarg_t) (vm_t, word_t);
-typedef void _VM_CALL (*opcode_int_t) (vm_t, int);
+typedef void _VM_CALL (*opcode_int_t) (vm_t, long);
 typedef void _VM_CALL (*opcode_float_t) (vm_t, float);
 typedef void _VM_CALL (*opcode_ptr_t) (vm_t, void*);
-typedef void _VM_CALL (*opcode_label_t) (vm_t, int);
+typedef void _VM_CALL (*opcode_label_t) (vm_t, long);
 typedef void _VM_CALL (*opcode_string_t) (vm_t, const char*);
 typedef void _VM_CALL (*opcode_opcode_t) (vm_t, word_t);
 

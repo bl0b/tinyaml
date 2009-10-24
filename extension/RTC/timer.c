@@ -37,7 +37,7 @@ Mutex mtx;
 pthread_cond_t timer_init_done = PTHREAD_COND_INITIALIZER;
 
 /* FIXME : dirty fix to prevent mutex recursion */
-int __selfcall=0;
+long __selfcall=0;
 
 #define LOCK(__x) do { if(!__selfcall) mutexLock(__x); } while(0)
 #define UNLOCK(__x) do { if(!__selfcall) mutexUnlock(__x); } while(0)
@@ -129,9 +129,9 @@ void timer_removeHandler(void*(*task)(float_t,void*)) {
 float_t allowed_resolutions[N_RES]= {	1/.128,	1/.256,	1/.512,	1/1.024,1/2.048,1/4.096,1/8.192 };
 unsigned long res_to_rtc_freq[N_RES]= {	128,	256,	512,	1024,	2048,	4096,	8192 };
 
-volatile int rtc_fd;
+volatile long rtc_fd;
 static pthread_t rtc_thread;
-volatile int timer_is_running=0;
+volatile long timer_is_running=0;
 
 float_t(*ext_source_read)();
 
@@ -144,7 +144,7 @@ volatile float_t  timer_basedate;
 void*timer_routine(void*arg);
 
 #ifdef __TESTS
-volatile int max_pileup;
+volatile long max_pileup;
 volatile float_t average_pileup;
 volatile long n_pileups;
 volatile long n_ticks;
@@ -155,10 +155,10 @@ volatile long n_realticks;
 
 
 
-int timer_init() {
+long timer_init() {
 	pthread_attr_t attr;
 	struct sched_param prio;
-	int err;
+	long err;
 
 //	listInit(perm_handlers);
 //	listInit(tasks);
@@ -266,8 +266,8 @@ float_t timer_get_seconds() {
 }
 
 float_t timer_set_resolution(float_t ms) {
-	int scbak=__selfcall;
-	int i=0;
+	long scbak=__selfcall;
+	long i=0;
 	LOCK(mtx);
 	while(i<(N_RES-1)&&ms<allowed_resolutions[i]) ++i;
 
@@ -308,7 +308,7 @@ void timer_stop() {
 
 
 void*timer_routine(void*arg) {
-	int ret;
+	long ret;
 #ifdef __TESTS
 	register long n;
 #endif

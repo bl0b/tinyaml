@@ -7,7 +7,7 @@
 
 #include "vm_types.h"
 
-typedef float PQTime;
+typedef float_t PQTime;
 
 
 /*
@@ -41,10 +41,10 @@ typedef struct _priority_queue_t* PQueue;
 
 
 typedef struct _pq_iterator_t* PQIterator;
-PQueue pqCreate(PQTime yearLength,int bucketmax,int dichotomymax,void(*destroy_message)(PQMessage));
+PQueue pqCreate(PQTime yearLength,long bucketmax,long dichotomymax,void(*destroy_message)(PQMessage));
 void pqDestroy(PQueue q);
 
-int pqMsgCount(PQueue q);
+long pqMsgCount(PQueue q);
 
 /* enqueue message with associated date */
 void pqEnqueue(PQueue q,PQTime date,PQMessage msg);
@@ -72,7 +72,7 @@ PQTime pqStartDate(PQueue q);
 PQTime pqEndDate(PQueue q);
 
 PQTime pqiNextDate(PQIterator qi);
-int pqiAtEnd(PQIterator qi);
+long pqiAtEnd(PQIterator qi);
 
 
 
@@ -168,14 +168,14 @@ int pqiAtEnd(PQIterator qi);
 	l'année démarre avec N=1.
 
 	pour insérer message avec date :
-		y = (int) (date/D);
+		y = (long) (date/D);
 		if(y) {
 			year=findYear(y);
 			if(!year) year=new year;
 		} else {
 			year=currentyear;
 		}
-		b = (int) ( (date/D - year) * (1<<N[year]) );
+		b = (long) ( (date/D - year) * (1<<N[year]) );
 		e=year.buckets[b].head;
 		while(e.date<date) ++e;		/ * au pire SEUIL opérations * /
 		if(e.date==date) {

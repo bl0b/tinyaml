@@ -39,7 +39,7 @@ void* try_walk(wast_t node, const char* pname, vm_t vm);
 
 
 
-extern volatile int line_number_bias;
+extern volatile long line_number_bias;
 
 /*! \addtogroup vcop_comp
  * @{
@@ -211,7 +211,7 @@ void _VM_CALL vm_op_write_ocFloat(vm_t vm, word_t unused) {
 
 
 
-void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, int rel_ofs) {
+void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, long rel_ofs) {
 	thread_t t=vm->current_thread;
 	vm_data_t local = _vm_pop(vm);	/* -1 becomes 0 */
 	word_t ofs = t->IP+rel_ofs;
@@ -350,7 +350,7 @@ void _VM_CALL vm_op_pp_curNode(vm_t vm, word_t x) {
 }
 
 void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
-	int lnb_backup=line_number_bias;
+	long lnb_backup=line_number_bias;
 	vm_data_t d = _vm_pop(vm);
 	const char*buffer = (const char*)d->data;
 	assert(d->type==DataString||d->type==DataObjStr);
@@ -419,7 +419,7 @@ void _VM_CALL vm_op_compileFileToThread(vm_t vm, word_t unused) {
 /*! \addtogroup vcop_st
  * @{
  */
-void _VM_CALL vm_op_newSymTab(vm_t vm, int rel_ofs) {
+void _VM_CALL vm_op_newSymTab(vm_t vm, long rel_ofs) {
 	vm_push_data(vm, DataObjSymTab, (word_t) vm_symtab_new(vm));
 }
 

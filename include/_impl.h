@@ -80,7 +80,7 @@ struct _opcode_chain_node_t {
 	const char* arg;
 	opcode_arg_t arg_type;
 	word_t lofs;
-	int row,col;
+	long row,col;
 };
 /*@}*/
 
@@ -193,7 +193,7 @@ struct _vm_t {
 	struct _dlist_t term_routines;
 	/* compilation error handling */
 	struct _generic_stack_t compinput_stack;
-	void (*onCompileError) (vm_t vm, const char* input, int is_buffer);
+	void (*onCompileError) (vm_t vm, const char* input, long is_buffer);
 	/* support of virtual AST walkers */
 	const char* virt_walker;
 	WalkDirection virt_walker_state;
@@ -285,9 +285,9 @@ struct _thread_t {
 	volatile thread_state_t state;
 	volatile word_t exec_flags;
 	/*word_t IP_status;*/
-	int _sync;
-	int prio;
-	volatile int remaining;
+	long _sync;
+	long prio;
+	volatile long remaining;
 	volatile mutex_t pending_lock;
 	struct _mutex_t join_mutex;
 	/* registers */

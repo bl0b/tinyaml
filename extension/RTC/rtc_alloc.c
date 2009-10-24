@@ -52,7 +52,7 @@ GenericList qWordBufs={NULL,NULL,0},oWordBufs={NULL,NULL,0},paraBufs={NULL,NULL,
 
 #define _offset(_p,_o,_sz) (((char*)(_p))+(_o)*(_sz))
 
-static volatile int alloc_is_init=0;
+static volatile long alloc_is_init=0;
 
 void term_alloc() {
 	GenericListNode* gln;
@@ -83,7 +83,7 @@ void term_alloc() {
 static inline void* __new_buf(size_t size,size_t countPerBuf,GenericList*l,void**first,size_t*total,size_t*free__) {
 	char*ptr;
 	void*p;
-	int i;
+	long i;
 //	vm_printf("__new_buf(%i,%i)\n",size,countPerBuf);
 	listAddTail(*l,(GenericListNode*)*first);
 	ptr=((char*)*first)+sizeof(GenericListNode);
@@ -140,7 +140,7 @@ void __collect_(pthread_mutex_t*mtx,void*ptr,GenericList*l,void**first) {
 }
 
 
-unsigned int allocBlocSize=1048576;
+unsigned long allocBlocSize=1048576;
 
 #define SIZE(n) (n*sizeof(void*))
 #define COUNT(n) ((allocBlocSize-sizeof(GenericListNode))/SIZE(n))
@@ -178,7 +178,7 @@ void init_alloc() {
 
 
 /*	para_t*ptr;
-	int i;
+	long i;
 	
 	if(!paragraphs) {
 		paragraphs=(para_t*)malloc(BLOC_COUNT_16W*sizeof(para_t));
@@ -220,16 +220,16 @@ void init_alloc() {
 #if 0
 
 typedef struct {
-	int a,b,c,d;
+	long a,b,c,d;
 } qstruc;
 
 typedef struct {
-	int a,b,c,d,e,f,g,h;
+	long a,b,c,d,e,f,g,h;
 } ostruc;
 
 
-int main() {
-	int i;
+long main() {
+	long i;
 	qstruc* testq[64];
 	ostruc* testo[64];
 	MusicPort*testp[64];

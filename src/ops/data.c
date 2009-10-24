@@ -32,7 +32,7 @@
  * @{
  */
 
-void _VM_CALL vm_op_getmem_Int(vm_t vm, int n) {
+void _VM_CALL vm_op_getmem_Int(vm_t vm, long n) {
 	thread_t t=vm->current_thread;
 	vm_data_t var;
 	if(n<0) {
@@ -72,21 +72,21 @@ void _VM_CALL vm_op_setmem_Int(vm_t vm, long n) {
 }
 
 
-void _VM_CALL vm_op_setmem(vm_t vm, int n) {
+void _VM_CALL vm_op_setmem(vm_t vm, long n) {
 	vm_data_t top = _vm_pop(vm);
 	if(top->type!=DataInt) {
 		return;
 	}
-	vm_op_setmem_Int(vm, (int)top->data);
+	vm_op_setmem_Int(vm, (long)top->data);
 }
 
 
-void _VM_CALL vm_op_getmem(vm_t vm, int n) {
+void _VM_CALL vm_op_getmem(vm_t vm, long n) {
 	vm_data_t top = _vm_pop(vm);
 	if(top->type!=DataInt) {
 		return;
 	}
-	vm_op_getmem_Int(vm, (int)top->data);
+	vm_op_getmem_Int(vm, (long)top->data);
 }
 
 void _VM_CALL vm_op_getClosure_Int(vm_t vm, word_t index) {
@@ -102,7 +102,7 @@ void _VM_CALL vm_op_getClosure(vm_t vm, word_t unused) {
 	if(top->type!=DataInt) {
 		return;
 	}
-	vm_op_getClosure_Int(vm, (int)top->data);
+	vm_op_getClosure_Int(vm, (long)top->data);
 }
 
 void _VM_CALL vm_op_setClosure_Int(vm_t vm, word_t index) {
@@ -125,7 +125,7 @@ void _VM_CALL vm_op_setClosure(vm_t vm, word_t unused) {
 	if(top->type!=DataInt) {
 		return;
 	}
-	vm_op_setClosure_Int(vm, (int)top->data);
+	vm_op_setClosure_Int(vm, (long)top->data);
 }
 
 /*@}*/
@@ -169,11 +169,11 @@ void _VM_CALL vm_op_toI(vm_t vm, word_t unused) {
 		vm_push_data(vm,DataInt,f2i(conv.f));
 		break;
 	case DataString:
-		/*vm_printf("convert \"%s\" to int\n",(const char*)d->data);*/
+		/*vm_printf("convert \"%s\" to long\n",(const char*)d->data);*/
 		vm_push_data(vm,DataInt,atoi((const char*)d->data));
 		break;
 	default:
-		vm_printerrf("[VM:WRN] can't convert to int.\n");
+		vm_printerrf("[VM:WRN] can't convert to long.\n");
 		vm_push_data(vm,DataInt,0);
 	};
 }

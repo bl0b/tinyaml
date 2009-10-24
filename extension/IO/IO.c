@@ -32,7 +32,7 @@ void _VM_CALL vm_op_flush(vm_t vm, word_t unused) {
 /*}*/
 
 void _VM_CALL vm_op_seek_Char(vm_t vm, word_t whence) {
-	int w;
+	long w;
 	vm_data_t d = _vm_pop(vm);
 	vm_data_t df = _vm_pop(vm);
 	file_t f = (file_t)df->data;
@@ -49,7 +49,7 @@ void _VM_CALL vm_op_seek_Char(vm_t vm, word_t whence) {
 		vm_fatal("Bad seek origin");
 		w=-1; /* make compiler happy. compiler doesn't know that vm_fatal will longjmp. */
 	};
-	fseek(f->descr.f, (int)d->data, w);
+	fseek(f->descr.f, (long)d->data, w);
 }
 
 void _VM_CALL vm_op_tell(vm_t vm, word_t whence) {
@@ -106,7 +106,7 @@ void _VM_CALL vm_op_readdir(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_fopen_String(vm_t vm, const char* mode) {
 	vm_data_t d = _vm_pop(vm);
-	/*int fd;*/
+	/*long fd;*/
 	const char* fpath = (const char*)d->data;
 	file_t f;
 	FILE*F;
@@ -173,9 +173,9 @@ static inline void addr2str(char* buf, struct sockaddr_in* sa) {
 		ntohs(sa->sin_port));
 }
 
-static inline file_t sock_init(vm_t vm, int type) {
+static inline file_t sock_init(vm_t vm, long type) {
 	struct sockaddr_in sa;
-	int sock;
+	long sock;
 	FILE*F;
 	vm_data_t d;
 	char buf[22];
@@ -261,7 +261,7 @@ void _VM_CALL vm_op_close(vm_t vm, word_t unused) {
 	}
 }
 
-static inline void __funpack(vm_t vm, unsigned char fmt, int stack_ofs) {
+static inline void __funpack(vm_t vm, unsigned char fmt, long stack_ofs) {
 	vm_data_type_t dt;
 	file_t f;
 	vm_peek_data(vm, stack_ofs, &dt, (word_t*)&f);
@@ -303,7 +303,7 @@ static inline void __funpack(vm_t vm, unsigned char fmt, int stack_ofs) {
 	}
 }
 
-static inline void __fpack(vm_t vm, unsigned char fmt, int stack_ofs) {
+static inline void __fpack(vm_t vm, unsigned char fmt, long stack_ofs) {
 	vm_data_type_t dt;
 	file_t f;
 	word_t x;
@@ -540,8 +540,8 @@ void _VM_CALL vm_op___IO__init(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op___tcpserver(vm_t vm, word_t unused) {
 	struct sockaddr_in sa;
-	int sock;
-	int backlog;
+	long sock;
+	long backlog;
 	vm_data_t d;
 	char buf[22];
 	/* create socket */
@@ -551,7 +551,7 @@ void _VM_CALL vm_op___tcpserver(vm_t vm, word_t unused) {
 	/* set backlog */
 	d = _vm_pop(vm);
 	assert(d->type==DataInt);
-	backlog = (int)d->data;
+	backlog = (long)d->data;
 	/* set port */
 	d = _vm_pop(vm);
 	assert(d->type==DataInt);

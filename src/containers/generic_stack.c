@@ -102,7 +102,7 @@ void* _gpop(generic_stack_t s) {
 */	return ret;
 }
 
-void* _gpeek(generic_stack_t s, int rel_ofs) {
+void* _gpeek(generic_stack_t s, long rel_ofs) {
 	assert(s->sp>=(word_t)-rel_ofs);
 /*
 	vm_printf("gpeek\n");

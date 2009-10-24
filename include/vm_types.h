@@ -56,7 +56,7 @@ typedef struct _vm_t* vm_t;
 /*! \brief An entry of the the VM's opcode dictionary. */
 typedef struct _opcode_t* opcode_t;
 
-typedef void (*vm_error_handler)(vm_t, const char*, int);
+typedef void (*vm_error_handler)(vm_t, const char*, long);
 
 /*@}*/
 

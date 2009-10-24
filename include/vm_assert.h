@@ -9,7 +9,7 @@
  */
 
 /*! \brief Is called when an assertion has failed. Kills the concerned thread. */
-extern void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, const char* function);
+extern void _vm_assert_fail(const char* assertion, const char*file, unsigned long line, const char* function);
 
 #if defined(NODEBUG)||defined(NDEBUG)
 #define assert(_x_)

@@ -12,7 +12,7 @@
 #include <pthread.h>
 
 /* small include hack : use output redictection by VM instead of plain printf */
-int vm_printf(const char* fmt, ...);
+long vm_printf(const char* fmt, ...);
 
 #define FLOAT_IMPREC .000001f /* to prevent floating-point roundoff errors */
 
@@ -35,7 +35,7 @@ struct _pq_ev {
 	struct _pq_ev*prev,*next;
 	PQTime date;
 	struct _pq_msg*head,*tail;
-	int count;
+	long count;
 };
 
 
@@ -46,7 +46,7 @@ struct _pq_ev {
  * manages an event sublist
  */
 struct _pq_bucket {
-	int count;			/* number of events in bucket */
+	long count;			/* number of events in bucket */
 	struct _pq_ev*head,*tail;	/* first and last event in bucket */
 	struct _pq_bucket*prev,*next;	/* prev and next buckets in year */
 	struct _pq_year*list;		/* year storage */
@@ -66,8 +66,8 @@ struct _pq_bst_node {
 	struct _pq_bst_node*left,*right;/* left and right sons in BST */
 	struct _pq_bst_node*parent;	/* the node's parent */
 	struct _pq_bucket*bucket;	/* the corresponding bucket if node is a leaf */
-	int balance;
-	int height;
+	long balance;
+	long height;
 };
 
 
@@ -81,8 +81,8 @@ struct _pq_year {
 	struct _pq_year*hNext;		/* for use in hashtab */
 	struct _pq_year*prev,*next;	/* for sorting years */
 	struct _priority_queue_t*list;	/* for sorting years */
-	int number;			/* year # */
-	int count;			/* events count */
+	long number;			/* year # */
+	long count;			/* events count */
 	struct _pq_bucket*head,*tail;	/* first and last buckets in year */
 	struct _pq_bst_node*root;	/* root node in BST */
 //	struct _pq_bucket*firstNotEmpty;/* first bucket that contains an event */
@@ -96,16 +96,16 @@ struct _priority_queue_t {
 	PQTime endDate;
 	/* struct constants */
 	PQTime minWidth;
-	int bucketMax;
+	long bucketMax;
 	/* forward/reverse reading tools */
 	/* enqueue tools */
 	struct _pq_ev*firstEv;
 	struct _pq_ev*lastEv;
-	int evCount;
-	int msgCount;
+	long evCount;
+	long msgCount;
 	/* years storage */
 	struct _pq_year*head,*tail;
-	int count;
+	long count;
 	struct _pq_year*years[YEAR_HASH];
 	void(*destroy_msg)(PQMessage);
 	pthread_mutex_t mutex;
@@ -403,7 +403,7 @@ static inline struct _pq_bucket* new_bucket(struct _pq_bst_node*node) {
 	return b;
 }
 
-static inline void hash_insert(PQueue q,int d,struct _pq_year*y) {
+static inline void hash_insert(PQueue q,long d,struct _pq_year*y) {
 	struct _pq_year*z,*w;
 	z=q->years[d];
 	w=NULL;//(struct _pq_year*)&(q->years[d]);
@@ -454,7 +454,7 @@ static inline void list_insert(PQueue q,struct _pq_year*y) {
 	}
 }
 
-static inline struct _pq_year* new_year(PQueue q,int d) {
+static inline struct _pq_year* new_year(PQueue q,long d) {
 	struct _pq_year*y=_alloc(struct _pq_year);
 
 	memset(y,0,sizeof(struct _pq_year));
@@ -524,7 +524,7 @@ static inline void free_year(void(*dm)(PQMessage),struct _pq_year*y) {
 
 void remove_year(PQueue q,struct _pq_year*y) {
 	struct _pq_year*hy,*hq;
-	int d;
+	long d;
 	/*vm_printf("remove_year\n");*/
 	/*dump_year(y,"remove_year\t");*/
 	/*fflush(stdout);*/
@@ -682,7 +682,7 @@ static inline struct _pq_bucket* find_bucket(struct _pq_year*year,float_t dt) {
 
 
 
-static inline struct _pq_year* find_year(PQueue q,int y) {
+static inline struct _pq_year* find_year(PQueue q,long y) {
 	register struct _pq_year*year=q->years[y%YEAR_HASH];
 	if(year) while(year->number!=y&&(year=year->next)); /* unbounded ; should be generally small ; smaller year numbers will be found more quickly than bigger ones */
 	return year;
@@ -712,11 +712,11 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 	/*PQTime W=n->width/2;*/
 	/*PQTime T=n->T+W;*/
 	PQTime Wl,Wr,Tl,Tr,tot=0;
-	int delta,half=((*bucket)->count>>1);
+	long delta,half=((*bucket)->count>>1);
 
 	/* assert count==real thing */
 	/*{*/
-		/*int n;*/
+		/*long n;*/
 		/*k=(*bucket)->head;*/
 		/*for(n=0;k;k=k->next,n+=1);*/
 		/*if(n!=(*bucket)->count) {*/
@@ -941,11 +941,11 @@ static inline void cache_backward(PQIterator qi) {
 
 
 
-static unsigned int max_find_k=0;
+static unsigned long max_find_k=0;
 
 static inline struct _pq_ev* find_k(struct _pq_bucket*bucket,PQTime date) {
 	register struct _pq_ev*k=bucket->tail;
-	/*unsigned int debug=0;*/
+	/*unsigned long debug=0;*/
 	if(bucket->head->date>date) {
 		return NULL;
 	} else if(bucket->head->date==date) {
@@ -1027,7 +1027,7 @@ static inline void bucket_insert(PQueue q,struct _pq_bucket*bucket,struct _pq_ms
  *************************************** PUBLIC METHODS *******************************************
  *************************************************************************************************/
 
-int pqMsgCount(PQueue q) {
+long pqMsgCount(PQueue q) {
 	return q->msgCount;
 }
 
@@ -1039,8 +1039,8 @@ PQTime pqEndDate(PQueue q) {
 	return q->endDate;
 }
 
-PQueue pqCreate(PQTime yearLength,int bucketmax,int dichotomymax,void(*dm)(PQMessage)) {
-	int i,debug=0;
+PQueue pqCreate(PQTime yearLength,long bucketmax,long dichotomymax,void(*dm)(PQMessage)) {
+	long i,debug=0;
 	PQueue q=(PQueue)malloc(sizeof(struct _priority_queue_t));
 	memset(q,0,sizeof(struct _priority_queue_t));
 	/*for(i=0;i<sizeof(struct _priority_queue_t);i++) {*/
@@ -1084,7 +1084,7 @@ void pqEnqueue(PQueue q,PQTime date,PQMessage msg) {
 	struct _pq_year*year;
 	struct _pq_bucket*bucket;
 	struct _pq_ev*e;
-	int y=(int) (date*q->invD);
+	long y=(long) (date*q->invD);
 	PQTime T;
 	
 	pthread_mutex_lock(&q->mutex);
@@ -1164,12 +1164,12 @@ PQMessage pqDequeue(PQueue q,PQTime date) {
 
 void pqRemove(PQueue q,PQTime date,PQMessage msg) {
 	PQMessage m,n;
-	int yi;
+	long yi;
 	struct _pq_year*y;
 	struct _pq_bucket*b;
 	struct _pq_ev*e;
-	//y=(int)(date*q->invD)-1;
-	yi=(int)(date*q->invD);
+	//y=(long)(date*q->invD)-1;
+	yi=(long)(date*q->invD);
 	if((!q->tail)||yi>q->tail->number) {
 		return;
 	}
@@ -1224,11 +1224,11 @@ void pqRemove(PQueue q,PQTime date,PQMessage msg) {
  */
 
 void pqiJumpTo(PQIterator qi,PQTime date) {
-	int y;
+	long y;
 	struct _pq_bucket*b;
 	struct _pq_ev*e;
-	//y=(int)(date*q->invD)-1;
-	y=(int)(date*qi->q->invD);
+	//y=(long)(date*q->invD)-1;
+	y=(long)(date*qi->q->invD);
 	if((!qi->q->tail)||y>qi->q->tail->number) {
 		qi->cacheMsg=NULL;
 		qi->cacheEv=NULL;
@@ -1385,7 +1385,7 @@ PQMessage pqiBackward(PQIterator qi,PQTime date) {
 }
 
 
-int pqiAtEnd(PQIterator qi) {
+long pqiAtEnd(PQIterator qi) {
 	return qi->cacheEv==NULL;
 }
 
@@ -1431,7 +1431,7 @@ void dump_event(struct _pq_ev*e,const char*prefix) {
 //	PQMessage m=e->head;
 	echo("%s%f%s => %i : %s",green,e->date,normal,e->count,green);
 //	while(m) {
-//		vm_printf("%i, ",(int)m->data);
+//		vm_printf("%i, ",(long)m->data);
 //		m=m->next;
 //	}
 	vm_printf("%s\n",normal);
@@ -1462,7 +1462,7 @@ void dump_node(struct _pq_bst_node*n,const char*prefix) {
 }
 
 void dump_year(struct _pq_year*y,const char*prefix) {
-	int t=0;
+	long t=0;
 	struct _pq_bucket*b=y->head;
 	char buffer[256];
 	sprintf(buffer,"%s    ",prefix);
@@ -1499,24 +1499,24 @@ void _dm(PQMessage msg) {
 	if(msg) _free(struct _pq_msg,msg);
 }
 
-int test_queue(PQTime yearSize,int evperbuf,int dichmax,double n_years,double ev_res,int evcount,float_t*enqPS,float_t*fwdPS,float_t*deqPS,int dump) {
+long test_queue(PQTime yearSize,long evperbuf,long dichmax,double n_years,double ev_res,long evcount,float_t*enqPS,float_t*fwdPS,float_t*deqPS,long dump) {
 	clock_t t1,t2;
-	int i,j;
+	long i,j;
 	float_t date;
 	float_t coef;
-	int mod;
+	long mod;
 	PQMessage msg;
-	int ec=evcount;
-	int k,l;
+	long ec=evcount;
+	long k,l;
 	float_t *rnd;
 	PQueue q=pqCreate(yearSize,evperbuf,dichmax,_dm);
 	PQIterator qi;
 
-	mod = (int) ((n_years/ev_res)+.5);
+	mod = (long) ((n_years/ev_res)+.5);
 
 	coef=yearSize*ev_res;
 
-	rnd=malloc(sizeof(int)*(ec+(ec>>2)));
+	rnd=malloc(sizeof(long)*(ec+(ec>>2)));
 
 	/*vm_printf("mod = %i coef = %f\n",mod,coef);*/
 	/*vm_printf("Pre-allocating memory... ");*/
@@ -1625,21 +1625,21 @@ int test_queue(PQTime yearSize,int evperbuf,int dichmax,double n_years,double ev
 #ifdef __PQTEST__
 
 
-int main(int argc,char**argv) {
+long main(long argc,char**argv) {
 //	PQueue q;
-//	int i;
+//	long i;
 //	PQMessage msg;
 //	clock_t t1,t2,t3,t4;
 //	char c;
 //	PQTime T;
-	int dichotomax;
+	long dichotomax;
 	float_t yL;
-	int evperbuck;
-	int BIG;
-	int yc;
+	long evperbuck;
+	long BIG;
+	long yc;
 	float_t tr;
 	float_t eps,dps,fps;
-	int dump;
+	long dump;
 	clock_t t1,t2;
 
 	init_alloc();

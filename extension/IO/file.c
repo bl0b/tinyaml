@@ -4,14 +4,14 @@
 volatile file_t f_out=NULL, f_in=NULL, f_err=NULL;
 
 
-int _VM_CALL _fill_buf0(FILE*f, char*buf) {
-	int i;
+long _VM_CALL _fill_buf0(FILE*f, char*buf) {
+	long i;
 	for(i=0;i<BUFSZ&&fread(buf, 1, 1, f)==1&&*buf;i+=1) buf+=1;
 	return i;
 }
 
-int _VM_CALL _fill_bufNL(FILE*f, char*buf) {
-	int i;
+long _VM_CALL _fill_bufNL(FILE*f, char*buf) {
+	long i;
 	for(i=0;i<BUFSZ&&fread(buf, 1, 1, f)==1&&*buf&&*buf!='\r'&&*buf!='\n';i+=1) buf+=1;
 	if(i<BUFSZ) {
 		*buf=0;
@@ -134,9 +134,9 @@ void* dir_routine(file_t f) {
 	return NULL;
 }
 
-void file_update_state(file_t f, int flags) {
+void file_update_state(file_t f, long flags) {
 	word_t oflags=f->flags;
-	int ret;
+	long ret;
 	/* update flags */
 	f->flags = flags;
 	/* open, close, start/stop thread... */
@@ -240,7 +240,7 @@ file_t file_clone(vm_t vm, file_t f) {
 
 
 
-file_t file_new(vm_t vm, const char* source, FILE*f, int flags) {
+file_t file_new(vm_t vm, const char* source, FILE*f, long flags) {
 	file_t ret = (file_t) vm_obj_new(sizeof(struct _file_t),
 			(void (*)(vm_t,void*)) file_deinit,
 			(void*(*)(vm_t,void*)) file_clone,

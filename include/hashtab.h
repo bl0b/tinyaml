@@ -39,7 +39,7 @@ typedef void* hash_elem;
 typedef void* hash_key;
 
 typedef word_t (*hash_func)(hash_key);
-typedef int (*compare_func)(hash_key,hash_key);
+typedef long (*compare_func)(hash_key,hash_key);
 
 struct _htab_entry_struct {
 	hash_key key;
@@ -63,9 +63,9 @@ struct _hashtab_t {
 word_t default_hash_func(const char*);
 
 word_t hash_str(char*);
-/*int strcmp(const char*,const char*);*/
+/*long strcmp(const char*,const char*);*/
 word_t hash_ptr(void*);
-int cmp_ptr(void*,void*);
+long cmp_ptr(void*,void*);
 
 /*! \addtogroup htab_iterator Hashtable iterator
  * @{
@@ -79,7 +79,7 @@ struct _htab_iterator {
 };
 
 /*! \brief TODO */
-static __inline int hi_incr(htab_iterator_t hi) {
+static __inline long hi_incr(htab_iterator_t hi) {
 	if(hi->entry&&hi->entry->next)
 		hi->entry=hi->entry->next;
 	do {
@@ -104,7 +104,7 @@ static __inline void hi_init(htab_iterator_t hi,hashtab_t t) {
 
 
 /*! \brief TODO */
-static __inline int hi_is_valid(htab_iterator_t hi) { return hi->entry!=NULL; }
+static __inline long hi_is_valid(htab_iterator_t hi) { return hi->entry!=NULL; }
 
 /*! \brief TODO */
 static __inline hash_key hi_key(htab_iterator_t hi) { return hi->entry->key; }
@@ -126,7 +126,7 @@ static __inline htab_entry_t hi_entry(htab_iterator_t hi) { return hi->entry; }
 
 /*! \brief TODO */
 static __inline void init_hashtab(hashtab_t tab,hash_func hash,compare_func cmp) {
-	int i;
+	long i;
 	for(i=0;i<HASH_SIZE;i++)
 		tab->table[i]=(htab_entry_t) HASH_NOVAL;
 	tab->hash=hash;
@@ -157,7 +157,7 @@ static __inline void hash_addelem(hashtab_t tab,hash_key key,hash_elem elem) {
 
 /*! \brief TODO */
 static __inline htab_entry_t hash_find_e(hashtab_t tab,hash_key key) {
-	int i;
+	long i;
 	if(!key) {
 		return NULL;
 	}
@@ -198,7 +198,7 @@ static __inline void hash_delelem(hashtab_t tab,hash_key key) {
 
 /*! \brief TODO */
 static __inline void clean_hashtab(hashtab_t tab,void(*callback)(htab_entry_t)) {
-	int i;
+	long i;
 	htab_entry_t s,p;
 	for(i=0;i<HASH_SIZE;i++) {
 		s=tab->table[i];

@@ -1,6 +1,8 @@
 #ifndef _BML_FAST_MATH_H_
 #define _BML_FAST_MATH_H_
 
+#include "config.h"
+
 /*! \addtogroup fast_math Fast 32-bit maths
  * @{
  * \brief Fast conversions.
@@ -9,36 +11,51 @@
  * The map supports indexed access to keys and values and random access by key lookup.
  */
 
-/* 32-bit floats and ints only ! */
-/*! \brief Magic converting bias, hex version. */
-#define BIAS_HEX ( ((23+127)<<23) + (1<<22) )
-/*! \brief Converting bias as an int */
-#define BIAS_INT ((long)BIAS_HEX)
-/*! \brief Converting bias as a float */
-#define BIAS_FLOAT ((float)12582912.0f)
-
 /*! \brief union to reinterpret bits in a word as an integer and a float. */
 union _intfloat_conv {
 	long i;	/*!< \brief bits as integer */
-	float f;	/*!< \brief bits as floating point */
+	float_t f;	/*!< \brief bits as floating point */
 };
 
 /*! _brief Public type for conversion union. */
 typedef union _intfloat_conv _IFC;
 
-/*! \brief Convert from float to int. */
-static inline long f2i(float f) {
+#ifdef __32__
+/* 32-bit floats and ints only ! */
+/*! \brief Magic converting bias, hex version. */
+#define BIAS_HEX ( ((23+127)<<23) + (1<<22) )
+/*! \brief Converting bias as an long */
+#define BIAS_INT ((long)BIAS_HEX)
+/*! \brief Converting bias as a float */
+#define BIAS_FLOAT ((float)12582912.0f)
+
+/*! \brief Convert from float to long. */
+static inline long f2i(float_t f) {
 	_IFC c;
 	c.f=f+BIAS_FLOAT;
 	return c.i-BIAS_INT;
 }
 
-/*! \brief Convert from int to float. */
-static inline float i2f(long i) {
+/*! \brief Convert from long to float. */
+static inline float_t i2f(long i) {
 	_IFC c;
 	c.i=i+BIAS_INT;
 	return c.f-BIAS_FLOAT;
 }
+
+#else
+
+/*! \brief Convert from float to long. */
+static inline long f2i(float_t f) {
+	return (long)f;
+}
+
+/*! \brief Convert from long to float. */
+static inline float_t i2f(long i) {
+	return (float_t)i;
+}
+
+#endif
 
 
 /*! @{ \brief Ease writing of arithmetic opcodes. */

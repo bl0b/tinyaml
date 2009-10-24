@@ -53,7 +53,7 @@ void dlist_del(dlist_t l) {
 
 
 #ifndef DLIST_INSERT_SORTED_IS_MACRO
-void dlist_insert_sorted(dlist_t l, dlist_node_t n, int(*cmp)(dlist_node_t, dlist_node_t)) {
+void dlist_insert_sorted(dlist_t l, dlist_node_t n, long(*cmp)(dlist_node_t, dlist_node_t)) {
 	dlist_node_t r = l->head;
 	if(!r) {
 		/* quick insert at head (and tail) */

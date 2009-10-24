@@ -20,15 +20,15 @@ static inline unsigned char _read_byte(file_t f) {
 #define BUFSHIFT 15
 #define BUFSZ (1<<BUFSHIFT)
 
-int _VM_CALL _fill_buf0(FILE*f, char*buf);
-int _VM_CALL _fill_bufNL(FILE*f, char*buf);
+long _VM_CALL _fill_buf0(FILE*f, char*buf);
+long _VM_CALL _fill_bufNL(FILE*f, char*buf);
 
 
-static inline char* _read_s(FILE*f, int _VM_CALL(*_filler)(FILE*, char*)) {
+static inline char* _read_s(FILE*f, long _VM_CALL(*_filler)(FILE*, char*)) {
 	/* optimize for short strings (1 buffer) */
 	char _buf[BUFSZ];
 	char* buf, * ret;
-	int len, i, N;
+	long len, i, N;
 	dynarray_t buffers;
 	_buf[0]=0;
 	if(BUFSZ==_filler(f, _buf)) {
@@ -69,7 +69,7 @@ static inline char* _read_str(file_t f) {
 static inline long _read_int(file_t f) {
 	long ret;
 	if(fscanf(f->descr.f, "%li", &ret)!=1) {
-		vm_fatal("Couldn't read int.");
+		vm_fatal("Couldn't read long.");
 	}
 	return ret;
 }
@@ -77,7 +77,7 @@ static inline long _read_int(file_t f) {
 static inline word_t _read_hexint(file_t f) {
 	word_t ret;
 	if(fscanf(f->descr.f, "%lX", &ret)!=1) {
-		vm_fatal("Couldn't read hexadecimal int.");
+		vm_fatal("Couldn't read hexadecimal long.");
 	}
 	return ret;
 }
@@ -91,7 +91,7 @@ static inline float _read_float(file_t f) {
 }
 
 static inline word_t _unpack(file_t f, char fmt) {
-	union { int i; word_t w; float f; const char* s; } conv;
+	union { long i; word_t w; float f; const char* s; } conv;
 	switch(fmt) {
 	case 'S' : conv.s = _read_str(f); break;
 	case 'I' : conv.i = _read_int(f); break;

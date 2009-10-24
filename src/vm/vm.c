@@ -44,7 +44,7 @@ extern const char* ml_core_grammar;
 extern const char* ml_core_lib;
 
 volatile vm_t _glob_vm = NULL;
-volatile int _vm_trace = 0;
+volatile long _vm_trace = 0;
 
 jmp_buf _glob_vm_jmpbuf;
 
@@ -53,7 +53,7 @@ const char* thread_state_to_str(thread_state_t ts);
 program_t dynFun_exec = NULL;
 
 const char* vm_find_innermost_file(vm_t vm) {
-	int ofs=0;
+	long ofs=0;
 	vm_data_t d;
 	do {
 		d = (vm_data_t) _gpeek(&vm->compinput_stack, 0);
@@ -64,7 +64,7 @@ const char* vm_find_innermost_file(vm_t vm) {
 	return (const char*)d->data;
 }
 
-void vm_print_compilation_source(vm_t vm, int ofs) {
+void vm_print_compilation_source(vm_t vm, long ofs) {
 	vm_data_t d = (vm_data_t) _gpeek(&vm->compinput_stack, ofs);
 	compinput_t ci = (compinput_t) d->type;
 	const char* buf = (const char*) d->data;
@@ -146,11 +146,11 @@ void vm_print_data(vm_t vm, vm_data_t d) {
 }
 
 
-extern volatile int line_number_bias;
+extern volatile long line_number_bias;
 
 
-void default_error_handler_no_exit(vm_t vm, const char* input, int is_buffer) {
-	int ofs, sz;
+void default_error_handler_no_exit(vm_t vm, const char* input, long is_buffer) {
+	long ofs, sz;
 	compinput_t ci;
 	const char* buf;
 	vm_data_t d;
@@ -177,7 +177,7 @@ void default_error_handler_no_exit(vm_t vm, const char* input, int is_buffer) {
 	}
 }
 
-void default_error_handler(vm_t vm, const char* input, int is_buffer) {
+void default_error_handler(vm_t vm, const char* input, long is_buffer) {
 	default_error_handler_no_exit(vm, input, is_buffer);
 	exit(-1);
 }
@@ -363,12 +363,12 @@ void vm_del(vm_t ret) {
 }
 
 
-void vm_set_timeslice(vm_t vm, int timeslice) {
+void vm_set_timeslice(vm_t vm, long timeslice) {
 	vm->timeslice=timeslice;
 }
 
-int comp_prio(dlist_node_t a, dlist_node_t b) {
-	return (int)(node_value(thread_t,b)->prio - node_value(thread_t,a)->prio);
+long comp_prio(dlist_node_t a, dlist_node_t b) {
+	return (long)(node_value(thread_t,b)->prio - node_value(thread_t,a)->prio);
 }
 
 
@@ -443,7 +443,7 @@ vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
 program_t compile_wast(wast_t, vm_t);
 void wa_del(wast_t w);
 
-program_t vm_compile_any(vm_t vm, word_t* start_IP, int last) {
+program_t vm_compile_any(vm_t vm, word_t* start_IP, long last) {
 	program_t p=NULL;
 	word_t reent = vm->compile_reent;
 	vm->compile_reent=0;
@@ -467,7 +467,7 @@ program_t vm_compile_any(vm_t vm, word_t* start_IP, int last) {
 	return p;
 }
 
-program_t vm_compile_append_file(vm_t vm, const char* fname, word_t* start_IP, int last) {
+program_t vm_compile_append_file(vm_t vm, const char* fname, word_t* start_IP, long last) {
 	/*vm_printf("vm_compile_file(%s)\n",fname);*/
 	tinyap_set_source_file(vm->parser,fname);
 	vm_compinput_push_file(vm, fname);
@@ -484,7 +484,7 @@ program_t vm_compile_file(vm_t vm, const char* fname) {
 }
 
 
-program_t vm_compile_append_buffer(vm_t vm, const char* buffer, word_t* start_IP, int last) {
+program_t vm_compile_append_buffer(vm_t vm, const char* buffer, word_t* start_IP, long last) {
 	/*vm_printf("vm_compile_buffer(%s)\n",buffer);*/
 	tinyap_set_source_buffer(vm->parser,buffer,strlen(buffer));
 	vm_compinput_push_buffer(vm, buffer);
@@ -519,7 +519,7 @@ vm_t vm_run_program_fg(vm_t vm, program_t p, word_t ip, word_t prio) {
 }
 
 /* FIXME : include support for thread args */
-thread_t vm_add_thread_helper(vm_t vm, thread_t t, int fg) {
+thread_t vm_add_thread_helper(vm_t vm, thread_t t, long fg) {
 	struct _data_stack_entry_t argc = { DataInt, 0 };
 	vm_obj_ref_ptr(vm, t);
 	t->state=ThreadStateMax;
@@ -546,7 +546,7 @@ thread_t vm_add_thread_helper(vm_t vm, thread_t t, int fg) {
 	return t;
 }
 
-thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,int fg) {
+thread_t vm_add_thread(vm_t vm, program_t p, word_t ip, word_t prio,long fg) {
 	thread_t t;
 	/*dlist_node_t dn;*/
 	if(!p) {
@@ -638,8 +638,8 @@ vm_t vm_kill_thread(vm_t vm, thread_t t) {
 void vm_dump_data_stack(vm_t vm) {
 	vm_data_t e;
 	generic_stack_t stack = &vm->current_thread->data_stack;
-	int sz = gstack_size(stack);
-	int i;
+	long sz = gstack_size(stack);
+	long i;
 
 	vm_printf("sz = %i\n",sz);
 	for(i=0;i<sz;i+=1) {
@@ -687,7 +687,7 @@ vm_t vm_push_catcher(vm_t vm, program_t seg, word_t ofs) {
 }
 
 
-vm_t vm_peek_data(vm_t vm, int rel_ofs, vm_data_type_t* type, word_t* value) {
+vm_t vm_peek_data(vm_t vm, long rel_ofs, vm_data_type_t* type, word_t* value) {
 	generic_stack_t stack = &vm->current_thread->data_stack;
 	vm_data_t top = gpeek( vm_data_t , stack, rel_ofs );
 	*type = (vm_data_type_t) top->type;
@@ -860,7 +860,7 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 		}
 		if(t->data_stack.sp>state_change_ndata) {
 			vm_data_t d;
-			int ofs;
+			long ofs;
 			fprintf(stdout, " Stack size %lu, pushed", t->data_stack.sp);
 			for(ofs=state_change_ndata-t->data_stack.sp+1;ofs<=0;ofs+=1) {
 				fputc(' ', stdout);
@@ -1089,7 +1089,7 @@ vm_t vm_set_engine(vm_t vm, vm_engine_t e) {
 
 
 
-void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, const char* function) {
+void _vm_assert_fail(const char* assertion, const char*file, unsigned long line, const char* function) {
 	if(strncmp(function,"vm_op_",6)) {
 		vm_printf( "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
 	} else {
@@ -1121,7 +1121,7 @@ void _vm_assert_fail(const char* assertion, const char*file, unsigned int line, 
 
 
 
-int vm_printf(const char* fmt, ...) {
+long vm_printf(const char* fmt, ...) {
 	char buffer[4096];
 	va_list ap;
 	va_start(ap,fmt);
@@ -1132,7 +1132,7 @@ int vm_printf(const char* fmt, ...) {
 }
 
 
-int vm_printerrf(const char* fmt, ...) {
+long vm_printerrf(const char* fmt, ...) {
 	char buffer[4096];
 	va_list ap;
 	va_start(ap,fmt);

@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <dlfcn.h>
 
-opcode_chain_node_t ochain_new_opcode(opcode_arg_t arg_type, const char* opcode, const char* arg,int row,int col) {
+opcode_chain_node_t ochain_new_opcode(opcode_arg_t arg_type, const char* opcode, const char* arg,long row,long col) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeOpcode;
 	ocn->arg=NULL;
@@ -39,7 +39,7 @@ opcode_chain_node_t ochain_new_opcode(opcode_arg_t arg_type, const char* opcode,
 	return ocn;
 }
 
-opcode_chain_node_t ochain_new_label(const char* label,int row,int col) {
+opcode_chain_node_t ochain_new_label(const char* label,long row,long col) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeLabel;
 	ocn->arg=NULL;
@@ -49,7 +49,7 @@ opcode_chain_node_t ochain_new_label(const char* label,int row,int col) {
 	return ocn;
 }
 
-opcode_chain_node_t ochain_new_langdef(const char* nodestr,int row,int col) {
+opcode_chain_node_t ochain_new_langdef(const char* nodestr,long row,long col) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeLangDef;
 	ocn->arg=NULL;
@@ -59,7 +59,7 @@ opcode_chain_node_t ochain_new_langdef(const char* nodestr,int row,int col) {
 	return ocn;
 }
 
-opcode_chain_node_t ochain_new_langplug(const char* plugin, const char* plug,int row,int col) {
+opcode_chain_node_t ochain_new_langplug(const char* plugin, const char* plug,long row,long col) {
 	opcode_chain_node_t ocn = (opcode_chain_node_t)malloc(sizeof(struct _opcode_chain_node_t));
 	ocn->type=NodeLangPlug;
 	ocn->arg=strdup(plug);
@@ -84,7 +84,7 @@ opcode_chain_t opcode_chain_new() {
 	return oc;
 }
 
-opcode_chain_t opcode_chain_add_label(opcode_chain_t oc, const char*label,int row,int col) {
+opcode_chain_t opcode_chain_add_label(opcode_chain_t oc, const char*label,long row,long col) {
 	opcode_chain_node_t ocn = ochain_new_label(label,row,col);
 	slist_insert_tail(oc, ocn);
 	return oc;
@@ -92,7 +92,7 @@ opcode_chain_t opcode_chain_add_label(opcode_chain_t oc, const char*label,int ro
 
 void delete_node(ast_node_t);
 
-opcode_chain_t opcode_chain_add_langdef(opcode_chain_t oc, wast_t node,int row,int col) {
+opcode_chain_t opcode_chain_add_langdef(opcode_chain_t oc, wast_t node,long row,long col) {
 	ast_node_t n = make_ast(node);
 	const char* str = tinyap_serialize_to_string(n);
 	opcode_chain_node_t ocn = ochain_new_langdef(str,row,col);
@@ -101,13 +101,13 @@ opcode_chain_t opcode_chain_add_langdef(opcode_chain_t oc, wast_t node,int row,i
 	return oc;
 }
 
-opcode_chain_t opcode_chain_add_langplug(opcode_chain_t oc, const char* plugin, const char*plug,int row,int col) {
+opcode_chain_t opcode_chain_add_langplug(opcode_chain_t oc, const char* plugin, const char*plug,long row,long col) {
 	opcode_chain_node_t ocn = ochain_new_langplug(plugin,plug,row,col);
 	slist_insert_tail(oc, ocn);
 	return oc;
 }
 
-opcode_chain_t opcode_chain_add_data(opcode_chain_t oc, vm_data_type_t argtyp, const char* data, const char* rep,int row,int col) {
+opcode_chain_t opcode_chain_add_data(opcode_chain_t oc, vm_data_type_t argtyp, const char* data, const char* rep,long row,long col) {
 	const char*repdup;
 	/* FIXME : this should be ochain_new_data() */
 	opcode_chain_node_t ocn = ochain_new_opcode(argtyp,data,rep,row,col);
@@ -125,7 +125,7 @@ opcode_chain_t opcode_chain_add_data(opcode_chain_t oc, vm_data_type_t argtyp, c
 	return oc;
 }
 
-opcode_chain_t opcode_chain_add_opcode(opcode_chain_t oc, opcode_arg_t argtyp, const char* opcode, const char* arg,int row,int col) {
+opcode_chain_t opcode_chain_add_opcode(opcode_chain_t oc, opcode_arg_t argtyp, const char* opcode, const char* arg,long row,long col) {
 	const char*argdup;
 	opcode_chain_node_t ocn = ochain_new_opcode(argtyp,opcode,arg,row,col);
 	/* FIXME : this should go into ochain_new_opcode() */
@@ -153,7 +153,7 @@ void opcode_chain_delete(opcode_chain_t oc) {
 	free(oc);
 }
 
-static int count;
+static long count;
 
 static void incr(opcode_chain_node_t ocn) {
 	count+=(ocn->type==NodeOpcode);
@@ -192,7 +192,7 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	word_t op = (word_t)opcode_stub_by_name(od,ocn->arg_type, ocn->name);
 	word_t arg;
 	union { word_t i; float_t f; } conv;
-	int skip_wr=0;
+	long skip_wr=0;
 	unsigned char c;
 	/*char*str;*/
 	/*vm_printf("got opcode %s.",ocn->name);*/
@@ -330,7 +330,7 @@ void opcode_chain_serialize(opcode_chain_t oc, opcode_dict_t od, program_t p, vo
 			opcode_serialize(od,oc,ofs,ocn,p,dl_handle);
 			ofs+=2;
 		} else if(ocn->type==NodeData) {
-			int rep = atoi(ocn->arg);
+			long rep = atoi(ocn->arg);
 			word_t dat = str2data(p,(vm_data_type_t)ocn->arg_type,ocn->name);
 			dynarray_t data_seg = &p->data;
 			while(rep>0) {

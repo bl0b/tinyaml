@@ -69,11 +69,11 @@ typedef struct _server_t* server_t;
 struct _file_t {
 	word_t magic;
 	union {
-		int fd;		/* still used for listening socket */
+		long fd;		/* still used for listening socket */
 		FILE* f;
 		DIR* d;
 	} descr;
-	int flags;
+	long flags;
 	char* source;
 	vm_blocker_t blocker;
 	thread_t owner;
@@ -84,8 +84,8 @@ struct _file_t {
 	char data_fmt;
 	union {
 		struct {
-			unsigned int addr;
-			unsigned int port;
+			unsigned long addr;
+			unsigned long port;
 		} client;
 		struct {
 			char* buffer_data;
@@ -108,13 +108,13 @@ extern volatile file_t f_out, f_in, f_err;
 #include "file_wr.h"
 
 
-void file_update_state(file_t f, int flags);
+void file_update_state(file_t f, long flags);
 
 void file_deinit(vm_t vm, file_t f);
 file_t file_clone(vm_t vm, file_t f);
-file_t file_new(vm_t vm, const char* source, FILE*f, int flags);
+file_t file_new(vm_t vm, const char* source, FILE*f, long flags);
 
-file_t buffer_new(vm_t vm, const char* source, FILE*f, int flags);
+file_t buffer_new(vm_t vm, const char* source, FILE*f, long flags);
 file_t dir_new(vm_t vm, const char* source);
 
 void cmd_pack(vm_t vm, file_t f, char fmt, word_t data);

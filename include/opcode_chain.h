@@ -26,11 +26,11 @@
 
 
 opcode_chain_t opcode_chain_new();
-opcode_chain_t opcode_chain_add_label(opcode_chain_t, const char*, int r, int c);
-opcode_chain_t opcode_chain_add_opcode(opcode_chain_t, opcode_arg_t, const char* opcode, const char* arg, int r, int c);
-opcode_chain_t opcode_chain_add_data(opcode_chain_t, vm_data_type_t, const char* opcode, const char* arg, int r, int c);
-opcode_chain_t opcode_chain_add_langdef(opcode_chain_t oc, wast_t node, int r, int c);
-opcode_chain_t opcode_chain_add_langplug(opcode_chain_t oc, const char* plugin, const char*plug, int r, int c);
+opcode_chain_t opcode_chain_add_label(opcode_chain_t, const char*, long r, long c);
+opcode_chain_t opcode_chain_add_opcode(opcode_chain_t, opcode_arg_t, const char* opcode, const char* arg, long r, long c);
+opcode_chain_t opcode_chain_add_data(opcode_chain_t, vm_data_type_t, const char* opcode, const char* arg, long r, long c);
+opcode_chain_t opcode_chain_add_langdef(opcode_chain_t oc, wast_t node, long r, long c);
+opcode_chain_t opcode_chain_add_langplug(opcode_chain_t oc, const char* plugin, const char*plug, long r, long c);
 
 void opcode_chain_delete(opcode_chain_t);
 

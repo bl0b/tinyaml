@@ -41,7 +41,7 @@ void* _gpop(generic_stack_t s);
 /*! \brief Pop a token from the stack. (typecast swallowing version) */
 #define gpop(__t,__s) ((__t)_gpop(__s))
 /*! \brief Peek the i-th token from the stack. (0 is top) */
-void* _gpeek(generic_stack_t s,int);
+void* _gpeek(generic_stack_t s,long);
 /*! \brief Peek the \c __i -th token from the stack. (typecast swallowing version) */
 #define gpeek(__t,__s,__i) ((__t)_gpeek(__s,__i))
 /*! \brief Free a stack. */

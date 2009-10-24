@@ -14,7 +14,7 @@
  * @{
  */
 
-int timer_init();						/**< \brief initialize timer \return 0 on success */
+long timer_init();						/**< \brief initialize timer \return 0 on success */
 void timer_terminate();						/**< \brief terminate timer \warning all timer_* calls are invalid after this */
 
 void timer_start();						/**< \brief (re)start timer */

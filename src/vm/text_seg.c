@@ -86,14 +86,14 @@ void _text_seg_append(text_seg_t ts, const char* sym) {
 }
 
 void text_seg_copy(text_seg_t dest, text_seg_t src) {
-	int i;
+	long i;
 	for(i=1;i<dynarray_size(&src->by_index);i+=1) {
 		(void)text_seg_find_by_text(dest, (const char*)dynarray_get(&src->by_index, i));
 	}
 }
 
 void text_seg_serialize(text_seg_t seg, writer_t w, const char* sec_name) {
-	int i,tot;
+	long i,tot;
 	const char*str;
 	/* write header */
 	write_string(w,sec_name);
@@ -110,7 +110,7 @@ void text_seg_serialize(text_seg_t seg, writer_t w, const char* sec_name) {
 void text_seg_unserialize(text_seg_t seg, reader_t r, const char* sec_name) {
 	const char*str;
 	word_t w,tot;
-	int i;
+	long i;
 	str = read_string(r);
 	assert(!strcmp(str,sec_name));
 	tot = read_word(r);

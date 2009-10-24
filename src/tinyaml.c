@@ -49,16 +49,16 @@ program_t compile_wast(wast_t node, vm_t vm);
 		(_arg_str_short && !strcmp(_arg_str_short,argv[i]))	\
 	))
 
-static int tinyaml_quiet=0;
+static long tinyaml_quiet=0;
 
-extern volatile int _vm_trace;
+extern volatile long _vm_trace;
 
 char* interpreter_prefix="";
 char* interpreter_suffix="";
-int interpreter_multiline=0;
-int interpreter_running=0;
+long interpreter_multiline=0;
+long interpreter_running=0;
 
-int eval_buffer(vm_t vm, program_t p, const char* buf) {
+long eval_buffer(vm_t vm, program_t p, const char* buf) {
 	if(!strncmp(".mode ", buf, 6)) {
 		const char* mode = buf+6;
 		if(!strcmp(mode, "raw")) {
@@ -94,8 +94,8 @@ int eval_buffer(vm_t vm, program_t p, const char* buf) {
 			vm_printf("Please use 'on' or 'off' after .multi\n");
 		}
 	} else {
-		int prelen = strlen(interpreter_prefix);
-		int suflen = strlen(interpreter_suffix);
+		long prelen = strlen(interpreter_prefix);
+		long suflen = strlen(interpreter_suffix);
 		word_t IP;
 		char* interpreter_buffer = (char*) malloc(strlen(buf)+prelen+suflen+3);
 		sprintf(interpreter_buffer, "%s%s%s", interpreter_prefix, buf, interpreter_suffix);
@@ -110,10 +110,10 @@ int eval_buffer(vm_t vm, program_t p, const char* buf) {
 	return 0;
 }
 
-void default_error_handler_no_exit(vm_t vm, const char* input, int is_buffer);
+void default_error_handler_no_exit(vm_t vm, const char* input, long is_buffer);
 
-int do_args(vm_t vm, int argc,char*argv[]) {
-	int i,k;
+long do_args(vm_t vm, long argc,char*argv[]) {
+	long i,k;
 	program_t p=NULL;
 	writer_t w=NULL;
 	reader_t r=NULL;
@@ -255,7 +255,7 @@ int do_args(vm_t vm, int argc,char*argv[]) {
 
 
 
-int main(int argc, char** argv) {
+long main(long argc, char** argv) {
 	vm_t vm;
 	vm = vm_new();
 	/*vm_set_engine(vm, stub_engine);*/

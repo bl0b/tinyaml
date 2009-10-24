@@ -6,7 +6,7 @@
 #include "object.h"
 #include "rtc_alloc.h"
 
-static int RTC_is_init=0;
+static long RTC_is_init=0;
 
 /*struct _generic_stack_t rtc_pending_threads;*/
 
@@ -159,7 +159,7 @@ void fifo_wr(float_t d,vm_dyn_func_t df) {
 	wr=(wr+1)&TASK_FIFO_MASK;
 }
 
-int fifo_rd(vm_dyn_func_t*df,float_t*d) {
+long fifo_rd(vm_dyn_func_t*df,float_t*d) {
 	if(rd==wr) {
 		return 0;
 	}

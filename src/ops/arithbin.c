@@ -198,7 +198,7 @@ void _VM_CALL vm_op_mod(vm_t vm, word_t immed) {
 	vm_poke_data(vm,dta,a);
 }
 
-void _VM_CALL vm_op_mod_Int(vm_t vm, int b) {
+void _VM_CALL vm_op_mod_Int(vm_t vm, long b) {
 	vm_data_type_t dta,dtb=DataInt;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);
@@ -206,7 +206,7 @@ void _VM_CALL vm_op_mod_Int(vm_t vm, int b) {
 	vm_poke_data(vm,dta,a);
 }
 
-void _VM_CALL vm_op_mod_Float(vm_t vm, int b) {
+void _VM_CALL vm_op_mod_Float(vm_t vm, long b) {
 	vm_data_type_t dta,dtb=DataFloat;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);
@@ -267,7 +267,7 @@ void _VM_CALL vm_op_div(vm_t vm, word_t immed) {
 }
 
 
-void _VM_CALL vm_op_add_Int(vm_t vm, int b) {
+void _VM_CALL vm_op_add_Int(vm_t vm, long b) {
 	vm_data_type_t dta,dtb=DataInt;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);
@@ -276,7 +276,7 @@ void _VM_CALL vm_op_add_Int(vm_t vm, int b) {
 }
 
 
-void _VM_CALL vm_op_sub_Int(vm_t vm, int b) {
+void _VM_CALL vm_op_sub_Int(vm_t vm, long b) {
 	vm_data_type_t dta,dtb=DataInt;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);
@@ -285,7 +285,7 @@ void _VM_CALL vm_op_sub_Int(vm_t vm, int b) {
 }
 
 
-void _VM_CALL vm_op_mul_Int(vm_t vm, int b) {
+void _VM_CALL vm_op_mul_Int(vm_t vm, long b) {
 	vm_data_type_t dta,dtb=DataInt;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);
@@ -294,7 +294,7 @@ void _VM_CALL vm_op_mul_Int(vm_t vm, int b) {
 }
 
 
-void _VM_CALL vm_op_div_Int(vm_t vm, int b) {
+void _VM_CALL vm_op_div_Int(vm_t vm, long b) {
 	vm_data_type_t dta,dtb=DataInt;
 	word_t a;
 	vm_peek_data(vm,0,&dta,&a);

@@ -345,7 +345,7 @@ void slist_del(slist_t);
 
 #else
 
-void dlist_insert_sorted(dlist_t l, dlist_node_t n, int(*cmp)(dlist_node_t, dlist_node_t));
+void dlist_insert_sorted(dlist_t l, dlist_node_t n, long(*cmp)(dlist_node_t, dlist_node_t));
 
 #endif
 

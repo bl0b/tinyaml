@@ -34,8 +34,8 @@
 #include "text_seg.h"
 
 /* hidden tinyap feature */
-ast_node_t newAtom(const char*data,int row,int col);
-ast_node_t newPair(const ast_node_t a,const ast_node_t d,const int row,const int col);
+ast_node_t newAtom(const char*data,long row,long col);
+ast_node_t newPair(const ast_node_t a,const ast_node_t d,const long row,const long col);
 
 word_t	docn_dat=0,docn_cod=0;
 
@@ -95,7 +95,7 @@ void dump_ocn(opcode_chain_node_t ocn) {
 	};
 }
 
-program_t compile_append_wast(wast_t node, vm_t vm, word_t* start_IP, int last) {
+program_t compile_append_wast(wast_t node, vm_t vm, word_t* start_IP, long last) {
 	/*vm_printf("compile_wast\n");*/
 	try_walk(node, "compiler", vm);
 	vm_set_lib_file(vm,NULL);
@@ -173,7 +173,7 @@ void ape_compiler_free(vm_t vm) {
 }
 
 
-extern volatile int _vm_trace;
+extern volatile long _vm_trace;
 
 WalkDirection ape_compiler_default(wast_t node, vm_t vm) {
 	char* vec_name = (char*)malloc(strlen(wa_op(node))+10);
@@ -227,13 +227,13 @@ WalkDirection ape_compiler_AsmBloc(wast_t node, vm_t vm) {
 	return update_vm_state(vm, Down);
 }
 
-volatile int line_number_bias=0;
+volatile long line_number_bias=0;
 
 const char* vm_find_innermost_file(vm_t vm);
 
 void add_debug_label(wast_t node, vm_t vm) {
 	static char linebuf[4096];
-	static int prev_line=-1;
+	static long prev_line=-1;
 	if(prev_line!=wa_row(node)) {
 		prev_line=wa_row(node);
 		sprintf(linebuf, ".%s_L%i", vm_find_innermost_file(vm), wa_row(node)+line_number_bias);
@@ -492,7 +492,7 @@ char* gen_unique_label() {
 }
 
 WalkDirection ape_compiler_LangPlug(wast_t node, vm_t vm) {
-	/*int i;*/
+	/*long i;*/
 	const char* plugin = wa_op(wa_opd(node,0));
 	const char* plug = wa_op(wa_opd(node,1));
 	char* methname = (char*)malloc(strlen(plugin)+10);
@@ -587,7 +587,7 @@ WalkDirection ape_compiler_LoadLib(wast_t node, vm_t vm) {
 
 WalkDirection ape_compiler_Postponed(wast_t node, vm_t vm) {
 	char* buffy = strdup(wa_op(wa_opd(node,0)));
-	int lnb_backup = line_number_bias;
+	long lnb_backup = line_number_bias;
 
 	/*const char* debug = tinyap_serialize_to_string(tinyap_get_grammar_ast(vm->parser));*/
 
@@ -637,7 +637,7 @@ WalkDirection ape_compiler_WalkerBodies(wast_t node, vm_t vm) {
 }
 
 
-void compile_walker_method(wast_t node, vm_t vm, const char* plugin, int body_index) {
+void compile_walker_method(wast_t node, vm_t vm, const char* plugin, long body_index) {
 	/* FIXME : clean copypasta */
 	const char* start = strdup(gen_unique_label());
 	const char* end = strdup(gen_unique_label());

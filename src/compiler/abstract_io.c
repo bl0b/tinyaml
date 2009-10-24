@@ -26,16 +26,16 @@
 
 
 struct _reader_t {
-	int swap_endian;
+	long swap_endian;
 	word_t (*read_word)(reader_t);
 	const char* (*read_string)(reader_t);
 	void (*close)(reader_t);
 };
 
 struct _writer_t {
-	int __dummy__;	/* preserve aliasing between _reader_t and _writer_t */
-	int (*write_word)(writer_t, word_t);
-	int (*write_string)(writer_t, const char*);
+	long __dummy__;	/* preserve aliasing between _reader_t and _writer_t */
+	long (*write_word)(writer_t, word_t);
+	long (*write_string)(writer_t, const char*);
 	void (*close)(writer_t);
 };
 
@@ -108,7 +108,7 @@ static char _rdr_buffy[BUFFY_SZ];
 
 const char* file_read_string(reader_t r) {
 	char c=1;
-	int i=0;
+	long i=0;
 	_(file,reader,fr,r);
 	memset(_rdr_buffy,0,BUFFY_SZ);
 	while(i<BUFFY_SZ&&c!=0) {
@@ -130,13 +130,13 @@ const char* buffer_read_string(reader_t r) {
 	return ret;
 }
 
-int file_write_word(writer_t w, word_t data) {
+long file_write_word(writer_t w, word_t data) {
 	_(file,writer,fw,w);
 	return fwrite(&data, sizeof(word_t), 1, fw->f);
 }
 
 
-int buffer_write_word(writer_t w, word_t data) {
+long buffer_write_word(writer_t w, word_t data) {
 	_(buffer,writer,bw,w);
 	*(word_t*)bw->cursor = data;
 	bw->cursor += sizeof(word_t);
@@ -144,14 +144,14 @@ int buffer_write_word(writer_t w, word_t data) {
 }
 
 
-int file_write_string(writer_t w, const char* data) {
+long file_write_string(writer_t w, const char* data) {
 	_(file,writer,fw,w);
 	return fwrite(data, 1, strlen(data)+1, fw->f);
 }
 
-int buffer_write_string(writer_t w, const char* data) {
+long buffer_write_string(writer_t w, const char* data) {
 	_(buffer,writer,bw,w);
-	int ret = 1+strlen(data);
+	long ret = 1+strlen(data);
 	strcpy(bw->cursor,data);
 	bw->cursor+=ret;
 	return ret;

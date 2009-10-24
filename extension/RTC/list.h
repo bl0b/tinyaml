@@ -13,7 +13,7 @@
 		struct ListOfType_##__type*list;\
 		__type* data;\
 		void* data2;\
-		int __pad__[3];\
+		long __pad__[3];\
 	}
 
 #define NODE(__type) \
@@ -22,13 +22,13 @@
 		struct ListOfType_##__type*list;\
 		__type data;\
 		void* data2;\
-		int __pad__[3];\
+		long __pad__[3];\
 	}
 
 #define LIST(__type) \
 	struct ListOfType_##__type {\
 		struct NodeOfType_##__type *head,*tail;\
-		int count;\
+		long count;\
 	}
 
 #define listInit(__l) do { (__l).head=NULL; (__l).tail=NULL; (__l).count=0; } while(0)

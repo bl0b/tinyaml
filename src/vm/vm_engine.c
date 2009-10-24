@@ -42,7 +42,7 @@ void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* o
 
 static void data_stack_renderer(vm_data_t d) {
 	_IFC conv;
-	/*int i;*/
+	/*long i;*/
 	/*const unsigned char*s;*/
 	switch(d->type) {
 	case DataInt:
@@ -204,7 +204,7 @@ struct _thread_engine_t {
 	pthread_t thread;
 	pthread_mutex_t mutex;
 	pthread_mutex_t fg_mutex;
-	volatile int is_running;
+	volatile long is_running;
 };
 
 void _VM_CALL th_cli_lock(struct _thread_engine_t* e) {

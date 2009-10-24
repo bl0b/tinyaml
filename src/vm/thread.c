@@ -95,7 +95,7 @@ void thread_delete(vm_t vm, thread_t t) {
 
 
 
-int comp_prio(dlist_node_t a, dlist_node_t b);
+long comp_prio(dlist_node_t a, dlist_node_t b);
 
 
 
@@ -128,7 +128,7 @@ void dump_thread_lists(vm_t vm) {
 }
 
 void thread_set_state(vm_t vm, thread_t t, thread_state_t state) {
-	/*int do_dump=0;*/
+	/*long do_dump=0;*/
 	assert(t->sched_data.value==(word_t)t);
 	/*assert(t->state!=state);*/
 	/*if(t->state==state) {*/
@@ -308,7 +308,7 @@ void blocker_resume(vm_t vm,vm_blocker_t b) {
 	thread_t t;
 	assert(b);
 	if(vm->current_thread) {
-		int cur_prio = vm->current_thread->prio;
+		long cur_prio = vm->current_thread->prio;
 		while(gstack_size(b)) {
 			t = *(thread_t*)_gpop(b);
 			/*vm_printf("task arrived ! resuming thread %p\n",t);*/

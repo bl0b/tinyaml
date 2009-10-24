@@ -184,7 +184,7 @@ void program_free(vm_t vm, program_t p) {
 	text_seg_deinit(&p->strings);
 	dynarray_deinit(&p->code,NULL);
 	if(p->data.size) {
-		int i;
+		long i;
 		/*vm_printf("dereff'ing data segment (%lu items)\n",p->data.size>>1);*/
 		for(i=0;i<p->data.size;i+=2) {
 			if((vm_data_type_t)p->data.data[i]&DataManagedObjectFlag) {
@@ -253,7 +253,7 @@ vm_dyn_env_t program_env_optimize(vm_t vm, program_t prog) {
 	opcode_arg_t arg_type;
 	opcode_stub_t stub;
 	word_t idx;
-	int i;
+	long i;
 
 	for(i=0;i<prog->code.size;i+=2) {
 		stub = (opcode_stub_t)prog->code.data[i];
@@ -270,7 +270,7 @@ vm_dyn_env_t program_env_optimize(vm_t vm, program_t prog) {
 
 
 void program_serialize(vm_t vm, program_t p, writer_t w) {
-	int i;
+	long i;
 	word_t op;
 	word_t arg;
 	const char* lbl;
@@ -331,7 +331,7 @@ void program_serialize(vm_t vm, program_t p, writer_t w) {
 
 
 program_t program_unserialize(vm_t vm, reader_t r) {
-	int i;
+	long i;
 	const char*str;
 	opcode_dict_t od;
 	program_t p;
@@ -434,7 +434,7 @@ word_t program_label_to_ofs(program_t p, const char* label) {
 }
 
 const char* program_ofs_to_label(program_t p, word_t ip) {
-	int i;
+	long i;
 	for(i=0;i<p->labels.offsets.size;i+=1) {
 		if(p->labels.offsets.data[i]==ip) {
 			return text_seg_find_by_index(&p->labels.labels,i);
@@ -470,7 +470,7 @@ void program_write_code(program_t p, word_t op, word_t arg) {
 */	dynarray_set(&p->code,ip+1,arg);
 	dynarray_set(&p->code,ip,op);
 /*	{
-		int i;
+		long i;
 		for(i=0;i<dynarray_size(&p->code);i+=2) {
 			vm_printf("%8.8lX %8.8lX   ",dynarray_get(&p->code,i),dynarray_get(&p->code,i+1));
 			if(i%8==6) vm_printf("\n");
@@ -517,7 +517,7 @@ const char* lookup_label_by_offset(struct _label_tab_t* ts, word_t IP) {
 
 const char* program_lookup_label(program_t p, word_t IP) {
 	return lookup_label_by_offset(&p->labels,IP);
-/*	int i;*/
+/*	long i;*/
 /*	if(!p->labels.offsets.data) {*/
 /*		return NULL;*/
 /*	}*/

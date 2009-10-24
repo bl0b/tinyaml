@@ -187,9 +187,9 @@ program_t vm_compile_file(vm_t, const char*);
 program_t vm_compile_buffer(vm_t, const char*);
 
 /*! \brief Compile a file (append to the current program). */
-program_t vm_compile_append_file(vm_t, const char*, word_t*, int);
+program_t vm_compile_append_file(vm_t, const char*, word_t*, long);
 /*! \brief Compile a character string (append to the current program). */
-program_t vm_compile_append_buffer(vm_t, const char*, word_t*, int);
+program_t vm_compile_append_buffer(vm_t, const char*, word_t*, long);
 
 /*@}*/
 
@@ -206,7 +206,7 @@ vm_t vm_run_program_bg(vm_t, program_t, word_t ip, word_t prio);
  * Start a new thread with priority level \c prio and starting at offset \c ip in program.
  * The VM engine is signaled the start and death of the thread if \c fg is non-zero.
  */
-thread_t vm_add_thread(vm_t, program_t, word_t ip, word_t prio, int fg);
+thread_t vm_add_thread(vm_t, program_t, word_t ip, word_t prio, long fg);
 
 /*! \brief get current thread. */
 thread_t vm_get_current_thread(vm_t);
@@ -216,7 +216,7 @@ vm_t vm_kill_thread(vm_t,thread_t);
 
 
 /*! \brief set the timeslice for thread scheduling. */
-void vm_set_timeslice(vm_t vm, int timeslice);
+void vm_set_timeslice(vm_t vm, long timeslice);
 
 
 /*@}*/
@@ -232,7 +232,7 @@ vm_t vm_push_caller(vm_t, program_t, word_t ip, word_t has_closure, vm_dyn_func_
 /*! \brief push a catcher onto current thread's catch stack */
 vm_t vm_push_catcher(vm_t, program_t, word_t);
 /*! \brief peek data at top of current thread's data stack */
-vm_t vm_peek_data(vm_t,int,vm_data_type_t*,word_t*);
+vm_t vm_peek_data(vm_t,long,vm_data_type_t*,word_t*);
 /*! \brief poke data at top of current thread's data stack */
 vm_t vm_poke_data(vm_t,vm_data_type_t,word_t);
 /*! \brief peek caller at top of current thread's call stack*/
@@ -282,9 +282,9 @@ vm_t _VM_CALL vm_collect(vm_t vm, vm_obj_t o);
 vm_t _VM_CALL vm_uncollect(vm_t vm, vm_obj_t o);
 
 /*! \brief output formatted data to VM's stdout. */
-int vm_printf(const char* fmt, ...);
+long vm_printf(const char* fmt, ...);
 /*! \brief output formatted data to VM's stderr. */
-int vm_printerrf(const char* fmt, ...);
+long vm_printerrf(const char* fmt, ...);
 /*@}*/
 
 thread_t vm_exec_dynFun(vm_t, vm_dyn_func_t);
