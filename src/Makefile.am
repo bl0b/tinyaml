@@ -49,7 +49,25 @@ ml_core_gram.c: ../ml/ml_core.gram ../ml/ml_core.lib
 	rm -f .$@.tmp
 	tinyap -g short -i $< -p -o .$@.tmp
 	sed -i -e 's/\\/\\\\/g' -e 's/"/\\"/g' .$@.tmp
-	head -1 .$@.tmp|sed -e 's/^/const char* ml_core_grammar = "/' -e 's/$$/";\r/' > $@
+	echo "/* TinyaML" > $@
+	echo " * Copyright (C) 2007 Damien Leroux" >> $@
+	echo " *" >> $@
+	echo " * This program is free software; you can redistribute it and/or" >> $@
+	echo " * modify it under the terms of the GNU General Public License" >> $@
+	echo " * as published by the Free Software Foundation; either version 2" >> $@
+	echo " * of the License, or (at your option) any later version." >> $@
+	echo " *" >> $@
+	echo " * This program is distributed in the hope that it will be useful," >> $@
+	echo " * but WITHOUT ANY WARRANTY; without even the implied warranty of" >> $@
+	echo " * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the" >> $@
+	echo " * GNU General Public License for more details." >> $@
+	echo " *" >> $@
+	echo " * You should have received a copy of the GNU General Public License" >> $@
+	echo " * along with this program; if not, write to the Free Software" >> $@
+	echo " * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA." >> $@
+	echo " */" >> $@
+	echo >> $@
+	head -1 .$@.tmp|sed -e 's/^/const char* ml_core_grammar = "/' -e 's/$$/";\r/' >> $@
 	echo >> $@
 	echo "const char* ml_core_lib =" >> $@
 	sed -e 's/^/"/' -e 's/$$/\\n"/' ../ml/ml_core.lib >> $@
