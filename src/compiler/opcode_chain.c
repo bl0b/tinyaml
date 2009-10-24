@@ -191,7 +191,7 @@ void _VM_CALL vm_op_nop(vm_t vm, word_t data);
 void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_chain_node_t ocn, program_t p, void* dl_handle) {
 	word_t op = (word_t)opcode_stub_by_name(od,ocn->arg_type, ocn->name);
 	word_t arg;
-	union { word_t i; float_t f; } conv;
+	union { word_t i; tinyaml_float_t f; } conv;
 	long skip_wr=0;
 	unsigned char c;
 	/*char*str;*/
@@ -212,7 +212,7 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 		break;
 	case OpcodeArgFloat:
 		/*vm_printf("Float \t(%s)", ocn->arg);*/
-		conv.f=(float_t)atof(ocn->arg);
+		conv.f=(tinyaml_float_t)atof(ocn->arg);
 		arg=conv.i;
 		break;
 	case OpcodeArgString:
@@ -265,7 +265,7 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 
 
 word_t str2data(program_t p, vm_data_type_t dt, const char*data) {
-	union { word_t i; float_t f; } conv;
+	union { word_t i; tinyaml_float_t f; } conv;
 	char buf[4];
 	switch((vm_data_type_t)dt) {
 	case DataChar:
@@ -274,7 +274,7 @@ word_t str2data(program_t p, vm_data_type_t dt, const char*data) {
 	case DataInt:
 		return (word_t)atoi(data);
 	case DataFloat:
-		conv.f = (float_t) atof(data);
+		conv.f = (tinyaml_float_t) atof(data);
 		return conv.i;
 	case DataString:
 		return program_find_string(p, data);

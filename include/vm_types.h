@@ -80,9 +80,9 @@ typedef unsigned long word_t;
 
 /*! \brief The basic floating-point processing unit. */
 #if SIZEOF_DOUBLE==SIZEOF_VOIDP
-	typedef double float_t;
+	typedef double tinyaml_float_t;
 #elif SIZEOF_FLOAT==SIZEOF_VOIDP
-	typedef float float_t;
+	typedef float tinyaml_float_t;
 #endif
 /*@}*/
 

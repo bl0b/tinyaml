@@ -194,7 +194,7 @@ void _VM_CALL vm_op_toF(vm_t vm, word_t unused) {
 		vm_push_data(vm,DataFloat,conv.i);
 		break;
 	default:
-		vm_printerrf("[VM:WRN] can't convert to float_t.\n");
+		vm_printerrf("[VM:WRN] can't convert to tinyaml_float_t.\n");
 		vm_push_data(vm,DataFloat,0);
 	};
 }

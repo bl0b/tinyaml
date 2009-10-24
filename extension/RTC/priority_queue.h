@@ -7,7 +7,7 @@
 
 #include "vm_types.h"
 
-typedef float_t PQTime;
+typedef tinyaml_float_t PQTime;
 
 
 /*

@@ -14,7 +14,7 @@
 /*! \brief union to reinterpret bits in a word as an integer and a float. */
 union _intfloat_conv {
 	long i;	/*!< \brief bits as integer */
-	float_t f;	/*!< \brief bits as floating point */
+	tinyaml_float_t f;	/*!< \brief bits as floating point */
 };
 
 /*! _brief Public type for conversion union. */
@@ -30,14 +30,14 @@ typedef union _intfloat_conv _IFC;
 #define BIAS_FLOAT ((float)12582912.0f)
 
 /*! \brief Convert from float to long. */
-static inline long f2i(float_t f) {
+static inline long f2i(tinyaml_float_t f) {
 	_IFC c;
 	c.f=f+BIAS_FLOAT;
 	return c.i-BIAS_INT;
 }
 
 /*! \brief Convert from long to float. */
-static inline float_t i2f(long i) {
+static inline tinyaml_float_t i2f(long i) {
 	_IFC c;
 	c.i=i+BIAS_INT;
 	return c.f-BIAS_FLOAT;
@@ -46,13 +46,13 @@ static inline float_t i2f(long i) {
 #else
 
 /*! \brief Convert from float to long. */
-static inline long f2i(float_t f) {
+static inline long f2i(tinyaml_float_t f) {
 	return (long)f;
 }
 
 /*! \brief Convert from long to float. */
-static inline float_t i2f(long i) {
-	return (float_t)i;
+static inline tinyaml_float_t i2f(long i) {
+	return (tinyaml_float_t)i;
 }
 
 #endif

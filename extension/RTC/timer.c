@@ -44,7 +44,7 @@ long __selfcall=0;
 
 typedef struct __task_t {
 	PQMessage_Fields;
-	void*(*task)(float_t,void*);
+	void*(*task)(tinyaml_float_t,void*);
 	void*arg;
 }* task_t;
 
@@ -58,7 +58,7 @@ typedef struct __task_t {
 #define task_date(_node) _node->date
 
 
-task_t new_task(float_t date,void*(*task)(float_t,void*),void*arg) {
+task_t new_task(tinyaml_float_t date,void*(*task)(tinyaml_float_t,void*),void*arg) {
 //	node_t ret=(node_t)malloc(sizeof(struct _node));
 	//node_t ret=_alloc(_node);
 	task_t ret=_alloc(struct __task_t);
@@ -88,7 +88,7 @@ void del_task(PQMessage task) {
 
 
 
-void timer_scheduleTask(float_t date,void*(*task)(float_t,void*),void*task_arg) {
+void timer_scheduleTask(tinyaml_float_t date,void*(*task)(tinyaml_float_t,void*),void*task_arg) {
 	task_t t;
 	LOCK(mtx);
 //	printf("hop\n");
@@ -103,7 +103,7 @@ void timer_scheduleTask(float_t date,void*(*task)(float_t,void*),void*task_arg) 
 
 
 /*
-void timer_addHandler(void*(*task)(float_t,void*),void*task_arg) {
+void timer_addHandler(void*(*task)(tinyaml_float_t,void*),void*task_arg) {
 	task_t newt=new_task(0,task,task_arg);
 	//list_insertAfter(&perm_handlers,perm_handlers.tail,newt);
 	//pthread_mutex_lock(&mutex);
@@ -111,7 +111,7 @@ void timer_addHandler(void*(*task)(float_t,void*),void*task_arg) {
 	//pthread_mutex_unlock(&mutex);
 }
 
-void timer_removeHandler(void*(*task)(float_t,void*)) {
+void timer_removeHandler(void*(*task)(tinyaml_float_t,void*)) {
 	task_t t=perm_handlers.head;
 	while(t&&task_task(t)!=task)
 		t=t->next;
@@ -126,26 +126,26 @@ void timer_removeHandler(void*(*task)(float_t,void*)) {
 
 #define N_RES 7
 
-float_t allowed_resolutions[N_RES]= {	1/.128,	1/.256,	1/.512,	1/1.024,1/2.048,1/4.096,1/8.192 };
+tinyaml_float_t allowed_resolutions[N_RES]= {	1/.128,	1/.256,	1/.512,	1/1.024,1/2.048,1/4.096,1/8.192 };
 unsigned long res_to_rtc_freq[N_RES]= {	128,	256,	512,	1024,	2048,	4096,	8192 };
 
 volatile long rtc_fd;
 static pthread_t rtc_thread;
 volatile long timer_is_running=0;
 
-float_t(*ext_source_read)();
+tinyaml_float_t(*ext_source_read)();
 
 volatile double timer_resolution;
-volatile float_t  timer_date;
-volatile float_t  timer_tempo;
+volatile tinyaml_float_t  timer_date;
+volatile tinyaml_float_t  timer_tempo;
 volatile double timer_dbeat;
-volatile float_t  timer_basedate;
+volatile tinyaml_float_t  timer_basedate;
 
 void*timer_routine(void*arg);
 
 #ifdef __TESTS
 volatile long max_pileup;
-volatile float_t average_pileup;
+volatile tinyaml_float_t average_pileup;
 volatile long n_pileups;
 volatile long n_ticks;
 volatile long n_realticks;
@@ -233,7 +233,7 @@ void timer_terminate() {
 	pqDestroy(tasks);
 }
 
-void timer_set_date(float_t date) {
+void timer_set_date(tinyaml_float_t date) {
 	LOCK(mtx);
 	//pthread_mutex_lock(&mutex);
 	timer_date=date;
@@ -242,11 +242,11 @@ void timer_set_date(float_t date) {
 	//pthread_mutex_unlock(&mutex);
 }
 
-float_t timer_get_date() {
+tinyaml_float_t timer_get_date() {
 	return timer_date;
 }
 
-void timer_set_tempo(float_t bpm) {
+void timer_set_tempo(tinyaml_float_t bpm) {
 	if(!bpm) return;
 	LOCK(mtx);
 //	//pthread_mutex_lock(&mutex);
@@ -257,15 +257,15 @@ void timer_set_tempo(float_t bpm) {
 //	//pthread_mutex_unlock(&mutex);
 }
 
-float_t timer_get_tempo() {
+tinyaml_float_t timer_get_tempo() {
 	return timer_tempo;
 }
 
-float_t timer_get_seconds() {
+tinyaml_float_t timer_get_seconds() {
 	return timer_basedate+timer_date*60.f/timer_tempo;
 }
 
-float_t timer_set_resolution(float_t ms) {
+tinyaml_float_t timer_set_resolution(tinyaml_float_t ms) {
 	long scbak=__selfcall;
 	long i=0;
 	LOCK(mtx);
@@ -283,12 +283,12 @@ float_t timer_set_resolution(float_t ms) {
 }
 
 
-float_t timer_get_resolution() {
+tinyaml_float_t timer_get_resolution() {
 	return timer_resolution;
 }
 
 
-void timer_set_source(float_t(*src_rd)()) {
+void timer_set_source(tinyaml_float_t(*src_rd)()) {
 	//pthread_mutex_lock(&mutex);
 	LOCK(mtx);
 	ext_source_read=src_rd;
@@ -381,7 +381,7 @@ void*timer_routine(void*arg) {
 
 #ifdef __TESTS
 		if(data>max_pileup) max_pileup=data;
-		average_pileup=(float_t)(average_pileup*n+data)/(float_t)(n+1);
+		average_pileup=(tinyaml_float_t)(average_pileup*n+data)/(tinyaml_float_t)(n+1);
 		++n;
 		if(data>PILEUP) ++n_pileups;
 		n_ticks+=data;
