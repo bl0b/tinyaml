@@ -39,7 +39,7 @@
 #elif defined(WIN32)||defined(__MSVC__)
 #define _VM_CALL __fastcall
 #else
-#warning "using cdecl"
+/*#warning "using cdecl"*/
 #define _VM_CALL
 #endif
 

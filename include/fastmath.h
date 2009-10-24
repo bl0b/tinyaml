@@ -1,7 +1,7 @@
 #ifndef _BML_FAST_MATH_H_
 #define _BML_FAST_MATH_H_
 
-#include "config.h"
+#include "vm_types.h"
 
 /*! \addtogroup fast_math Fast 32-bit maths
  * @{
