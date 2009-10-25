@@ -84,6 +84,18 @@ typedef struct _server_t* server_t;
 #define FIFOSZ 4096
 #define FIFOMASK (FIFOSZ-1)
 
+typedef void (*_pack_handler) (file_t, char, word_t);
+typedef word_t (*_unpack_handler) (file_t, char);
+
+struct _format_override {
+	_pack_handler packer;
+	_unpack_handler unpacker;
+	vm_data_type_t data_type;
+	word_t magic;	/* for user object types */
+};
+
+typedef struct _format_override* format_override_t;
+
 struct _file_t {
 	word_t magic;
 	union {
@@ -110,6 +122,7 @@ struct _file_t {
 			word_t buffer_size;
 		} buffer;
 	} extra;
+	format_override_t _overrides[127];
 };
 
 extern volatile file_t f_out, f_in, f_err;
@@ -139,4 +152,6 @@ void cmd_pack(vm_t vm, file_t f, char fmt, word_t data);
 
 void cmd_unpack(vm_t vm, file_t f, char fmt);
 
+
+void file_override_format(file_t, char, _pack_handler, _unpack_handler, vm_data_type_t, word_t);
 

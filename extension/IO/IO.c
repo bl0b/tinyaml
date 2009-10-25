@@ -290,27 +290,31 @@ static inline void __funpack(vm_t vm, unsigned char fmt, long stack_ofs) {
 		pthread_mutex_lock(&f->mutex);
 		file_cmd_reset(f);
 		vm_pop_data(vm,1-stack_ofs);
-		switch(fmt) {
-		case 'C':
-			dt=DataChar;
-			break;
-		case 'S':
-		case 's':
-			dt=DataObjStr;
-			break;
-		case 'I':
-		case 'X':
-		case 'i':
-		case 'b':
-			dt=DataInt;
-			break;
-		case 'F':
-		case 'f':
-			dt=DataFloat;
-			break;
-		default:
-			vm_fatal("Unhandled format character");
-		};
+		if(f->_overrides[fmt]!=NULL) {
+			dt = f->_overrides[fmt]->data_type;
+		} else {
+			switch(fmt) {
+			case 'C':
+				dt=DataChar;
+				break;
+			case 'S':
+			case 's':
+				dt=DataObjStr;
+				break;
+			case 'I':
+			case 'X':
+			case 'i':
+			case 'b':
+				dt=DataInt;
+				break;
+			case 'F':
+			case 'f':
+				dt=DataFloat;
+				break;
+			default:
+				vm_fatal("Unhandled format character");
+			};
+		}
 		vm_push_data(vm, dt, f->data);
 		pthread_mutex_unlock(&f->mutex);
 	} else if(!(f->flags&FCMDMASK)) {
@@ -338,24 +342,34 @@ static inline void __fpack(vm_t vm, unsigned char fmt, long stack_ofs) {
 	} else if(!(f->flags&FCMDMASK)) {
 		/*vm_printf("FPRINT\n");*/
 		vm_peek_data(vm, stack_ofs-1,&dt,&x);
-		switch(fmt) {
-		case 'S':
-		case 's':
-			assert(dt==DataString||dt==DataObjStr);
-			break;
-		case 'C':
-		case 'b':
-			assert(dt==DataInt||dt==DataChar);
-			break;
-		case 'I':
-		case 'i':
-		case 'X':
-			assert(dt==DataInt);
-			break;
-		case 'F':
-		case 'f':
-			assert(dt==DataFloat);
-		};
+		if(f->_overrides[fmt]!=NULL) {
+			assert(dt==f->_overrides[fmt]->data_type);
+			if(dt==DataObjUser) {
+				assert(*(word_t*)x == f->_overrides[fmt]->magic);
+			}
+		} else {
+			switch(fmt) {
+			case 'S':
+			case 's':
+				assert(dt==DataString||dt==DataObjStr);
+				break;
+			case 'C':
+			case 'b':
+				assert(dt==DataInt||dt==DataChar);
+				break;
+			case 'I':
+			case 'i':
+			case 'X':
+				assert(dt==DataInt);
+				break;
+			case 'F':
+			case 'f':
+				assert(dt==DataFloat);
+				break;
+			default:
+				vm_fatal("Unhandled format character");
+			};
+		}
 		cmd_pack(vm, f, fmt, x);
 	} else {
 		blocker_suspend(vm, f->blocker, vm->current_thread);

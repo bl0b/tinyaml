@@ -120,7 +120,7 @@ static inline word_t _unpack(file_t f, char fmt) {
 	case 's' : conv.s = _read_binstr(f); break;
 	case 'i' : /* see below */
 	case 'f' : conv.w = _read_bin_word(f); break;
-	default: vm_fatal("Unhandled format character.");
+	default:   vm_fatal("Unhandled format character.");
 	};
 	return conv.w;
 }

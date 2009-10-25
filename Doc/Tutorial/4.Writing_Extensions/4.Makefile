@@ -44,9 +44,8 @@ LD=gcc
 ######################################################################
 
 # Use pkg-config to know how to compile, link, and where to install.
-CFLAGS=$(shell pkg-config tinyaml --variable=extlibcflags)
-#LIBS=$(shell pkg-config tinyaml --variable=extliblibs)
-LIBS=-L/usr/local/lib -ltinyaml -pthread -shared
+CFLAGS=$(shell pkg-config tinyaml --variable=extlibcflags) $(shell pkg-config tinyap --cflags)
+LIBS=$(shell pkg-config tinyaml --variable=extliblibs)
 INSTALLDIR=$(shell pkg-config tinyaml --variable=extlibdir)
 
 
@@ -56,7 +55,7 @@ OBJECTS=$(SOURCES:.c=.o)
 all: .depend $(TARGET)
 
 .depend: $(SOURCES)
-	$(CC) --depend $(SOURCES) > .depend
+	$(CC) $(CFLAGS) --depend $(SOURCES) > .depend
 
 clean:
 	rm -f ${TARGET}

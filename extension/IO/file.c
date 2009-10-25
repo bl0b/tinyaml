@@ -65,7 +65,7 @@ void* tcpserver_routine(file_t f) {
 		f->extra.client.port=ntohs(client.sin_port);
 		blocker_resume(_glob_vm, f->blocker);
 	}
-	vm_printf("[VM:DEBUG] Exiting I/O thread for TCP server %s... (flags=%X)\n", f->source, f->flags);
+	/*vm_printf("[VM:DEBUG] Exiting I/O thread for TCP server %s... (flags=%X)\n", f->source, f->flags);*/
 	if(f->flags&FCMDREAD) {
 		f->data=(word_t)-1;
 		file_cmd_done(f);
@@ -94,14 +94,22 @@ void* file_routine(file_t f) {
 		/*vm_printf("In file routine (file %s)... CMD=%X\n", f->source, f->flags&(~FSTATEMASK));*/
 		if(f->flags&FCMDREAD) {
 			if(f->flags&FREADABLE) {
-				f->data = _unpack(f, f->data_fmt);
+				if(f->_overrides[f->data_fmt]!=NULL) {
+					f->data = f->_overrides[f->data_fmt]->unpacker(f, f->data_fmt);
+				} else {
+					f->data = _unpack(f, f->data_fmt);
+				}
 			} else {
 				vm_fatal("Trying to read from unreadable stream.");
 			}
 			file_cmd_done(f);
 		} else if(f->flags&FCMDWRITE) {
 			if(f->flags&FWRITABLE) {
-				_pack(f, f->data_fmt, f->data);
+				if(f->_overrides[f->data_fmt]!=NULL) {
+					f->_overrides[f->data_fmt]->packer(f, f->data_fmt, f->data);
+				} else {
+					_pack(f, f->data_fmt, f->data);
+				}
 			} else {
 				vm_fatal("Trying to write to unwritable stream.");
 			}
@@ -111,7 +119,7 @@ void* file_routine(file_t f) {
 			blocker_resume(_glob_vm, f->blocker);
 		}
 	}
-	vm_printf("[VM:DEBUG] Exiting I/O thread for %s... (flags=%X)\n", f->source, f->flags);
+	/*vm_printf("[VM:DEBUG] Exiting I/O thread for %s... (flags=%X)\n", f->source, f->flags);*/
 	pthread_mutex_lock(&f->mutex);
 	f->flags&=~FISRUNNING;
 	pthread_cond_signal(&f->cond);
@@ -144,7 +152,7 @@ void* dir_routine(file_t f) {
 			blocker_resume(_glob_vm, f->blocker);
 		}
 	}
-	vm_printf("[VM:DEBUG] Exiting I/O thread for DIR %s... (flags=%X)\n", f->source, f->flags);
+	/*vm_printf("[VM:DEBUG] Exiting I/O thread for DIR %s... (flags=%X)\n", f->source, f->flags);*/
 	pthread_mutex_lock(&f->mutex);
 	f->flags&=~FISRUNNING;
 	pthread_cond_signal(&f->cond);
@@ -194,7 +202,7 @@ void file_update_state(file_t f, long flags) {
 			pthread_cond_wait(&f->cond, &f->mutex);
 		}
 		pthread_mutex_unlock(&f->mutex);
-		vm_printerrf("[VM:DBG] Done closing file.\n");
+		/*vm_printerrf("[VM:DBG] Done closing file.\n");*/
 	} else if((flags&FISOPEN) && !(oflags&FISOPEN)) { /* opening file */
 		/* start thread */
 		pthread_attr_t attr;
@@ -247,8 +255,15 @@ void file_update_state(file_t f, long flags) {
 }
 
 void file_deinit(vm_t vm, file_t f) {
+	char fmt;
 	file_update_state(f, f->flags&FISSYSTEM);
 	free(f->source);
+	for(fmt=0;fmt<127;fmt+=1) {
+		if(f->_overrides[fmt]) {
+			vm_printerrf("[VM:DBG] removing override %p\n", f->_overrides[fmt]);
+			free(f->_overrides[fmt]);
+		}
+	}
 	blocker_free(f->blocker);
 }
 
@@ -259,6 +274,7 @@ file_t file_clone(vm_t vm, file_t f) {
 
 
 file_t file_new(vm_t vm, const char* source, FILE*f, long flags) {
+	int fmt;
 	file_t ret = (file_t) vm_obj_new(sizeof(struct _file_t),
 			(void (*)(vm_t,void*)) file_deinit,
 			(void*(*)(vm_t,void*)) file_clone,
@@ -267,12 +283,16 @@ file_t file_new(vm_t vm, const char* source, FILE*f, long flags) {
 	ret->descr.f = f;
 	ret->owner = vm->current_thread;
 	ret->flags=0;
+	for(fmt=0;fmt<127;fmt+=1) {
+		ret->_overrides[fmt] = NULL;
+	}
 	ret->source = strdup(source?source:"(unset)");
 	file_update_state(ret, flags);
 	return ret;
 }
 
 file_t dir_new(vm_t vm, const char* source) {
+	int fmt;
 	file_t ret = (file_t) vm_obj_new(sizeof(struct _file_t),
 			(void (*)(vm_t,void*)) file_deinit,
 			(void*(*)(vm_t,void*)) file_clone,
@@ -281,6 +301,9 @@ file_t dir_new(vm_t vm, const char* source) {
 	ret->descr.d = opendir(source);
 	ret->owner = vm->current_thread;
 	ret->flags=0;
+	for(fmt=0;fmt<127;fmt+=1) {
+		ret->_overrides[fmt] = NULL;
+	}
 	ret->data=(word_t)-1;
 	ret->source = strdup(source?source:"(unset)");
 	file_update_state(ret, FISDIR|FISOPEN);
@@ -306,5 +329,20 @@ void cmd_unpack(vm_t vm, file_t f, char fmt) {
 	/*file_enable_thread(f);*/
 	pthread_cond_signal(&f->cond);
 	pthread_mutex_unlock(&f->mutex);
+}
+
+
+void file_override_format(file_t f, char fmt, _pack_handler ph, _unpack_handler uh, vm_data_type_t dt, word_t magic) {
+	if(f->_overrides[fmt]) {
+		free(f->_overrides[fmt]);
+	}
+	if(ph&&uh&&dt!=DataNone) {
+		format_override_t fo = (format_override_t) malloc(sizeof(struct _format_override));
+		fo->packer = ph;
+		fo->unpacker = uh;
+		fo->data_type = dt;
+		fo->magic = magic;
+		f->_overrides[fmt] = fo;
+	}
 }
 

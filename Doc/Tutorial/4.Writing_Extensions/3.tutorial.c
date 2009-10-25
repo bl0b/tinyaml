@@ -26,8 +26,8 @@
 ###############################################################################*/
 
 
-#include <tinyaml/tinyaml.h>
-#include <tinyaml/dynarray.h>
+#include <tinyaml.h>
+#include <dynarray.h>
 
 #include <string.h>
 #include <stdlib.h>
