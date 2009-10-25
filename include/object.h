@@ -65,6 +65,9 @@ static inline void* vm_obj_new(word_t struc_size, void(*_free)(vm_t,void*), void
 	o->_free=_free;
 	o->_clone=_clone;
 	/*vm_printf("obj new, %u+%lu bytes long at %p ; magic is %8.8lX\n",VM_OBJ_OFS,struc_size,o,o->magic);*/
+	/*if(o->magic==0x6106010A) {*/
+		/*vm_printf("user obj new, %u+%lu bytes long at %p ; _free=%p\n",VM_OBJ_OFS,struc_size,o, o->_free);*/
+	/*}*/
 	return (void*)(((char*)o)+VM_OBJ_OFS);
 }
 
@@ -76,8 +79,11 @@ static inline void vm_obj_free_obj(vm_t vm, vm_obj_t o) {
 		vm_printerrf("[VM:ERR] trying to free something not a managed object (%p).\n",o);
 		return;
 	}
-	/*assert(o->magic==VM_OBJ_MAGIC);*/
-	/*vm_printf("obj free %p (%li refs)\n",o,o->ref_count);*/
+	/*if(o->magic==0x6106010A) {*/
+		/*vm_printf("user obj free %p (%li refs), magic=%8.8lX, _free=%p\n",o,o->ref_count, *(((word_t*)o)+4), o->_free);*/
+	/*} else {*/
+		/*vm_printf("obj free %p (%li refs), magic=%8.8lX\n",o,o->ref_count, o->magic);*/
+	/*}*/
 	if(o->_free) {
 		o->_free(vm, (void*)(((char*)o)+VM_OBJ_OFS));
 	}

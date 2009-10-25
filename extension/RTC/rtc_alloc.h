@@ -42,6 +42,7 @@ void free_mc(MusicMessageConstraint*);
 #define BLOC_COUNT_16W  ((512*1024)-1)
 
 void init_alloc();
+void term_alloc();
 
 void*_alloc_4w();
 void _free_4w(void*);

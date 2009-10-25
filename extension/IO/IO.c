@@ -615,7 +615,7 @@ void _VM_CALL vm_op___accept(vm_t vm, word_t unused) {
 			vm_printerrf("[TCPSRV] New client ! fd=%li\n", server->data);
 			vm_push_data(vm, DataInt, (word_t)server->extra.client.addr);
 			vm_push_data(vm, DataInt, (word_t)server->extra.client.port);
-			sprintf(buf, "%u.%u.%u.%u:%u",
+			sprintf(buf, "%u.%u.%u.%u:%lu",
 				((unsigned char*)&server->extra.client.addr)[0],
 				((unsigned char*)&server->extra.client.addr)[1],
 				((unsigned char*)&server->extra.client.addr)[2],

@@ -236,7 +236,7 @@ void add_debug_label(wast_t node, vm_t vm) {
 	static long prev_line=-1;
 	if(prev_line<wa_row(node)) {
 		prev_line=wa_row(node);
-		sprintf(linebuf, ".%s_L%i", vm_find_innermost_file(vm), wa_row(node)+line_number_bias);
+		sprintf(linebuf, ".%s_L%li", vm_find_innermost_file(vm), wa_row(node)+line_number_bias);
 		opcode_chain_add_label(vm->result, linebuf, wa_row(node), wa_col(node));
 	}
 }

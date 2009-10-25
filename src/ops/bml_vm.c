@@ -157,7 +157,7 @@ void _VM_CALL vm_op_chr(vm_t vm, word_t unused) {
 		vm_push_data(vm, DataChar, d->data);
 	} else if(d->type==DataString||d->type==DataObjStr) {
 		char c;
-		sscanf((unsigned char*)d->data, "%c", &c);
+		sscanf((char*)d->data, "%c", &c);
 		vm_push_data(vm, DataChar, c);
 	} else {
 		assert(d->type==DataString||d->type==DataObjStr||d->type==DataInt);

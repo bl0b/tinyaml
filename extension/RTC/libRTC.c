@@ -164,7 +164,7 @@ tinyaml_float_t fifo_d[4096];
 word_t rd=0,wr=0;
 
 void fifo_wr(tinyaml_float_t d,vm_dyn_func_t df) {
-	thread_t t;
+	/*thread_t t;*/
 	fifo_f[wr]=df;
 	fifo_d[wr]=d;
 	/*while(gstack_size(&rtc_pending_threads)) {*/
@@ -202,7 +202,7 @@ void _VM_CALL vm_op_RTC_sched(vm_t vm, word_t unused) {
 	conv.i=d->data;
 	assert(f->type==DataObjFun);
 	vm_obj_ref_ptr(vm,(void*)f->data);
-	timer_scheduleTask(conv.f,sched_task,f->data);
+	timer_scheduleTask(conv.f,(void*(*)(tinyaml_float_t, void*))sched_task, (void*)f->data);
 }
 
 
@@ -214,7 +214,7 @@ void _VM_CALL vm_op__RTC_nextTask(vm_t vm, word_t unused) {
 	if(fifo_rd(&df,&conv.f)) {
 		vm_push_data(vm,DataFloat,conv.i);
 		/*vm_push_data(vm,DataInt,1);*/
-		vm_push_data(vm,DataObjFun,df);
+		vm_push_data(vm,DataObjFun,(word_t)df);
 		vm_obj_deref_ptr(vm,df);
 	} else {
 		/*printf("blocking thread %p until a task arrives\n",vm->current_thread);*/

@@ -40,7 +40,6 @@ test_write_to_file:
 	push '\n' +$f _fpack 'C'
 	+$k +$f _fpack 'i'
 	+$k toF +$f _fpack 'f'
-	push "POUET\n" print 1
 	+$k toF +$f _fpack 'F'
 	+$f close
 	ret 0
@@ -140,7 +139,7 @@ _lp_readdir:
 	]
 
 	+$f close
-
+	push 0 -$f
 
 	%__IO__term()
 end

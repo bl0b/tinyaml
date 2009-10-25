@@ -255,7 +255,7 @@ long do_args(vm_t vm, long argc,char*argv[]) {
 
 
 
-long main(long argc, char** argv) {
+int main(int argc, char** argv) {
 	vm_t vm;
 	vm = vm_new();
 	/*vm_set_engine(vm, stub_engine);*/

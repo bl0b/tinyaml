@@ -94,8 +94,8 @@ void* file_routine(file_t f) {
 		/*vm_printf("In file routine (file %s)... CMD=%X\n", f->source, f->flags&(~FSTATEMASK));*/
 		if(f->flags&FCMDREAD) {
 			if(f->flags&FREADABLE) {
-				if(f->_overrides[f->data_fmt]!=NULL) {
-					f->data = f->_overrides[f->data_fmt]->unpacker(f, f->data_fmt);
+				if(f->_overrides[(word_t)f->data_fmt]!=NULL) {
+					f->data = f->_overrides[(word_t)f->data_fmt]->unpacker(f, f->data_fmt);
 				} else {
 					f->data = _unpack(f, f->data_fmt);
 				}
@@ -105,8 +105,8 @@ void* file_routine(file_t f) {
 			file_cmd_done(f);
 		} else if(f->flags&FCMDWRITE) {
 			if(f->flags&FWRITABLE) {
-				if(f->_overrides[f->data_fmt]!=NULL) {
-					f->_overrides[f->data_fmt]->packer(f, f->data_fmt, f->data);
+				if(f->_overrides[(word_t)f->data_fmt]!=NULL) {
+					f->_overrides[(word_t)f->data_fmt]->packer(f, f->data_fmt, f->data);
 				} else {
 					_pack(f, f->data_fmt, f->data);
 				}
@@ -157,6 +157,7 @@ void* dir_routine(file_t f) {
 	f->flags&=~FISRUNNING;
 	pthread_cond_signal(&f->cond);
 	pthread_mutex_unlock(&f->mutex);
+	/*vm_printerrf("[VM:DBG] Done with dir.\n");*/
 	return NULL;
 }
 
@@ -173,6 +174,12 @@ void file_update_state(file_t f, long flags) {
 		/*oflags &= ~(FISOPEN|FCMDMASK);*/
 		/*file_enable_thread(f);*/
 		/*vm_printf("SIGNALING THREAD : FILE IS CLOSED.\n");*/
+		pthread_mutex_lock(&f->mutex);
+		pthread_cond_signal(&f->cond);
+		while(f->flags&FISRUNNING) {
+			pthread_cond_wait(&f->cond, &f->mutex);
+		}
+		pthread_mutex_unlock(&f->mutex);
 		if(!(oflags&FISSYSTEM)) {
 			switch(_file_type(f)) {
 			case FISFILE:
@@ -194,14 +201,8 @@ void file_update_state(file_t f, long flags) {
 			default:;
 				vm_printerrf("[VM:ERR] Undefined file type flags (%X)\n", _file_type(f));
 			};
-			f->descr.fd=-1;
+			/*f->descr.fd=-1;*/
 		}
-		pthread_mutex_lock(&f->mutex);
-		pthread_cond_signal(&f->cond);
-		while(f->flags&FISRUNNING) {
-			pthread_cond_wait(&f->cond, &f->mutex);
-		}
-		pthread_mutex_unlock(&f->mutex);
 		/*vm_printerrf("[VM:DBG] Done closing file.\n");*/
 	} else if((flags&FISOPEN) && !(oflags&FISOPEN)) { /* opening file */
 		/* start thread */
@@ -255,16 +256,21 @@ void file_update_state(file_t f, long flags) {
 }
 
 void file_deinit(vm_t vm, file_t f) {
-	char fmt;
-	file_update_state(f, f->flags&FISSYSTEM);
+	word_t fmt;
+	/*vm_printerrf("[VM:DBG] about to reset flags...\n");*/
+	file_update_state(f, f->flags&(FTYPEMASK|FISSYSTEM));
+	/*vm_printerrf("[VM:DBG] about to free source...\n");*/
 	free(f->source);
+	/*vm_printerrf("[VM:DBG] about to free overrides...\n");*/
 	for(fmt=0;fmt<127;fmt+=1) {
 		if(f->_overrides[fmt]) {
 			vm_printerrf("[VM:DBG] removing override %p\n", f->_overrides[fmt]);
 			free(f->_overrides[fmt]);
 		}
 	}
+	/*vm_printerrf("[VM:DBG] about to free thread blocker...\n");*/
 	blocker_free(f->blocker);
+	/*vm_printerrf("[VM:DBG] finished deiniting file.\n");*/
 }
 
 file_t file_clone(vm_t vm, file_t f) {
@@ -284,7 +290,7 @@ file_t file_new(vm_t vm, const char* source, FILE*f, long flags) {
 	ret->owner = vm->current_thread;
 	ret->flags=0;
 	for(fmt=0;fmt<127;fmt+=1) {
-		ret->_overrides[fmt] = NULL;
+		ret->_overrides[(word_t)fmt] = NULL;
 	}
 	ret->source = strdup(source?source:"(unset)");
 	file_update_state(ret, flags);
@@ -301,12 +307,12 @@ file_t dir_new(vm_t vm, const char* source) {
 	ret->descr.d = opendir(source);
 	ret->owner = vm->current_thread;
 	ret->flags=0;
-	for(fmt=0;fmt<127;fmt+=1) {
-		ret->_overrides[fmt] = NULL;
-	}
 	ret->data=(word_t)-1;
+	for(fmt=0;fmt<127;fmt+=1) {
+		ret->_overrides[(word_t)fmt] = NULL;
+	}
 	ret->source = strdup(source?source:"(unset)");
-	file_update_state(ret, FISDIR|FISOPEN);
+	file_update_state(ret, FREADABLE|FISDIR|FISOPEN);
 	return ret;
 }
 
@@ -333,8 +339,8 @@ void cmd_unpack(vm_t vm, file_t f, char fmt) {
 
 
 void file_override_format(file_t f, char fmt, _pack_handler ph, _unpack_handler uh, vm_data_type_t dt, word_t magic) {
-	if(f->_overrides[fmt]) {
-		free(f->_overrides[fmt]);
+	if(f->_overrides[(word_t)fmt]) {
+		free(f->_overrides[(word_t)fmt]);
 	}
 	if(ph&&uh&&dt!=DataNone) {
 		format_override_t fo = (format_override_t) malloc(sizeof(struct _format_override));
@@ -342,7 +348,7 @@ void file_override_format(file_t f, char fmt, _pack_handler ph, _unpack_handler 
 		fo->unpacker = uh;
 		fo->data_type = dt;
 		fo->magic = magic;
-		f->_overrides[fmt] = fo;
+		f->_overrides[(word_t)fmt] = fo;
 	}
 }
 

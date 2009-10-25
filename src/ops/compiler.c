@@ -26,6 +26,7 @@
 #include "text_seg.h"
 #include "opcode_chain.h"
 #include "object.h"
+#include "program.h"
 
 ast_node_t ast_unserialize(const char*);
 
@@ -46,7 +47,7 @@ extern volatile long line_number_bias;
  */
 
 void _VM_CALL vm_op__vm_prog_get_globals(vm_t vm, word_t unused) {
-	vm_push_data(vm, DataObjSymTab, vm->current_edit_prg->data_symbols);
+	vm_push_data(vm, DataObjSymTab, (word_t) vm->current_edit_prg->data_symbols);
 }
 
 void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
@@ -136,7 +137,7 @@ void _VM_CALL vm_op_write_ocString(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_write_ocChar_String(vm_t vm, const char* name) {
 	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	const char argstr[16];
+	char argstr[16];
 	assert(arg->type==DataChar);
 	sprintf(argstr,"%c",(char)arg->data);
 	/*vm_printf("vm_op_write_ocString_String %s %s\n",name,argstr);*/

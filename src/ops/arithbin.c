@@ -427,7 +427,7 @@ void _VM_CALL vm_op_nEq(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_sin(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	_IFC conv;
-	tinyaml_float_t f;
+	/*tinyaml_float_t f;*/
 	assert(d->type==DataFloat);
 	conv.i = d->data;
 	conv.f = sinf(conv.f);

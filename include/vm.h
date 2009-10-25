@@ -291,5 +291,12 @@ thread_t vm_exec_dynFun(vm_t, vm_dyn_func_t);
 
 #define TINYAML_SHEBANG "#!/usr/bin/env tinyaml\nBML_PRG"
 
+
+void vm_compinput_push_file(vm_t vm, const char*filename);
+void vm_compinput_push_buffer(vm_t vm, const char*buffer);
+void vm_compinput_push_walker(vm_t vm, const char*wname);
+void vm_compinput_pop(vm_t vm);
+
+
 #endif
 

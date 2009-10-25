@@ -119,7 +119,7 @@ const char* thread_state_to_str(thread_state_t ts) {
 
 void dump_thread_lists(vm_t vm) {
 	vm_printf("[VM:DBG] Ready threads :");
-	#define _pr(_x) printf(" %p[%i]", (_x), (_x)->prio)
+	#define _pr(_x) printf(" %p[%li]", (_x), (_x)->prio)
 	dlist_forward(&vm->ready_threads, thread_t, _pr);
 	vm_printf("\n         Running threads :");
 	dlist_forward(&vm->running_threads, thread_t, _pr);

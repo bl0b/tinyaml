@@ -729,7 +729,7 @@ PQTime split_bucket(struct _pq_year*year,struct _pq_bucket**bucket) {
 	struct _pq_ev*k,*e;
 	/*PQTime W=n->width/2;*/
 	/*PQTime T=n->T+W;*/
-	PQTime Wl,Wr,Tl,Tr,tot=0;
+	PQTime Wl,Wr,Tl,Tr/*,tot*/=0;
 	long delta,half=((*bucket)->count>>1);
 
 	/* assert count==real thing */
@@ -959,7 +959,7 @@ static inline void cache_backward(PQIterator qi) {
 
 
 
-static unsigned long max_find_k=0;
+/*static unsigned long max_find_k=0;*/
 
 static inline struct _pq_ev* find_k(struct _pq_bucket*bucket,PQTime date) {
 	register struct _pq_ev*k=bucket->tail;
@@ -1058,7 +1058,7 @@ PQTime pqEndDate(PQueue q) {
 }
 
 PQueue pqCreate(PQTime yearLength,long bucketmax,long dichotomymax,void(*dm)(PQMessage)) {
-	long i,debug=0;
+	/*long i,debug=0;*/
 	PQueue q=(PQueue)malloc(sizeof(struct _priority_queue_t));
 	memset(q,0,sizeof(struct _priority_queue_t));
 	/*for(i=0;i<sizeof(struct _priority_queue_t);i++) {*/

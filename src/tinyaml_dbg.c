@@ -57,14 +57,14 @@ void dbg_out(const char*str) {
 			char*new = (char*)malloc(strlen(old)+strlen(str)+1);
 			strcpy(new,old);
 			strcat(new,str);
-			dynarray_set(&StdOut.lines,StdOut.lines.size-1,new);
+			dynarray_set(&StdOut.lines,StdOut.lines.size-1,(word_t)new);
 			free(old);
 		}
 		StdOut.ateol=1;
 		tok=strtok(NULL,"\r\n");
 	}
 	if(*str) {
-		tok=str;
+		tok=(char*)str;
 		while(*(tok+1)) { tok+=1; }
 	} else {
 		tok="";
@@ -519,9 +519,9 @@ word_t calc_count(long n, word_t sz) {
 
 static void repaint(vm_t vm, thread_t t, long do_command) {
 	/*word_t ofs;*/
-	const char*label;
-	const char*disasm;
-	word_t code_start, code_end,i,j;
+	/*const char*label;*/
+	/*const char*disasm;*/
+	/*word_t code_start, code_end,i,j;*/
 	/*word_t skip,count;*/
 	char title[50];
 
@@ -660,7 +660,7 @@ void render_code(WINDOW*w, long vofs, vm_t vm, thread_t t) {
 	j = getmaxx(w)-17;
 
 	for(i=code_start;i<code_end;i+=2) {
-		disasm = program_disassemble(vm,t->program,i);
+		disasm = (char*) program_disassemble(vm,t->program,i);
 		label = program_lookup_label(t->program,i);
 		if(i==windows[CodeWin].vofs) {
 			wattron(windows[CodeWin].w,A_STANDOUT);
@@ -834,9 +834,9 @@ void init() {
 	))
 
 long do_args(vm_t vm, long argc,const char*argv[]) {
-	long i,k;
+	long i;
 	program_t p=NULL;
-	writer_t w=NULL;
+	/*writer_t w=NULL;*/
 	reader_t r=NULL;
 
 	for(i=1;i<argc;i+=1) {
@@ -877,7 +877,7 @@ long do_args(vm_t vm, long argc,const char*argv[]) {
 }
 
 
-long main(long argc, const char**argv) {
+int main(int argc, const char**argv) {
 	init();
 	vm = vm_new();
 	vm_set_engine(vm,debug_engine);
@@ -1004,12 +1004,12 @@ void _VM_CALL dbg_init(struct _thread_engine_t* e) {
 /* synchronous engine. init lock unlock and deinit are pointless, and kill can't happen. */
 const vm_engine_t debug_engine = (vm_engine_t) (struct _thread_engine_t[])
 {{{
-	dbg_init,
+	(void(*_VM_CALL)(vm_engine_t))dbg_init,
 	e_stub,
-	dbg_run,
+	(void(*_VM_CALL)(vm_engine_t, program_t, word_t, word_t))dbg_run,
 	e_stub,
 	e_stub,
-	dbg_run,
+	(void(*_VM_CALL)(vm_engine_t, program_t, word_t, word_t))dbg_run,
 	e_stub,
 	(vm_engine_func_t)dbg_cli_lock,
 	(vm_engine_func_t)dbg_cli_unlock,
@@ -1017,8 +1017,8 @@ const vm_engine_t debug_engine = (vm_engine_t) (struct _thread_engine_t[])
 	(vm_engine_func_t)dbg_vm_unlock,
 	dbg_thread_failed,
 	dbg_debug,
-	dbg_out,
-	dbg_err,
+	(void(*_VM_CALL)(const char*))dbg_out,
+	(void(*_VM_CALL)(const char*))dbg_err,
 	NULL
 },
 	(pthread_t)0,

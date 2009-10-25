@@ -255,7 +255,7 @@ void opcode_serialize(opcode_dict_t od, opcode_chain_t oc, word_t ip, opcode_cha
 	if(!skip_wr) {
 		if(!op) {
 			char errbuf[512];
-			sprintf(errbuf, "[COMP:ERR] : at %i:%i : illegal opcode %s:%i\n",ocn->row,ocn->col,ocn->name,ocn->arg_type);
+			sprintf(errbuf, "[COMP:ERR] : at %li:%li : illegal opcode %s:%u\n",ocn->row,ocn->col,ocn->name,ocn->arg_type);
 			vm_fatal(errbuf);
 			op=(word_t)vm_op_nop;
 		}

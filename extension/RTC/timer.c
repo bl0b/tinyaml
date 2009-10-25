@@ -176,7 +176,7 @@ volatile long n_realticks;
 long timer_init() {
 	pthread_attr_t attr;
 	struct sched_param prio;
-	long err;
+	/*long err;*/
 
 //	listInit(perm_handlers);
 //	listInit(tasks);

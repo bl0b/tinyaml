@@ -289,7 +289,7 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 	vm_data_t dk = _vm_pop(vm);
 	vm_data_t dc = _vm_pop(vm);
 	vm_dyn_env_t env = vm->current_thread->program->env;
-	vm_data_t env_dc;
+	/*vm_data_t env_dc;*/
 	word_t index;
 	word_t type=0, data=0;
 	if(!env) {
@@ -333,7 +333,7 @@ void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
 void _VM_CALL vm_op_envSet_EnvSym(vm_t vm, long index) {
 	vm_dyn_env_t env = vm->current_thread->program->env;
 	vm_data_t dc = _vm_pop(vm);
-	vm_data_t env_dc;
+	/*vm_data_t env_dc;*/
 	if(!env) {
 		/*vm_printf("### program->env should be set ! ###\n");*/
 		env = vm->env;

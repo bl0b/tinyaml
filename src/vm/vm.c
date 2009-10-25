@@ -151,9 +151,9 @@ extern volatile long line_number_bias;
 
 void default_error_handler_no_exit(vm_t vm, const char* input, long is_buffer) {
 	long ofs, sz;
-	compinput_t ci;
-	const char* buf;
-	vm_data_t d;
+	/*compinput_t ci;*/
+	/*const char* buf;*/
+	/*vm_data_t d;*/
 	wast_t wa;
 	sz = vm->compinput_stack.sp;
 	vm_printerrf("Error during compilation :\n");
@@ -349,6 +349,7 @@ void vm_del(vm_t ret) {
 		} else {
 			ret->gc_pending.head=NULL;
 		}
+		/*vm_printerrf("[VM:DBG] free obj @%p\n", dn);*/
 		vm_obj_free_obj(ret,(void*)dn->value);
 		free(dn);
 	}
@@ -441,6 +442,7 @@ vm_t vm_serialize_program(vm_t vm, program_t p, writer_t w) {
 
 
 program_t compile_wast(wast_t, vm_t);
+program_t compile_append_wast(wast_t, vm_t, word_t*, long);
 void wa_del(wast_t w);
 
 program_t vm_compile_any(vm_t vm, word_t* start_IP, long last) {
@@ -811,6 +813,8 @@ vm_t vm_pop_catcher(vm_t vm, word_t count) {
 
 
 
+void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* ofs);
+
 
 thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	word_t*array;
@@ -859,7 +863,7 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 			fprintf(stdout," JMP=>[%s:%li]", program_get_source(t->jmp_seg), t->jmp_ofs);
 		}
 		if(t->data_stack.sp>state_change_ndata) {
-			vm_data_t d;
+			/*vm_data_t d;*/
 			long ofs;
 			fprintf(stdout, " Stack size %lu, pushed", t->data_stack.sp);
 			for(ofs=state_change_ndata-t->data_stack.sp+1;ofs<=0;ofs+=1) {
