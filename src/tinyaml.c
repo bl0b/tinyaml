@@ -219,16 +219,26 @@ long do_args(vm_t vm, long argc,char*argv[]) {
 			exit(0);
 		} else if(cmp_param(0,"--help","-h")) {
 			printf(TINYAML_ABOUT);
-			printf("Usage : %s [--compile, -c [filename]] [--save, -s [filename]] [--load, -l [filename]] [--run-foreground, -f] [--run-background, -b] [--version, -v] [--help,-h]\n",argv[0]);
+			printf("Usage : %s [--compile, -c [filename]] [--save, -s [filename]] [--load, -l [filename]] [--run-foreground, -f] [--run-background, -b] [--version, -v] [--interactive, -i] [--help,-h]\n",argv[0]);
 			printf(	"Commands are executed on the fly.\n"
 				"\n\t--compile,-c [filename]\tcompile this file\n"
 				  "\t--save,-s [filename]\tsave the newest program into this file\n"
 				  "\t--load,-l [filename]\tload a serialized program from this file\n"
 				  "\t--run-foreground,-f \trun the newest program in foreground\n"
 				  "\t--run-background,-b \trun the newest program in background\n"
+				  "\t--execute,-x [filename]\tload and execute in foreground the given binary\n"
+				  "\t\t\t\t(short for -l filename -f)\n"
+				  "\t--execute-bg,-z [filename]\tload and execute in background the given binary\n"
+				  "\t\t\t\t(short for -l filename -b)\n"
 				  "\t--trace,-t \t\tstart tracing execution cycles\n"
 				  "\t--no-trace,-nt \t\tstop tracing execution cycles\n"
 				  "\t--version,-v \t\tdisplay program version\n"
+				  "\t--disasm,-d \t\tdisassemble the current program\n"
+				  "\t--quiet,-q \t\tdon't output VM cycles count on exit\n"
+				  "\t--properties,-p \toutput some properties of the current program\n"
+				  "\t--timeslice,-ts [int]\tset the VM timeslice\n"
+				  "\t--interactive,-i \tstart interactive mode (basic REPL ; will preload all\n"
+				  "\t\t\t\tlayers upto script language)\n"
 				"\n\t--help,-h\t\tdisplay this text\n\n");
 			exit(0);
 		} else {	/* default to execute/compile filename */
