@@ -183,6 +183,12 @@ void file_update_state(file_t f, long flags) {
 		if(!(oflags&FISSYSTEM)) {
 			switch(_file_type(f)) {
 			case FISFILE:
+				if(f->descr.fd>0&&f->descr.fd<=0xFFFF) {
+					close(f->descr.fd);
+				} else {
+					fclose(f->descr.f);
+				}
+				break;
 			case FISBUFFER:
 			case FISSOCKET:
 				fclose(f->descr.f);
