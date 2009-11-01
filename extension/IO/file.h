@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <dirent.h>
+#include <errno.h>
 #include "vm.h"
 #include "thread.h"
 #include "_impl.h"

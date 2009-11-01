@@ -269,7 +269,9 @@ void _VM_CALL th_init(struct _thread_engine_t* e) {
 	pthread_attr_init(&pa);
 	/*pthread_attr_setdetachstate(&pa,PTHREAD_CREATE_DETACHED);*/
 	pthread_attr_setdetachstate(&pa,PTHREAD_CREATE_JOINABLE);
-	pthread_attr_setschedpolicy(&pa,SCHED_RR);
+	if(pthread_attr_setschedpolicy(&pa,SCHED_RR)!=0) {
+		vm_printerrf("[VM:WRN] Failed setting round-robin scheduler policy (%s)\n", strerror(errno));
+	}
 	pthread_create(&e->thread,&pa, (void*(*)(void*))th_th_run,e);
 }
 

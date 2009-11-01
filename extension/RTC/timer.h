@@ -27,6 +27,7 @@
 
 /*#include "types.h"*/
 #include "vm_types.h"
+#include <errno.h>
 
 /** \defgroup Timer High-resolution timer
  * Implements a timer and scheduling of tasks

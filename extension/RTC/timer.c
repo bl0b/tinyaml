@@ -177,6 +177,7 @@ long timer_init() {
 	pthread_attr_t attr;
 	struct sched_param prio;
 	/*long err;*/
+	int err;
 
 //	listInit(perm_handlers);
 //	listInit(tasks);
@@ -192,27 +193,27 @@ long timer_init() {
 	//list_init(&perm_handlers);
 	//list_init(&tasks);
 
-	if(pthread_attr_init(&attr)) {
-		perror("Error initializing thread struct");
+	if((err=pthread_attr_init(&attr))) {
+		vm_printerrf("[VM:ERR] (RTC) initializing thread struct : %s\n", strerror(err));
 		return 1;
 	}
-	if(pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED)) {
-		perror("Error setting Detached state");
+	if((err=pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED))) {
+		vm_printerrf("[VM:ERR] (RTC) setting detached state : %s\n", strerror(err));
 		return 1;
 	}
-	if(pthread_attr_setschedpolicy(&attr,SCHED_FIFO)) {
-		perror("Error setting realtime scheduler policy");
+	if((err=pthread_attr_setschedpolicy(&attr,SCHED_RR))) {
+		vm_printerrf("[VM:ERR] (RTC) setting realtime scheduler policy : %s\n", strerror(err));
 		return 1;
 	}
-	if(pthread_attr_getschedparam(&attr,&prio)) {
-		perror("Error getting schedule param struct");
-		return 1;
-	}
-	prio.sched_priority=sched_get_priority_max(SCHED_FIFO);
-	if(pthread_attr_setschedparam(&attr,&prio)) {
-		perror("Error setting thread priority");
-		return 1;
-	}
+	/*if(pthread_attr_getschedparam(&attr,&prio)) {*/
+		/*vm_printerrf("[VM:ERR] (RTC) getting schedule param struct : %s\n", strerror(errno));*/
+		/*return 1;*/
+	/*}*/
+	/*prio.sched_priority=sched_get_priority_max(SCHED_RR);*/
+	/*if(pthread_attr_setschedparam(&attr,&prio)) {*/
+		/*vm_printerrf("[VM:ERR] (RTC) setting thread priority : %s\n", strerror(errno));*/
+		/*return 1;*/
+	/*}*/
 
 	/*timer_is_running=0;*/
 

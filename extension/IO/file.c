@@ -213,27 +213,31 @@ void file_update_state(file_t f, long flags) {
 	} else if((flags&FISOPEN) && !(oflags&FISOPEN)) { /* opening file */
 		/* start thread */
 		pthread_attr_t attr;
+		int ret;
 		struct sched_param prio;
 		/*f->mutex=PTHREAD_MUTEX_INITIALIZER;*/
 		pthread_mutex_init(&f->mutex, NULL);
 		/*f->cond=PTHREAD_COND_INITIALIZER;*/
 		pthread_cond_init(&f->cond, NULL);
-		if(pthread_attr_init(&attr)) {
-			perror("Error initializing thread attr");
+		if((ret=pthread_attr_init(&attr))) {
+			vm_printerrf("[VM:ERR] (IO:%s) pthread_attr_init : %s\n", f->source, strerror(ret));
 			return;
 		}
-		if(pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED)) {
-			perror("Error setting Detached state");
+		if((ret=pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED))) {
+			vm_printerrf("[VM:ERR] (IO:%s) pthread_attr_setdetachstate : %s\n", f->source, strerror(ret));
 			return;
 		}
-		if(pthread_attr_getschedparam(&attr,&prio)) {
-			perror("Error getting schedule param struct");
+		if((ret=pthread_attr_getschedparam(&attr,&prio))) {
+			vm_printerrf("[VM:ERR] (IO:%s) pthread_attr_getschedparam : %s\n", f->source, strerror(ret));
 			return;
 		}
-		prio.sched_priority=sched_get_priority_max(SCHED_FIFO);
-		if(pthread_attr_setschedparam(&attr,&prio)) {
-			perror("Error setting thread priority");
-			return;
+		/*prio.sched_priority=sched_get_priority_max(SCHED_RR);*/
+		/*vm_printerrf("[VM:DBG] obtained priority value %d\n", prio.sched_priority);*/
+		/*if((ret=pthread_attr_setschedparam(&attr,&prio))) {*/
+			/*vm_printerrf("[VM:WRN] (IO:%s) pthread_attr_setschedparam : %s\n", f->source, strerror(ret));*/
+		/*}*/
+		if((ret=pthread_attr_setschedpolicy(&attr, SCHED_RR))) {
+			vm_printerrf("[VM:WRN] (IO:%s) pthread_attr_setschedpolicy : %s\n", strerror(ret));
 		}
 		/*file_disable_thread(f);*/
 		pthread_mutex_lock(&f->mutex);
@@ -270,7 +274,7 @@ void file_deinit(vm_t vm, file_t f) {
 	/*vm_printerrf("[VM:DBG] about to free overrides...\n");*/
 	for(fmt=0;fmt<127;fmt+=1) {
 		if(f->_overrides[fmt]) {
-			vm_printerrf("[VM:DBG] removing override %p\n", f->_overrides[fmt]);
+			/*vm_printerrf("[VM:DBG] removing override %p\n", f->_overrides[fmt]);*/
 			free(f->_overrides[fmt]);
 		}
 	}
