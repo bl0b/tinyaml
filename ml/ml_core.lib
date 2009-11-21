@@ -293,7 +293,7 @@ lib
 
       # Access to internals
         opcode _vm_prog_get_globals     # push symtab
-
+        opcode typeof			# pop any, push int (Data* constant)
 
 
         end

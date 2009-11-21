@@ -216,9 +216,16 @@ void vm_compinput_pop(vm_t vm) {
 	_gpop(&vm->compinput_stack);
 }
 
+
+void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused);
+
+
+
 /* the VM is a singleton */
 vm_t vm_new() {
 	vm_t ret;
+	/*struct _thread_t th;*/
+	word_t index;
 
 	if(_glob_vm) {
 		return _glob_vm;
@@ -279,6 +286,51 @@ vm_t vm_new() {
 
 	ret->env = vm_env_new();
 	vm_obj_ref_ptr(ret,ret->env);
+
+#define _SETENV(__key) \
+	index = text_seg_text_to_index(&ret->env->symbols,text_seg_find_by_text(&ret->env->symbols, #__key))<<1;\
+	dynarray_set(&ret->env->data, index+1, (word_t) __key); \
+	dynarray_set(&ret->env->data, index, (word_t) DataInt);
+
+	_SETENV(DataNone);
+	_SETENV(DataInt);
+	_SETENV(DataChar);
+	_SETENV(DataFloat);
+	_SETENV(DataString);
+	_SETENV(DataManagedObjectFlag);
+	_SETENV(DataObjStr);
+	_SETENV(DataObjSymTab);
+	_SETENV(DataObjMutex);
+	_SETENV(DataObjThread);
+	_SETENV(DataObjArray);
+	_SETENV(DataObjEnv);
+	_SETENV(DataObjStack);
+	_SETENV(DataObjFun);
+	_SETENV(DataObjVObj);
+	_SETENV(DataObjUser);
+	/*thread_init(&th, 0, program_new(), 0);*/
+	/*ret->current_thread = &th;*/
+/**/
+	/*vm_push_data(ret, DataInt, (word_t) DataNone); vm_push_data(ret, DataString, (word_t) "DataNone"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataInt); vm_push_data(ret, DataString, (word_t) "DataInt"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataChar); vm_push_data(ret, DataString, (word_t) "DataChar"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataFloat); vm_push_data(ret, DataString, (word_t) "DataFloat"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataString); vm_push_data(ret, DataString, (word_t) "DataString"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataManagedObjectFlag); vm_push_data(ret, DataString, (word_t) "DataManagedObjectFlag"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjStr); vm_push_data(ret, DataString, (word_t) "DataObjStr"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjSymTab); vm_push_data(ret, DataString, (word_t) "DataObjSymTab"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjMutex); vm_push_data(ret, DataString, (word_t) "DataObjMutex"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjThread); vm_push_data(ret, DataString, (word_t) "DataObjThread"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjArray); vm_push_data(ret, DataString, (word_t) "DataObjArray"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjEnv); vm_push_data(ret, DataString, (word_t) "DataObjEnv"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjStack); vm_push_data(ret, DataString, (word_t) "DataObjStack"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjFun); vm_push_data(ret, DataString, (word_t) "DataObjFun"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjVObj); vm_push_data(ret, DataString, (word_t) "DataObjVObj"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataObjUser); vm_push_data(ret, DataString, (word_t) "DataObjUser"); vm_op_envAdd(ret, 0);*/
+	/*vm_push_data(ret, DataInt, (word_t) DataTypeMax); vm_push_data(ret, DataString, (word_t) "DataTypeMax"); vm_op_envAdd(ret, 0);*/
+/**/
+	/*program_free(ret, th.program);*/
+	/*thread_deinit(ret, &th);*/
 
 	if(!dynFun_exec) {
 		dynFun_exec = vm_compile_buffer(ret, "asm call ret 0 end");

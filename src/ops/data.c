@@ -72,6 +72,11 @@ void _VM_CALL vm_op_setmem_Int(vm_t vm, long n) {
 }
 
 
+void _VM_CALL vm_op_typeof(vm_t vm, word_t unused) {
+	vm_data_t d = _vm_pop(vm);
+	vm_push_data(vm, DataInt, (word_t)d->type);
+}
+
 void _VM_CALL vm_op_setmem(vm_t vm, long n) {
 	vm_data_t top = _vm_pop(vm);
 	if(top->type!=DataInt) {
