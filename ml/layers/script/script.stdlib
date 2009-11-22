@@ -55,6 +55,12 @@ script
 	export("chr", function(i) asm +$i chr -$i end return i end)
 	export("ord", function(i) asm +$i ord -$i end return i end)
 
+	export("typeof", function(x) asm +$x typeof -$x end return x end)
+	export("isA", function(x, what)
+			asm +$x typeof -$x end
+			return x=what
+		end)
+
 	addTo("String","compare",strcmp)
 	addTo("String","length",
 		function(l)
