@@ -231,9 +231,11 @@ void _VM_CALL vm_op_tcpopen(vm_t vm, word_t unused) {
 }
 
 void _VM_CALL vm_op_string2ip(vm_t vm, word_t unused) {
+	struct hostent* he;
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataString||d->type==DataObjStr);
-	vm_push_data(vm, DataInt, ntohl(*(word_t*)gethostbyname((const char*)d->data)->h_addr));
+	he = gethostbyname((const char*)d->data);
+	vm_push_data(vm, DataInt, he?ntohl(he->h_addr):0);
 }
 
 void _VM_CALL vm_op_ip2string(vm_t vm, word_t unused) {

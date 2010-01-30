@@ -61,17 +61,17 @@ _skip:
 
 	nop
 
-	push "www.breizhdev.net" -$i
+	push "www.tirnan0g.org" -$i
 	+$i push " : " +$i string2ip -$i +$i ip2string push '\n' print 4
 	+$i push 80 tcpopen -$f
-	push "GET http://www.breizhdev.net/\r\n" +$f _fpack 'S'
+	push "GET http://www.tirnan0g.org/\r\n" +$f _fpack 'S'
 	+$f _funpack 's' print 1
 	+$f close
 
 	push "localhost" -$i
 	+$i push " : " +$i string2ip -$i +$i ip2string push '\n' print 4
 	+$i push 7 udpopen -$f
-	push "GET http://www.breizhdev.net/\r\n" +$f _fpack 'S'
+	push "GET http://www.tirnan0g.org/\r\n" +$f _fpack 'S'
 	+$f _funpack 'S' print 1
 	+$f close
 
