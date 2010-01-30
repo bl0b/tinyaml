@@ -1147,26 +1147,26 @@ vm_t vm_set_engine(vm_t vm, vm_engine_t e) {
 
 void _vm_assert_fail(const char* assertion, const char*file, unsigned long line, const char* function) {
 	if(strncmp(function,"vm_op_",6)) {
-		vm_printf( "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
+		vm_printerrf( "[VM:FATAL] In function `%s' at %s:%u : %s\n", function, file, line, assertion);
 	} else {
-		vm_printf( "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
+		vm_printerrf( "[VM:FATAL] In opcode `%s' at %s:%u : %s\n", function+6, file, line, assertion);
 		if(!strcmp(function+6, "throw") &&
 				(_glob_vm->exception.type==DataString ||
 					_glob_vm->exception.type==DataObjStr)) {
-			vm_printf("Exception String : %s\n", (char*) _glob_vm->exception.data);
+			vm_printerrf("Exception String : %s\n", (char*) _glob_vm->exception.data);
 			
 		}
 	}
 	if(_glob_vm&&_glob_vm->current_node) {
-		vm_printf("[VM:INFO] While compiling ");
+		vm_printerrf("[VM:INFO] While compiling ");
 		vm_print_compilation_source(_glob_vm,0);
-		vm_printf(" ");
-		vm_printf("at %i:%i (%s)\n", wa_row(_glob_vm->current_node), wa_col(_glob_vm->current_node), wa_op(_glob_vm->current_node));
+		vm_printerrf(" ");
+		vm_printerrf("at %i:%i (%s)\n", wa_row(_glob_vm->current_node), wa_col(_glob_vm->current_node), wa_op(_glob_vm->current_node));
 	}
 	if(_glob_vm&&_glob_vm->current_thread) {
 		thread_t t = _glob_vm->current_thread;
 		_glob_vm->current_thread = NULL;
-		vm_printf("[VM:NOTICE] Killing current thread %p\n", t);
+		vm_printerrf("[VM:NOTICE] Killing current thread %p\n", t);
 		_glob_vm->engine->_thread_failed(_glob_vm,t);
 		vm_kill_thread(_glob_vm,t);
 		longjmp(_glob_vm_jmpbuf,1);
