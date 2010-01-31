@@ -315,7 +315,7 @@ void blocker_resume(vm_t vm,vm_blocker_t b) {
 			t->IP-=2;
 			vm_obj_deref_ptr(vm,t);
 			thread_set_state(vm,t,ThreadReady);
-			if(t->prio>=cur_prio) {
+			if(t->prio>=cur_prio&&vm->current_thread) {
 				vm->current_thread->remaining=0;
 			}
 		}

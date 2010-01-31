@@ -2,6 +2,7 @@ loadlib IO
 require "symasm.wc"
 
 glob
+	count=0
 	i=0
 	f=0
 	k=305419896
@@ -9,6 +10,7 @@ glob
 	pi_host="www.exploratorium.edu"
 	genese_URL="http://www.info-bible.org/lsg/01.Genese.html"
 	genese_host="www.info-bible.org"
+	tno_query="GET / HTTP/1.1\r\nHost: tirnan0g.org\r\n\r\n"
 end
 
 asm
@@ -26,11 +28,11 @@ thread_1:
 	ret 0
 
 thread_2:
-	push 0 -$i
+	push 0 -$count
 _lp_th2:
-	+$i inc -$i
+	+$count inc -$count
 	#push 0 _lp2th2: inc dup 0 push 100 eq SNZ jmp@_lp2th2 pop
-	+$i push 100 eq SNZ jmp@_lp_th2
+	+$count push 100 eq SNZ jmp@_lp_th2
 	ret 0
 
 test_write_to_file:
@@ -64,15 +66,8 @@ _skip:
 	push "www.tirnan0g.org" -$i
 	+$i push " : " +$i string2ip -$i +$i ip2string push '\n' print 4
 	+$i push 80 tcpopen -$f
-	push "GET http://www.tirnan0g.org/\r\n" +$f _fpack 'S'
+	+$tno_query +$f _fpack 'S'
 	+$f _funpack 's' print 1
-	+$f close
-
-	push "localhost" -$i
-	+$i push " : " +$i string2ip -$i +$i ip2string push '\n' print 4
-	+$i push 7 udpopen -$f
-	push "GET http://www.tirnan0g.org/\r\n" +$f _fpack 'S'
-	+$f _funpack 'S' print 1
 	+$f close
 
 	jmp@_skip_long_read_tests
@@ -134,6 +129,7 @@ _skip_long_read_tests:
 _lp_readdir:
 	+$i strlen [
 		push "dir entry : " +$i push "\n" print 3
+		#push "--\\n" print 1
 		+$f readdir -$i
 		jmp@_lp_readdir
 	]

@@ -191,14 +191,14 @@ static inline void addr2str(char* buf, struct sockaddr_in* sa) {
 		ntohs(sa->sin_port));
 }
 
-static inline file_t sock_init(vm_t vm, long type) {
+static inline file_t sock_init(vm_t vm, int type) {
 	struct sockaddr_in sa;
-	long sock;
+	int sock;
 	FILE*F;
 	vm_data_t d;
 	char buf[22];
 	/* create socket */
-	if((sock = socket(PF_INET, type, 0))==-1) {
+	if((sock = socket(AF_INET, type, type==SOCK_STREAM?6:17))==-1) {
 		couldnt("open socket", NULL);
 	}
 	/* set port */
@@ -235,7 +235,27 @@ void _VM_CALL vm_op_string2ip(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
 	assert(d->type==DataString||d->type==DataObjStr);
 	he = gethostbyname((const char*)d->data);
-	vm_push_data(vm, DataInt, he?ntohl(he->h_addr):0);
+	if(he) {
+		char**ptr;
+		vm_printf("Debug gethostbyname (queried %s)\n", (const char*)d->data);
+		vm_printf("	h_name = %s\n", he->h_name);
+		vm_printf("	h_aliases =");
+		ptr=he->h_aliases;
+		while(*ptr) {
+			vm_printf(" %s", *ptr);
+			ptr+=1;
+		}
+		vm_printf("\n	h_addrtype = %i\n", he->h_addrtype);
+		vm_printf("	h_length = %i\n", he->h_length);
+		vm_printf("	h_addr_list =");
+		ptr=he->h_addr_list;
+		while(*ptr) {
+			vm_printf(" %8.8X", *(unsigned int*)*ptr);
+			ptr+=1;
+		}
+		vm_printf("\n");
+	}
+	vm_push_data(vm, DataInt, he?ntohl(*(unsigned int*)he->h_addr):0);
 }
 
 void _VM_CALL vm_op_ip2string(vm_t vm, word_t unused) {
