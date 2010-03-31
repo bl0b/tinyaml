@@ -28,14 +28,13 @@
 
 
 void _VM_CALL vm_op__set_timeslice_Int(vm_t vm, word_t timeslice) {
-	assert(timeslice!=0);
-	vm->timeslice=timeslice;
+	if(0<(long)timeslice) {
+		vm->timeslice=timeslice;
+	}
 }
 
 void _VM_CALL vm_op__set_timeslice(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
-	vm_op__set_timeslice_Int(vm, d->data);
+	vm_op__set_timeslice_Int(vm, vm_pop_int(vm));
 }
 
 void _VM_CALL vm_op__get_timeslice(vm_t vm, word_t unused) {
@@ -44,15 +43,13 @@ void _VM_CALL vm_op__get_timeslice(vm_t vm, word_t unused) {
 
 
 void _VM_CALL vm_op_onCompInit(vm_t vm, word_t unused) {
-	vm_data_t df = _vm_pop(vm);
-	assert(df->type==DataObjFun);
+	vm_data_t df = vm_pop_func(vm);
 	vm_obj_ref_ptr(vm, (void*)df->data);
 	dlist_insert_tail(&vm->init_routines, (word_t)df->data);
 }
 
 void _VM_CALL vm_op_onCompTerm(vm_t vm, word_t unused) {
-	vm_data_t df = _vm_pop(vm);
-	assert(df->type==DataObjFun);
+	vm_data_t df = vm_pop_func(vm);
 	vm_obj_ref_ptr(vm, (void*)df->data);
 	dlist_insert_tail(&vm->term_routines, (word_t)df->data);
 }
@@ -62,8 +59,7 @@ void _VM_CALL vm_op_onCompTerm(vm_t vm, word_t unused) {
  * @{
  */
 void _VM_CALL vm_op_clone(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type&DataManagedObjectFlag);
+	vm_data_t d = vm_pop_obj(vm);
 	vm_push_data(vm, d->type, (word_t)vm_obj_clone_obj(vm,PTR_TO_OBJ(d->data)));
 }
 
@@ -92,8 +88,7 @@ void _VM_CALL vm_op_pop(vm_t vm, word_t unused) {
 }
 
 void _VM_CALL vm_op_popN(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_pop_data(vm,d->data);
 }
 
@@ -113,7 +108,9 @@ void _VM_CALL vm_op_dup_Int(vm_t vm, long data) {
 void _VM_CALL vm_op_swap_Int(vm_t vm, long offset) {
 	/* dirty hack : swap top and (top-offset)-th value in stack */
 	vm_data_t top, swappee;
-	assert(offset>0);
+	if(offset<=0) {
+		return;
+	}
 	/*printf("GET TOP\n"); fflush(stdout);*/
 	top = (vm_data_t)_gpeek(&vm->current_thread->data_stack, 0);
 	/*printf("GET SWAPPEE\n"); fflush(stdout);*/
@@ -160,13 +157,13 @@ void _VM_CALL vm_op_chr(vm_t vm, word_t unused) {
 		sscanf((char*)d->data, "%c", &c);
 		vm_push_data(vm, DataChar, c);
 	} else {
-		assert(d->type==DataString||d->type==DataObjStr||d->type==DataInt);
+		raise_exception(vm, DataString, "Type");
+		/*assert(d->type==DataString||d->type==DataObjStr||d->type==DataInt);*/
 	}
 }
 
 void _VM_CALL vm_op_ord(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataChar);
+	vm_data_t d = vm_pop_char(vm);
 	vm_push_data(vm, DataInt, d->data);
 }
 
@@ -229,6 +226,9 @@ void _VM_CALL vm_op_print_Int(vm_t vm, long n) {
 		case DataObjVObj:
 			vm_printf("[V-Obj  %p]",(void*)tmp.i);
 			break;
+		case DataObjVCls:
+			vm_printf("[V-Class %s]",((vobj_class_t)tmp.i)->_name);
+			break;
 		case DataManagedObjectFlag:
 			vm_printf("[Undefined Object ! %p]", (opcode_stub_t*)tmp.i);
 			break;
@@ -244,8 +244,7 @@ void _VM_CALL vm_op_print_Int(vm_t vm, long n) {
 
 
 void _VM_CALL vm_op_print(vm_t vm, long n) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	/*printf("[[[print %i]]]\n", d->data);*/
 	vm_op_print_Int(vm, d->data);
 }
@@ -289,8 +288,7 @@ void _VM_CALL vm_op_jmp_Label(vm_t vm, word_t data) {
 /*! \brief Pops a relative offset from stack then jumps (aka computed jump). */
 void _VM_CALL vm_op_jmp(vm_t vm, word_t unused) {
 	thread_t t=vm->current_thread;
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	t->jmp_ofs=t->IP+d->data;
 }
 /*@}*/
@@ -309,10 +307,9 @@ void _VM_CALL vm_op_jmp(vm_t vm, word_t unused) {
  * - call F.cs:F.ip
  */
 void _VM_CALL vm_op_call(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_obj(vm);
 	thread_t t=vm->current_thread;
 	vm_dyn_func_t fun = (vm_dyn_func_t) d->data;
-	assert(d->type&DataManagedObjectFlag);
 	if(fun->closure) { 
 		vm_push_caller(vm, t->program, t->IP, 1, fun);
 		gpush(&t->closures_stack,&fun->closure);
@@ -337,13 +334,11 @@ void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused) {
 	dynarray_t da;
 	thread_t t=vm->current_thread;
 	/* pop dynfun */
-	d = _vm_pop(vm);
-	assert(d->type==DataObjFun);
+	d = vm_pop_fun(vm);
 	fun = (vm_dyn_func_t) d->data;
 	assert(fun->closure==NULL);
 	/* pop closure */
-	d = _vm_pop(vm);
-	assert(d->type==DataObjArray);
+	d = vm_pop_array(vm);
 	da = (dynarray_t) d->data;
 	/* perform call */
 	vm_push_caller(vm,t->program, t->IP, 1, fun);
@@ -483,10 +478,9 @@ void _VM_CALL vm_op_getmem_Int(vm_t vm, long n);
  * @{
  */
 void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_int(vm);
 	thread_t t=vm->current_thread;
 	word_t ofs = t->IP+rel_ofs;
-	assert(d->type==DataInt);
 	t = vm_add_thread(vm, t->program, ofs, d->data, 0);
 	/*vm_printf("new thread has handle %p\n",t);*/
 	vm_push_data(vm,DataObjThread,(word_t)t);
@@ -494,12 +488,10 @@ void _VM_CALL vm_op_newThread_Label(vm_t vm, word_t rel_ofs) {
 
 extern program_t dynFun_exec;
 void _VM_CALL vm_op_newThread(vm_t vm, word_t unused) {
-	vm_data_t df = _vm_pop(vm);
+	vm_data_t df = vm_pop_func(vm);
 	struct _data_stack_entry_t argc = { DataInt, 0 };
-	vm_data_t prio = _vm_pop(vm);
+	vm_data_t prio = vm_pop_int(vm);
 	thread_t t;
-	assert(df->type==DataObjFun);
-	assert(prio->type==DataInt);
 	t = vm_add_thread(vm, dynFun_exec, 0, prio->data, 0);
 	/*t = vm_thread_new(vm,prio->data,dynFun_exec,0);*/
 	gpush(&t->data_stack, &argc);
@@ -529,8 +521,7 @@ void _VM_CALL vm_op_lockMtx_Int(vm_t vm, long memcell) {
 	thread_t t = vm->current_thread;
 	mutex_t m;
 	vm_op_getmem_Int(vm,memcell);
-	d = _vm_pop(vm);
-	assert(d->type==DataObjMutex);
+	d = vm_pop_mutex(vm);
 	m = (mutex_t)d->data;
 	/*assert_ptr_is_obj(m);*/
 	assert(_is_a_ptr(m,DataObjMutex));
@@ -543,8 +534,7 @@ void _VM_CALL vm_op_unlockMtx_Int(vm_t vm, long memcell) {
 	thread_t t = vm->current_thread;
 	mutex_t m;
 	vm_op_getmem_Int(vm,memcell);
-	d = _vm_pop(vm);
-	assert(d->type==DataObjMutex);
+	d = vm_pop_mutex(vm);
 	m = (mutex_t)d->data;
 	/*assert_ptr_is_obj(m);*/
 	assert(_is_a_ptr(m,DataObjMutex));
@@ -557,8 +547,7 @@ void _VM_CALL vm_op_lockMtx(vm_t vm, word_t unused) {
 	vm_data_t d;
 	thread_t t = vm->current_thread;
 	if(!t->pending_lock) {
-		d = _vm_pop(vm);
-		assert(d->type==DataObjMutex);
+		d = vm_pop_mutex(vm);
 		t->pending_lock = (mutex_t)d->data;
 		assert(_is_a_ptr(t->pending_lock,DataObjMutex));
 		/*assert_ptr_is_obj(t->pending_lock);*/
@@ -573,9 +562,8 @@ void _VM_CALL vm_op_unlockMtx(vm_t vm, word_t unused) {
 	vm_data_t d;
 	thread_t t = vm->current_thread;
 	mutex_t m;
-	d = _vm_pop(vm);
+	d = vm_pop_mutex(vm);
 	m = (mutex_t)d->data;
-	assert(_is_a_ptr(m,DataObjMutex));
 	/*assert_ptr_is_obj(m);*/
 	mutex_unlock(vm,m,t);
 }

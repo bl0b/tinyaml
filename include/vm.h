@@ -298,5 +298,22 @@ void vm_compinput_push_walker(vm_t vm, const char*wname);
 void vm_compinput_pop(vm_t vm);
 
 
+vm_data_t vm_pop_numeric(vm_t);
+vm_data_t vm_pop_obj(vm_t);
+vm_data_t vm_pop_any(vm_t, vm_data_type_t);
+#define vm_pop_int(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_char(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_float(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_string(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_symtab(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_mutex(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_thread(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_env(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_stack(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_func(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_vobj(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_vclass(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_user(_v) vm_pop_any(_v, DataInt)
+
 #endif
 

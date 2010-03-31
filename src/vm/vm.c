@@ -198,6 +198,46 @@ int find_in_bases(vm_t vm, vm_data_t haystack, vobj_class_t needle) {
 	
 }
 
+vm_data_t vm_pop_numeric(vm_t vm) {
+	vm_data_t d = _vm_pop(vm);
+	if(d->type!=DataInt&&d->type!=DataFloat) {
+		_IFC conv;
+		int fail=0;
+		conv.i = dynamic_cast(vm, d, DataFloat, NULL, &fail);
+		if(fail) {
+			conv.i = dynamic_cast(vm, d, DataInt, NULL, &fail);
+			if(fail) {
+				raise_exception(vm, DataString, "Type");
+			} else {
+				d->type=DataInt;
+			}
+		} else {
+			d->type=DataFloat;
+		}
+		d->data=conv.i;
+	}
+	return d;
+}
+
+vm_data_t vm_pop_obj(vm_t vm) {
+	vm_data_t d = _vm_pop(vm);
+	if(d->type&ManagedObjFlag) {
+		return d;
+	}
+	raise_exception(vm, DataString, "Type");
+	return d;
+}
+
+vm_data_t vm_pop_any(vm_t vm, vm_data_type_t dt) {
+	vm_data_t d = _vm_pop(vm);
+	if(d->type==dt) {
+		return d;
+	}
+	d->data = dynamic_cast(vm, d, dt, NULL, NULL);
+	d->type=dt;
+	return d;
+}
+
 
 word_t dynamic_cast(vm_t vm, vm_data_t d, vm_data_type_t newtype, vobj_class_t newcls, int*fail) {
 	_IFC conv;
