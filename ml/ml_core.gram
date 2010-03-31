@@ -119,7 +119,7 @@ DataChar ::= char.
 ## Opcode declarations (libraries)
 ##
 
-DeclOpcode = [ "opcode" sym ] declOpcode_opt_arg.
+DeclOpcode = [ [ "opcode" sym ] declOpcode_opt_arg ] DeclOpcodeOverloads.
 
 declOpcode_opt_arg =	( DeclOpcode_Float
 			| DeclOpcode_Int
@@ -137,6 +137,12 @@ DeclOpcode_String ::= ":" "String".
 DeclOpcode_Label ::= ":" "Label".
 DeclOpcode_EnvSym ::= ":" "EnvSym".
 DeclOpcode_NoArg ::= _epsilon.
+
+
+DeclOpcodeOverloads ::= ("(" _doovl_lp _doovl_End|_epsilon).
+DeclOpcode_Overload ::= int ( "=" [sym]declOpcode_opt_arg )?.
+_doovl_lp = ( _doovl_lp "," DeclOpcode_Overload | DeclOpcode_Overload).
+_doovl_End ::= ")".
 
 Library ::= "lib" p_libStatement+ "end" (_EOF|Postponed).
 p_libStatement = ( DeclOpcode | LibFile ).

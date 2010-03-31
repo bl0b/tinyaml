@@ -225,3 +225,157 @@ vm_dyn_func_t vm_dyn_fun_new() {
 }
 
 
+
+
+vobj_ref_t ObjNil = NULL;
+vobj_class_t ClassNil = NULL;
+
+
+
+
+void vm_vor_deinit(vm_t vm, vobj_ref_t obj) {
+	vm_obj_deref_ptr(vm, obj->members);
+}
+
+vobj_ref_t vm_vor_clone(vm_t vm, vobj_ref_t obj) {
+	vobj_ref_t ret = (vobj_ref_t) vm_obj_new(sizeof(struct _vobj_ref_t),
+			(void (*)(vm_t, void*)) vm_vor_deinit,
+			(void*(*)(vm_t, void*)) vm_vor_clone,
+			DataObjVObj);
+	ret->cls = obj->cls;
+	ret->members = obj->members;
+	ret->own=VOBJ_COPYONWRITE;
+	ret->offset=0;
+	vm_obj_ref_ptr(vm, ret->members);
+	return ret;
+}
+
+vobj_ref_t vobj_new() {
+	vobj_ref_t ret = (vobj_ref_t) vm_obj_new(sizeof(struct _vobj_ref_t),
+			(void (*)(vm_t, void*)) vm_vor_deinit,
+			(void*(*)(vm_t, void*)) vm_vor_clone,
+			DataObjVObj);
+	ret->cls = NULL;
+	ret->own=VOBJ_OWN;
+	ret->offset=0;
+	ret->members = vm_array_new();
+	vm_obj_ref_ptr(_glob_vm, ret->members);
+	return ret;
+}
+
+void vobj_set_class(vobj_ref_t o, vobj_class_t cls) {
+	if(o->cls) {
+		vm_obj_deref_ptr(_glob_vm, o->cls);
+	}
+	o->cls = cls;
+	vm_obj_ref_ptr(_glob_vm, cls);
+}
+
+vobj_class_t vobj_get_class(vobj_ref_t o) {
+	return o->cls?o->cls:ClassNil;
+}
+
+void vobj_set_member(vobj_ref_t o, word_t index, vm_data_t d) {
+	index<<=1;
+	dynarray_set(o->members, index, (word_t) d->type);
+	dynarray_set(o->members, index+1, (word_t) d->data);
+}
+
+vm_data_t vobj_get_member(vobj_ref_t o, word_t index) {
+	return ((vm_data_t)o->members->data)+index;
+}
+
+void htab_free_oo(htab_entry_t e) {
+	vm_data_t d = (vm_data_t) e->e;
+	if(d->type&DataManagedObjectFlag) {
+		vm_obj_deref_ptr(_glob_vm, (void*) d->data);
+	}
+	free(d);
+}
+
+void vm_vcls_deinit(vm_t vm, vobj_class_t cls) {
+	int i;
+	for(i=0;i<DataTypeMax;i+=1) {
+		if(cls->_cast_to[i]) {
+			vm_obj_deref_ptr(vm, cls->_cast_to[i]);
+		}
+		if(cls->_cast_from[i]) {
+			vm_obj_deref_ptr(vm, cls->_cast_from[i]);
+		}
+	}
+	clean_hashtab(&cls->_overloads, htab_free_oo);
+	if(cls->_name) {
+		free(cls->_name);
+	}
+}
+
+vobj_class_t vm_vcls_clone(vm_t vm, vobj_class_t cls) {
+	return cls;
+}
+
+vobj_class_t vclass_new() {
+	vobj_class_t ret = (vobj_class_t) vm_obj_new(sizeof(struct _vobj_class_t),
+			(void (*)(vm_t, void*)) vm_vcls_deinit,
+			(void*(*)(vm_t, void*)) vm_vcls_clone,
+			DataObjVObj);
+	ret->ref.cls = NULL;
+	ret->ref.own=VOBJ_OWN;
+	ret->ref.offset=0;
+	ret->_name=strdup("(unset)");
+	init_hashtab(&ret->_overloads, (hash_func) hash_ptr, (compare_func) cmp_ptr);
+	memset(ret->_cast_from, 0, sizeof(vm_dyn_func_t)*DataTypeMax);
+	memset(ret->_cast_to, 0, sizeof(vm_dyn_func_t)*DataTypeMax);
+	ret->ref.members = vm_array_new();
+	vm_obj_ref_ptr(_glob_vm, ret->ref.members);
+	return ret;
+}
+
+const char* vclass_get_name(vobj_class_t cls) {
+	return cls->_name?cls->_name:"(unset)";
+}
+
+void vclass_set_name(vobj_class_t cls, const char* name) {
+	if(cls->_name) {
+		free(cls->_name);
+	}
+	cls->_name=strdup(name);
+}
+
+void vclass_set_overload(vobj_class_t cls, opcode_stub_t stub, vm_data_t ovl) {
+	vm_data_t d = (vm_data_t) hash_find(&cls->_overloads, (hash_key) stub);
+	if(!d) {
+		d = (vm_data_t) malloc(sizeof(struct _data_stack_entry_t));
+		d->type=0;
+		hash_addelem(&cls->_overloads, (hash_key) stub, (hash_elem) d);
+	}
+	if(d->type&DataManagedObjectFlag) {
+		vm_obj_deref_ptr(_glob_vm, (void*) d->data);
+	}
+	d->type=ovl->type;
+	d->data=ovl->data;
+	if(d->type&DataManagedObjectFlag) {
+		vm_obj_ref_ptr(_glob_vm, (void*) d->data);
+	}
+}
+
+
+void vclass_define_cast_to(vobj_class_t cls, vm_data_type_t totype, vm_dyn_func_t cast) {
+	if(cls->_cast_to[totype]) {
+		vm_obj_deref_ptr(_glob_vm, cls->_cast_to[totype]);
+	}
+	vm_obj_deref_ptr(_glob_vm, cls->_cast_to[totype]);
+	cls->_cast_to[totype] = cast;
+	vm_obj_ref_ptr(_glob_vm, cast);
+}
+
+
+void vclass_define_cast_from(vobj_class_t cls, vm_data_type_t totype, vm_dyn_func_t cast) {
+	if(cls->_cast_from[totype]) {
+		vm_obj_deref_ptr(_glob_vm, cls->_cast_from[totype]);
+	}
+	vm_obj_deref_ptr(_glob_vm, cls->_cast_from[totype]);
+	cls->_cast_from[totype] = cast;
+	vm_obj_ref_ptr(_glob_vm, cast);
+}
+
+

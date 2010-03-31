@@ -182,6 +182,21 @@ void _VM_CALL vm_op_mapNew(vm_t vm, word_t unused) {
 }
 
 
+void _VM_CALL vm_op_mapKeys(vm_t vm, word_t unused) {
+	word_t i, size;
+	vm_data_t d = _vm_pop(vm);
+	vm_dyn_env_t env = (vm_dyn_env_t) d->data;
+	assert(d->type==DataObjEnv);
+	dynarray_t da = vm_array_new();
+	size = dynarray_size(&env->data);
+	dynarray_reserve(da, size);
+	for(i=0;i<size;i+=2) {
+		dynarray_set(da, i, DataString);
+		dynarray_set(da, i+1, env->symbols.by_index.data[i>>1]);
+	}
+	vm_push_data(vm, DataObjArray, (word_t) da);
+}
+
 void _VM_CALL vm_op_mapGet_String(vm_t vm, const char* key) {
 	vm_data_t d = _vm_pop(vm);
 	vm_dyn_env_t env = (vm_dyn_env_t) d->data;

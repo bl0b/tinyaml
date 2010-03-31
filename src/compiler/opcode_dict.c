@@ -89,6 +89,7 @@ void opcode_dict_init(opcode_dict_t od) {
 	}
 	init_hashtab(&od->wordcode_by_stub, (hash_func) hash_ptr, (compare_func) cmp_ptr);
 	init_hashtab(&od->name_by_stub, (hash_func) hash_ptr, (compare_func) cmp_ptr);
+	init_hashtab(&od->overloads_by_stub, (hash_func) hash_ptr, (compare_func) cmp_ptr);
 }
 
 void htab_free_dict(htab_entry_t e) {
@@ -145,6 +146,25 @@ const char* opcode_name_by_stub(opcode_dict_t od, opcode_stub_t stub) {
 	return (const char*) hash_find(&od->name_by_stub, (hash_key)stub);
 }
 
+opcode_stub_overload_t opcode_overloads_by_stub(opcode_dict_t d, opcode_stub_t stub) {
+	return (opcode_stub_overload_t) hash_find(&d->overloads_by_stub, (hash_key) stub);
+}
+
+void opcode_set_stub_overloads(opcode_dict_t d, opcode_stub_t stub, opcode_stub_overload_t ovl) {
+	opcode_stub_overload_t initial = opcode_overloads_by_stub(d, stub);
+	if(!initial) {
+		hash_addelem(&d->overloads_by_stub, (hash_key) stub, (hash_elem) ovl);
+		ovl->argc = ovl->offset;
+	} else {
+		while(initial->next) {
+			if(initial->argc<ovl->argc) {
+				initial->argc=ovl->argc;
+			}
+			initial=initial->next;
+		}
+		initial->next=ovl;
+	}
+}
 
 long opcode_dict_link_stubs(opcode_dict_t target, opcode_dict_t src) {
 	return 0;

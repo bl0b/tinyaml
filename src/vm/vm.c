@@ -131,6 +131,9 @@ void vm_print_data(vm_t vm, vm_data_t d) {
 	case DataObjVObj:
 		vm_printf("[V-Obj  %p]",(void*)tmp.i);
 		break;
+	case DataObjVCls:
+		vm_printf("[V-Cls  %p]",(void*)tmp.i);
+		break;
 	case DataObjUser:
 		vm_printf("[UserObj  %p : %X]",(void*)tmp.i, *(word_t*)tmp.i);
 		break;
@@ -142,7 +145,159 @@ void vm_print_data(vm_t vm, vm_data_t d) {
 		vm_printf("[Erroneous data %X %lX]", d->type, tmp.i);
 	};
 	/*fflush(stderr);*/
+}
 
+extern const vm_engine_t stub_engine;
+
+word_t raise_exception(vm_t vm, vm_data_type_t dt, word_t exc) {
+	call_stack_entry_t cse;
+	if(dt&DataManagedObjectFlag) {
+		vm_obj_ref_ptr(vm,(void*)exc);
+	}
+	vm->exception.data = exc;
+	vm->exception.type= dt;
+	if((long)vm->current_thread->catch_stack.sp>=0) {
+		cse = _gpop(&vm->current_thread->catch_stack);
+		/*vm_printf("throw : uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
+		vm->current_thread->jmp_seg=cse->cs;
+		vm->current_thread->jmp_ofs=cse->ip;
+		while((long)vm->current_thread->call_stack.sp>(long)cse->has_closure) {
+			(void)vm_pop_caller(vm,1);
+		}
+		/*vm_push_data(vm,e->type,e->data);*/
+	} else {
+		vm_fatal("Uncaught exception. Aborting.");
+	}
+	return 0;
+}
+
+int find_in_bases(vm_t vm, vm_data_t haystack, vobj_class_t needle) {
+	vobj_class_t tmp;
+	int i;
+	dynarray_t da;
+	/* single inheritance ? */
+	switch(haystack->type) {
+	case DataObjVObj:
+		tmp = ((vobj_ref_t)haystack->data)->cls;
+		return needle==tmp || find_in_bases(vm, &tmp->_base, needle);
+	case DataObjVCls:
+		tmp = (vobj_class_t) haystack->data;
+		return needle==tmp || find_in_bases(vm, &tmp->_base, needle);
+	case DataObjArray:
+		da = (dynarray_t) haystack->data;
+		for(i=0;i<dynarray_size(da);i+=1) {
+			tmp = (vobj_class_t) dynarray_get(da, i);
+			if(tmp==needle||find_in_bases(vm, &tmp->_base, needle)) {
+				return 1;
+			}
+		}
+		return 0;
+	default:;
+		return 0;
+	};
+	
+}
+
+
+word_t dynamic_cast(vm_t vm, vm_data_t d, vm_data_type_t newtype, vobj_class_t newcls, int*fail) {
+	_IFC conv;
+	vobj_class_t objcls;
+	dynarray_t da;
+	vm_dyn_func_t* cast;
+	vm_dyn_func_t df;
+	vm_printf("dynamic_cast from (%i:%8.8X) to %i/%p\n", d->type, d->data, newtype, newcls);
+	fail?*fail=0:(void)0;
+	if(newcls!=NULL) {
+		vm_printf("dc to class instance\n");
+		switch(d->type) {
+		case DataObjVCls:
+		case DataObjVObj:
+			objcls = ((vobj_ref_t)d->data)->cls;
+			if(newcls==objcls) {
+				return d->data;
+			}
+			/* search bases */
+			return find_in_bases(vm, &objcls->_base, newcls)
+					? d->data
+					: (fail	? *fail=1
+						: raise_exception(vm, DataString, (word_t)"Type"));
+		default:
+			cast = newcls->_cast_from;
+			df = cast[d->type];
+			if(df) {
+				stub_engine->_run_sync((vm_engine_t)&stub_engine, df->cs, df->ip, vm->current_thread->prio);
+				d=_vm_pop(vm);
+				return d->data;
+			}
+		};
+	} else if(newtype==DataObjVObj&&(d->type==DataObjVObj||d->type==DataObjVCls)) {
+		vm_printf("dc raw obj\n");
+		return d->data;
+	}
+	if(d->type==newtype||d->type==DataObjVCls&&newtype==DataObjVObj) {
+		vm_printf("dc idem or class->obj\n");
+		return d->data;
+	}
+	switch(d->type) {
+	case DataObjVCls:
+	case DataObjVObj:
+		vm_printf("dc from class/obj\n");
+		objcls = ((vobj_ref_t)d->data)->cls;
+		cast = objcls?objcls->_cast_to:NULL;
+		df = cast?cast[newtype]:NULL;
+		if(df) {
+			stub_engine->_run_sync((vm_engine_t)&stub_engine, df->cs, df->ip, vm->current_thread->prio);
+			d=_vm_pop(vm);
+			return d->data;
+		}
+		raise_exception(vm, DataString, (word_t) "Type");
+		break;
+	case DataInt:
+		vm_printf("dc from int\n");
+		switch(newtype) {
+		case DataChar:
+			return d->data;
+		case DataFloat:
+			return i2f(d->data);
+		case DataString:
+		case DataObjStr:
+			return atoi((const char*)d->data);
+		default:;
+		};
+		break;
+	case DataFloat:
+		vm_printf("dc from float\n");
+		switch(newtype) {
+		case DataInt:
+			conv.i = d->data;
+			return f2i(conv.f);
+		case DataString:
+		case DataObjStr:
+			conv.f = atof((const char*)d->data);
+			return conv.i;
+		default:;
+		};
+		break;
+	case DataString:
+	case DataObjStr:
+		vm_printf("dc from string\n");
+		switch(newtype) {
+		case DataInt:
+			return atoi((const char*)d->data);
+		case DataFloat:
+			conv.f = atof((const char*)d->data);
+			return conv.i;
+		case DataString:
+		case DataObjStr:
+			return d->data;
+		default:;
+		};
+		break;
+	default:;
+		vm_printf("dc fail\n");
+		fail?*fail=1:raise_exception(vm, DataString, (word_t) "Type");
+	};
+	return 0;
 }
 
 
@@ -218,6 +373,8 @@ void vm_compinput_pop(vm_t vm) {
 
 
 void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused);
+void _VM_CALL vm_op_call(vm_t vm, word_t unused);
+void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused);
 
 
 
@@ -307,30 +464,16 @@ vm_t vm_new() {
 	_SETENV(DataObjStack);
 	_SETENV(DataObjFun);
 	_SETENV(DataObjVObj);
+	_SETENV(DataObjVCls);
 	_SETENV(DataObjUser);
-	/*thread_init(&th, 0, program_new(), 0);*/
-	/*ret->current_thread = &th;*/
-/**/
-	/*vm_push_data(ret, DataInt, (word_t) DataNone); vm_push_data(ret, DataString, (word_t) "DataNone"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataInt); vm_push_data(ret, DataString, (word_t) "DataInt"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataChar); vm_push_data(ret, DataString, (word_t) "DataChar"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataFloat); vm_push_data(ret, DataString, (word_t) "DataFloat"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataString); vm_push_data(ret, DataString, (word_t) "DataString"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataManagedObjectFlag); vm_push_data(ret, DataString, (word_t) "DataManagedObjectFlag"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjStr); vm_push_data(ret, DataString, (word_t) "DataObjStr"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjSymTab); vm_push_data(ret, DataString, (word_t) "DataObjSymTab"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjMutex); vm_push_data(ret, DataString, (word_t) "DataObjMutex"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjThread); vm_push_data(ret, DataString, (word_t) "DataObjThread"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjArray); vm_push_data(ret, DataString, (word_t) "DataObjArray"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjEnv); vm_push_data(ret, DataString, (word_t) "DataObjEnv"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjStack); vm_push_data(ret, DataString, (word_t) "DataObjStack"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjFun); vm_push_data(ret, DataString, (word_t) "DataObjFun"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjVObj); vm_push_data(ret, DataString, (word_t) "DataObjVObj"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataObjUser); vm_push_data(ret, DataString, (word_t) "DataObjUser"); vm_op_envAdd(ret, 0);*/
-	/*vm_push_data(ret, DataInt, (word_t) DataTypeMax); vm_push_data(ret, DataString, (word_t) "DataTypeMax"); vm_op_envAdd(ret, 0);*/
-/**/
-	/*program_free(ret, th.program);*/
-	/*thread_deinit(ret, &th);*/
+
+	_SETENV(OpcodeNoArg);
+	_SETENV(OpcodeArgInt);
+	_SETENV(OpcodeArgChar);
+	_SETENV(OpcodeArgFloat);
+	_SETENV(OpcodeArgLabel);
+	_SETENV(OpcodeArgString);
+	_SETENV(OpcodeArgEnvSym);
 
 	if(!dynFun_exec) {
 		dynFun_exec = vm_compile_buffer(ret, "asm call ret 0 end");
@@ -868,9 +1011,22 @@ vm_t vm_pop_catcher(vm_t vm, word_t count) {
 void lookup_label_and_ofs(program_t cs, word_t ip, const char** label, word_t* ofs);
 
 
+
+vm_dyn_func_t find_overload(vobj_ref_t obj, opcode_stub_t stub) {
+	hashtab_t oo = obj&&obj->cls ? &obj->cls->_overloads : NULL;
+	vm_data_t d = oo?hash_find(oo, (hash_key) stub):NULL;
+	printf("   find_overload obj=%p cls=%p oo=%p stub=%p => dt=%lu d=%8.8lX\n", obj, obj?obj->cls:NULL, oo, stub, d?d->type:0, d?d->data:0);
+	return d?dynamic_cast(_glob_vm, d, DataObjFun, NULL, NULL):NULL;
+}
+
+
 thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	word_t*array;
+	word_t offset;
 	word_t state_change_ndata;
+	vobj_ref_t obj;
+	vm_data_t d;
+	word_t argc;
 /*
 	if(t->IP>=t->program->code.size) {
 		t->state=ThreadDying;
@@ -906,7 +1062,77 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 	/* decode */
 	if(*array&&!setjmp(_glob_vm_jmpbuf)) {
 		t->data_sp_backup = t->data_stack.sp;
-		((opcode_stub_t) *array) ( vm, *(array+1) );
+		/* check if it has to be an object message passing */
+		vm_dyn_func_t method = NULL;
+		opcode_stub_overload_t ovl = opcode_overloads_by_stub(&vm->opcodes, (opcode_stub_t)*array);
+		while(ovl&&!method) {
+			if(_vm_trace) { printf("overload offset %i\n", ovl->offset); }
+			if(gstack_size(&t->data_stack)>=ovl->offset) {
+				offset = ovl->offset;
+				d = gpeek( vm_data_t , &t->data_stack, -offset);
+				obj = (vobj_ref_t) d->data;
+				method = d->type==DataObjVObj?find_overload(obj, ovl->target):NULL;
+				argc=ovl->argc;
+				if(_vm_trace) {
+					printf(" dt=%i d=%8.8X\n method=%p\n", d->type, d->data, method);
+				}
+			}
+			ovl=ovl->next;
+		}
+		if(method) {
+			if(_vm_trace) {
+				fprintf(stdout,"[VM:EXEC]\t shadowed by v-obj !\n");
+			}
+			/* prepare stack */
+			switch(offset) { 	/* remove object reference from stack (first, move it to top of stack) */
+			case 0: break;
+			case 1:	vm_op_swap_Int(vm, 1);
+				break;
+			default:
+				memmove(_gpeek(&t->data_stack, -offset), _gpeek(&t->data_stack, 1-offset), (offset-1)*t->data_stack.token_size);
+			};
+			_gpop(&t->data_stack); 		/* drop object reference */
+			switch(WC_GET_ARGTYPE(opcode_code_by_stub(&vm->opcodes, (opcode_stub_t) *array))) {
+			case OpcodeArgInt:
+				vm_push_data(vm, DataInt, *(array+1));
+				argc+=1;
+				break;
+			case OpcodeArgChar:
+				vm_push_data(vm, DataChar, *(array+1));
+				argc+=1;
+				break;
+			case OpcodeArgFloat:
+				vm_push_data(vm, DataFloat, *(array+1));
+				argc+=1;
+				break;
+			case OpcodeArgLabel:
+				vm_push_data(vm, DataInt, *(array+1));
+				argc+=1;
+				break;
+			case OpcodeArgString:
+				vm_push_data(vm, DataString, *(array+1));
+				argc+=1;
+				break;
+			case OpcodeArgEnvSym:
+				vm_push_data(vm, DataInt, *(array+1));
+				argc+=1;
+				break;
+			case OpcodeNoArg:
+				break;
+			case OpcodeArgPtr:
+			case OpcodeTypeMax:
+				raise_exception(vm, DataString, (word_t) "OvlArg");
+			};
+			vm_push_data(vm, DataInt, argc); /* FIXME? calling convention : pop argc first */
+			vm_push_data(vm, DataObjArray, (word_t) obj->members);
+			vm_push_data(vm, DataObjFun, (word_t)method); 	/* setup stack for call_vc */
+			vm_op_call_vc(vm, 0);
+		} else {
+			if(_vm_trace) {
+				vm_printf("  (no overload)\n");
+			}
+			((opcode_stub_t) *array) ( vm, *(array+1) );
+		}
 	}
 
 	if(_vm_trace&&(t->jmp_ofs||state_change_ndata!=t->data_stack.sp)) {

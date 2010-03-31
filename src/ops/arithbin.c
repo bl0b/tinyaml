@@ -188,6 +188,16 @@ void _VM_CALL vm_op_dec(vm_t vm, word_t immed) {
 }
 
 
+void _VM_CALL vm_op_rmod(vm_t vm, word_t immed) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	fast_apply_bin_func(dtb,b,dta,a,m_mod,fmod,a,dta);
+	vm_poke_data(vm,dta,a);
+}
+
 void _VM_CALL vm_op_mod(vm_t vm, word_t immed) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
@@ -227,6 +237,18 @@ void _VM_CALL vm_op_add(vm_t vm, word_t immed) {
 }
 
 
+void _VM_CALL vm_op_rsub(vm_t vm, word_t immed) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dtb,&b);
+	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	/*printf("debug sub : a=%li b=%li\n", a, b);*/
+	fast_apply_bin_func(dtb,b,dta,a,_sub,_sub,a,dta);
+	/*printf("debug sub : a=%li\n", a);*/
+	vm_poke_data(vm,dta,a);
+}
+
 void _VM_CALL vm_op_sub(vm_t vm, word_t immed) {
 	vm_data_type_t dta,dtb;
 	word_t a,b;
@@ -256,6 +278,20 @@ void _VM_CALL vm_op_div(vm_t vm, word_t immed) {
 	word_t a,b;
 	vm_peek_data(vm,0,&dtb,&b);
 	vm_peek_data(vm,-1,&dta,&a);
+	vm_pop_data(vm,1);
+	assert((dta==DataInt||dta==DataFloat)&&(dtb==DataInt||dtb==DataFloat));
+	if(b==0) {
+		vm_fatal("Division by zero !");
+	}
+	fast_apply_bin_func(dta,a,dtb,b,_div,_div,a,dta);
+	vm_poke_data(vm,dta,a);
+}
+
+void _VM_CALL vm_op_rdiv(vm_t vm, word_t immed) {
+	vm_data_type_t dta,dtb;
+	word_t a,b;
+	vm_peek_data(vm,0,&dta,&a);
+	vm_peek_data(vm,-1,&dtb,&b);
 	vm_pop_data(vm,1);
 	assert((dta==DataInt||dta==DataFloat)&&(dtb==DataInt||dtb==DataFloat));
 	if(b==0) {

@@ -96,7 +96,16 @@ struct _opcode_dict_t {
 	/* reverse lookup */
 	struct _hashtab_t wordcode_by_stub;
 	struct _hashtab_t name_by_stub;
+	struct _hashtab_t overloads_by_stub;
 };
+
+struct _opcode_stub_overload_t {
+	struct _opcode_stub_overload_t* next;
+	long offset;
+	word_t argc;
+	opcode_stub_t target;
+};
+
 /*@}*/
 
 
@@ -294,6 +303,28 @@ struct _thread_t {
 	struct _data_stack_entry_t registers[TINYAML_N_REGISTERS];
 };
 /*@}*/
+
+
+
+struct _vobj_ref_t {
+	dynarray_t members;
+	vobj_class_t cls;
+	word_t own;
+	word_t offset;
+};
+
+
+
+struct _vobj_class_t {
+	struct _vobj_ref_t ref;
+	struct _data_stack_entry_t _base; /* allow for single or multiple inheritance */
+	char* _name;
+	struct _hashtab_t _overloads;
+	vm_dyn_func_t _cast_from[DataTypeMax];
+	vm_dyn_func_t _cast_to[DataTypeMax];
+};
+
+
 
 /*! \weakgroup vm
  * @{

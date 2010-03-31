@@ -103,6 +103,9 @@ void* _gpop(generic_stack_t s) {
 }
 
 void* _gpeek(generic_stack_t s, long rel_ofs) {
+	if(s->sp<(word_t)-rel_ofs) {
+		abort();
+	}
 	assert(s->sp>=(word_t)-rel_ofs);
 /*
 	vm_printf("gpeek\n");

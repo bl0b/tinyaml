@@ -220,12 +220,12 @@ typedef struct _opcode_dict_t* opcode_dict_t;
  */
 typedef enum {
 	DataNone=0,
-	DataInt=1,			/*!< 32-bit integer */
+	DataInt=OpcodeArgInt,		/*!< 32-bit integer */
 	DataChar=OpcodeArgChar,		/*!< 8-bit char (internally represented as 32-bit integer) */
 	DataFloat=OpcodeArgFloat,	/*!< 32-bit floating point */
 	DataString=OpcodeArgString,	/*!< static string */
 
-	DataManagedObjectFlag=0x100,	/*!< Managed object types have this bit set */
+	DataManagedObjectFlag=0x10,	/*!< Managed object types have this bit set */
 	DataObjStr,			/*!< Managed string */
 	DataObjSymTab,			/*!< Managed \ref symtab_t "symbol table" */
 	DataObjMutex,			/*!< Managed \ref mutex_t "mutex" */
@@ -235,6 +235,7 @@ typedef enum {
 	DataObjStack,			/*!< Managed \ref generic_stack_t "stack" */
 	DataObjFun,			/*!< Managed \ref dyn_func_t "function object" */
 	DataObjVObj,			/*!< Reserved for object model management. VObj should be a dynarray with a header. */
+	DataObjVCls,			/*!< Reserved for object model management. VObj should be a dynarray with a header. */
 	DataObjUser,			/*!< Managed user object. (meant for extensions) */
 
 	DataTypeMax,			/*!< Boundary \note This is not a valid type. */
@@ -285,11 +286,18 @@ typedef struct _call_stack_entry_t* call_stack_entry_t;
 typedef struct _call_stack_entry_t* catch_stack_entry_t;
 /*@}*/
 
+/*! \brief A reference to a virtual object */
+typedef struct _vobj_ref_t* vobj_ref_t;
+typedef struct _vobj_class_t* vobj_class_t;
+
+
 /*! \weakgroup vm
  * @{
  */
 /*! \brief Signature for all C opcode routines. */
 typedef void _VM_CALL (*opcode_stub_t) (vm_t, word_t t);
+
+typedef struct _opcode_stub_overload_t* opcode_stub_overload_t;
 /*@}*/
 
 /*! \brief Bitsize of argument_type field in wordcode. */

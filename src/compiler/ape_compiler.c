@@ -345,8 +345,45 @@ void plug_opcode(tinyap_t parser, const char* arg_type, const char* opcode) {
 }
 
 
+
+
+opcode_stub_t os;
+opcode_stub_overload_t osovl;
+
+WalkDirection ape_compiler_DeclOpcodeOverloads(wast_t node, vm_t vm) {
+	os=NULL;
+	osovl=NULL;
+	return Down;
+}
+
+WalkDirection ape_compiler_DeclOpcode_Overload(wast_t node, vm_t vm) {
+	opcode_stub_overload_t oo=osovl;
+	if(!oo) {
+		oo = (opcode_stub_overload_t) malloc(sizeof(struct _opcode_stub_overload_t));
+		oo->next=NULL;
+	} else {
+		while(oo->next) { oo=oo->next; }
+		oo->next = (opcode_stub_overload_t) malloc(sizeof(struct _opcode_stub_overload_t));
+		oo=oo->next;
+	}
+	oo->offset = atoi(wa_op(wa_opd(node, 0)))-1;
+	if(wa_opd_count(node)==1) {
+		oo->target = os;
+	} else {
+		opcode_stub_t osbak = os;
+		try_walk(wa_opd(node, 1), "compiler", vm);
+		os=osbak;
+	}
+	opcode_set_stub_overloads(&vm->opcodes, os, oo);
+	return Next;
+}
+
+WalkDirection ape_compiler__doovl_End(wast_t node, vm_t vm) {
+	
+	return Next;
+}
+
 WalkDirection ape_compiler_DeclOpcode_Float(wast_t node, vm_t vm) {
-	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
 	/*plug_opcode(vm->parser, "Float", name);*/
 	os = opcode_stub_resolve(OpcodeArgFloat,name,vm->dl_handle);
@@ -358,7 +395,6 @@ WalkDirection ape_compiler_DeclOpcode_Float(wast_t node, vm_t vm) {
 }
 
 WalkDirection ape_compiler_DeclOpcode_Int(wast_t node, vm_t vm) {
-	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
 	/*plug_opcode(vm->parser, "Int", name);*/
 	os = opcode_stub_resolve(OpcodeArgInt,name,vm->dl_handle);
@@ -370,7 +406,6 @@ WalkDirection ape_compiler_DeclOpcode_Int(wast_t node, vm_t vm) {
 }
 
 WalkDirection ape_compiler_DeclOpcode_Char(wast_t node, vm_t vm) {
-	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
 	/*plug_opcode(vm->parser, "Int", name);*/
 	os = opcode_stub_resolve(OpcodeArgChar,name,vm->dl_handle);
@@ -382,7 +417,6 @@ WalkDirection ape_compiler_DeclOpcode_Char(wast_t node, vm_t vm) {
 }
 
 WalkDirection ape_compiler_DeclOpcode_Label(wast_t node, vm_t vm) {
-	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
 	/*plug_opcode(vm->parser, "Label", name);*/
 	os = opcode_stub_resolve(OpcodeArgLabel,name,vm->dl_handle);
@@ -394,7 +428,6 @@ WalkDirection ape_compiler_DeclOpcode_Label(wast_t node, vm_t vm) {
 }
 
 WalkDirection ape_compiler_DeclOpcode_EnvSym(wast_t node, vm_t vm) {
-	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
 	/*plug_opcode(vm->parser, "EnvSym", name);*/
 	os = opcode_stub_resolve(OpcodeArgEnvSym,name,vm->dl_handle);
@@ -406,7 +439,6 @@ WalkDirection ape_compiler_DeclOpcode_EnvSym(wast_t node, vm_t vm) {
 }
 
 WalkDirection ape_compiler_DeclOpcode_String(wast_t node, vm_t vm) {
-	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
 	/*plug_opcode(vm->parser, "String", name);*/
 	os = opcode_stub_resolve(OpcodeArgString,name,vm->dl_handle);
@@ -418,7 +450,6 @@ WalkDirection ape_compiler_DeclOpcode_String(wast_t node, vm_t vm) {
 }
 
 WalkDirection ape_compiler_DeclOpcode_NoArg(wast_t node, vm_t vm) {
-	opcode_stub_t os;
 	const char* name = wa_op(wa_opd(node,0));
 	/*plug_opcode(vm->parser, "NoArg", name);*/
 	os = opcode_stub_resolve(OpcodeNoArg,name,vm->dl_handle);

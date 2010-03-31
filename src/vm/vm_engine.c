@@ -100,6 +100,9 @@ static void data_stack_renderer(vm_data_t d) {
 	case DataObjVObj:
 		vm_printerrf("V-Obj  %p",(void*)d->data);
 		break;
+	case DataObjVCls:
+		vm_printerrf("V-Class  %p",(void*)d->data);
+		break;
 	case DataManagedObjectFlag:
 		vm_printerrf("Undefined Object ! %p",(void*)d->data);
 		break;

@@ -178,7 +178,31 @@ generic_stack_t vm_stack_new();
  */
 vm_dyn_func_t vm_dyn_fun_new();
 
+/*! \brief create a new virtual object instance
+ */
+vobj_ref_t vobj_new();
+vobj_ref_t vobj_add_class(vm_t vm, vobj_ref_t o, vobj_class_t cls);
+void vobj_set_member(vobj_ref_t o, word_t index, vm_data_t d);
+vm_data_t vobj_get_member(vobj_ref_t o, word_t index);
+#define VOBJ_OWN 0x1
+#define VOBJ_COPYONWRITE 0x100
+
+extern vobj_ref_t ObjNil;
+extern vobj_class_t ClassNil;
+
 /*@}*/
+
+
+/*! virtual object class handling */
+/*@{*/
+vobj_class_t vclass_new();
+const char* vclass_get_name(vobj_class_t cls);
+void vclass_set_name(vobj_class_t cls, const char* name);
+void vclass_set_overload(vobj_class_t cls, opcode_stub_t stub, vm_data_t ovl);
+void vclass_define_cast_to(vobj_class_t cls, vm_data_type_t totype, vm_dyn_func_t cast);
+void vclass_define_cast_from(vobj_class_t cls, vm_data_type_t totype, vm_dyn_func_t cast);
+/*@}*/
+
 
 #endif
 

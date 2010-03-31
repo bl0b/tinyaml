@@ -343,7 +343,7 @@ void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused) {
 	assert(fun->closure==NULL);
 	/* pop closure */
 	d = _vm_pop(vm);
-	assert(d->type==DataObjArray||d->type==DataObjVObj);
+	assert(d->type==DataObjArray);
 	da = (dynarray_t) d->data;
 	/* perform call */
 	vm_push_caller(vm,t->program, t->IP, 1, fun);
@@ -460,30 +460,9 @@ void _VM_CALL vm_op_throw(vm_t vm, word_t unused) {
 	call_stack_entry_t cse;
 	if((long)vm->current_thread->data_stack.sp>=0) {
 		vm_data_t d = _vm_pop(vm);
-		if(d->type&DataManagedObjectFlag) {
-			vm_obj_ref_ptr(vm,(void*)d->data);
-		}
-		vm->exception.data = d->data;
-		vm->exception.type= d->type;
+		raise_exception(vm, d->type, d->data);
 	} else {
-		vm->exception.type=DataString;
-		vm->exception.data=(word_t)"GlobalFailure : throw without data.";
-	}
-	/*vm_printf("VM exception state @%p %i:%8.8lX\n",vm->exception,vm->exception.type,vm->exception.data);*/
-	/*if(vm->exception->type&DataManagedObjectFlag) {*/
-		/*vm_obj_ref_ptr(vm,(void*)vm->exception->data);*/
-	/*}*/
-	if((long)vm->current_thread->catch_stack.sp>=0) {
-		cse = _gpop(&vm->current_thread->catch_stack);
-		/*vm_printf("throw : uninstall catcher %p:%lu\n",cse->cs,cse->ip);*/
-		vm->current_thread->jmp_seg=cse->cs;
-		vm->current_thread->jmp_ofs=cse->ip;
-		while((long)vm->current_thread->call_stack.sp>(long)cse->has_closure) {
-			(void)vm_pop_caller(vm,1);
-		}
-		/*vm_push_data(vm,e->type,e->data);*/
-	} else {
-		vm_fatal("Uncaught exception");
+		raise_exception(vm, DataString, (word_t)"GlobalFailure : throw without data.");
 	}
 }
 

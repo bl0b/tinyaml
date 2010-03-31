@@ -42,6 +42,9 @@ const char* opcode_name_by_stub(opcode_dict_t, opcode_stub_t);
 long opcode_dict_link_stubs(opcode_dict_t target, opcode_dict_t src);
 long opcode_dict_resolve_stubs(opcode_dict_t src);
 
+opcode_stub_overload_t opcode_overloads_by_stub(opcode_dict_t d, opcode_stub_t stub);
+void opcode_set_stub_overloads(opcode_dict_t d, opcode_stub_t stub, opcode_stub_overload_t ovl);
+
 
 void opcode_dict_serialize(opcode_dict_t od, writer_t);
 void opcode_dict_unserialize(opcode_dict_t od, reader_t, void*);

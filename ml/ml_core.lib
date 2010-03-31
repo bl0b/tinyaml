@@ -22,29 +22,29 @@ lib
         opcode push:Float
         opcode push:String
 
-        opcode pop
-        opcode popN
+        opcode pop   
+        opcode popN    
         opcode pop:Int          # pop n values
         opcode dup:Int          # duplicate n-th value on top of stack
         opcode swap:Int         # swap top and top-offset on data stack
 
       # char/int conversions
         opcode chr:Int          # push char
-        opcode chr              # pop int, push char
+        opcode chr      (1)    # pop int, push char
         opcode ord:Char         # push int
-        opcode ord              # pop char, push int
+        opcode ord      (1)    # pop char, push int
 
       # objects
-        opcode clone
+        opcode clone (1)
 
       # tests
 
-        opcode inf
-        opcode sup
-        opcode eq
-        opcode nEq
-        opcode infEq
-        opcode supEq
+        opcode inf (1,2=supEq)
+        opcode sup (1,2=infEq)
+        opcode eq (1,2=nEq)
+        opcode nEq (1,2=eq)
+        opcode infEq (1,2=sup)
+        opcode supEq (1,2=inf)
 
         opcode SZ               # skip next instruction if zero
         opcode SNZ              # skip next instruction if non zero
@@ -59,7 +59,7 @@ lib
       # jumps
         opcode jmp:Label        # relative intra-segment jump
       # call stack
-        opcode call             # call a function object
+        opcode call (1)        # call a function object
         opcode call_vc          # pop function object, pop array or
                                 # VObj, use the latter as closure and
                                 # call the former.
@@ -69,12 +69,12 @@ lib
         opcode ret:Int          # pop out n values then return
 
       # function objects
-        opcode dynFunNew:Label    # push func obj
-        opcode dynFunAddClosure   # pop (data to clone)
-        opcode getClosure:Int     # pop (data to clone)
-        opcode getClosure         # pop index, pop (data to clone)
-        opcode setClosure:Int     # pop (data to set)
-        opcode setClosure         # pop index, pop (data to set)
+        opcode dynFunNew:Label   # push func obj
+        opcode dynFunAddClosure (2)  # pop (data to clone)
+        opcode getClosure:Int    # pop (data to clone)
+        opcode getClosure        # pop index, pop (data to clone)
+        opcode setClosure:Int    # pop (data to set)
+        opcode setClosure        # pop index, pop (data to set)
 
       # address space management
         opcode enter:Int        # reserve n local variables
@@ -88,53 +88,56 @@ lib
         opcode getmem           # pop n from data stack then getmem n
         opcode setmem           # pop n from data stack then setmem n
       # bin&arith
-        opcode shr              # shift right
-        opcode shr:Int          # shift right n bits
-        opcode vshr             # pop n then shift right n bits
+        opcode shr (1)             # shift right
+        opcode shr:Int (1)         # shift right n bits
+        opcode vshr (2)            # pop n then shift right n bits
 
-        opcode shl              # shift left
-        opcode shl:Int          # shift left n bits
-        opcode vshl             # pop n then shift left n bits
+        opcode shl (1)             # shift left
+        opcode shl:Int (1)         # shift left n bits
+        opcode vshl (2)            # pop n then shift left n bits
 
-        opcode and
-        opcode or
-        opcode not
-        opcode xor
-        opcode and:Int
-        opcode or:Int
-        opcode xor:Int
+        opcode and (1,2)
+        opcode or (1,2)
+        opcode not (1)
+        opcode xor (1,2)
+        opcode and:Int (1)
+        opcode or:Int (1)
+        opcode xor:Int (1)
 
-        opcode inc
-        opcode dec
+        opcode inc (1)
+        opcode dec (1)
 
-        opcode mod
-        opcode mod:Int
+        opcode rmod (1,2=mod)
+        opcode mod (1,2=rmod)
+        opcode mod:Int (1)
         opcode mod:Float
 
-        opcode add              # use two values on top of stack
-        opcode sub
-        opcode mul
-        opcode div
+        opcode add (1,2)             # use two values on top of stack
+        opcode sub (1,2=rsub)
+        opcode rsub (1,2=sub)
+        opcode mul (1,2)
+        opcode div (1,2=rdiv)
+        opcode rdiv (1,2=div)
 
-        opcode add:Int          # use top of stack and immed value
-        opcode sub:Int
-        opcode mul:Int
-        opcode div:Int
+        opcode add:Int (1)         # use top of stack and immed value
+        opcode sub:Int (1)
+        opcode mul:Int (1)
+        opcode div:Int (1)
 
-        opcode add:Float
-        opcode sub:Float
-        opcode mul:Float
-        opcode div:Float
+        opcode add:Float (1)
+        opcode sub:Float (1)
+        opcode mul:Float (1)
+        opcode div:Float (1)
 
-        opcode sin
-        opcode cos
-        opcode tan
+        opcode sin (1)
+        opcode cos (1)
+        opcode tan (1)
 
-        opcode sqrt             # pop float, push sqrt(value)
-        opcode log              # pop float, push ln(value)
-        opcode log:Float        # pop float, push ln(value)/ln(arg)
-        opcode exp              # pop float, push exp(float)
-        opcode pow              # pop int/float (x), pop int/float (y),
+        opcode sqrt (1)         # pop float, push sqrt(value)
+        opcode log  (1)         # pop float, push ln(value)
+        opcode log:Float (1)    # pop float, push ln(value)/ln(arg)
+        opcode exp (1)          # pop float, push exp(float)
+        opcode pow (1)          # pop int/float (x), pop int/float (y),
                                 # push float (x^y)
 
       # AST manipulation
@@ -200,10 +203,10 @@ lib
       # handling symbol tables
         opcode newSymTab                # create a new sym tab and push
                                         # it onto data stack
-        opcode symTabSz
-        opcode getSym                   #pop key, pop table, push index
-        opcode getSymName               #pop key, pop table, push symbol
-        opcode addSym                   # pop key, pop table
+        opcode symTabSz (1)
+        opcode getSym   (2)             #pop key, pop table, push index
+        opcode getSymName (2)           #pop key, pop table, push symbol
+        opcode addSym (2)               # pop key, pop table
 
       # runtime environment
         opcode envLookup                # [symbol] => offset
@@ -213,50 +216,51 @@ lib
         opcode envAdd
 
         opcode mapNew
-        opcode mapHasKey
-        opcode mapGet
-        opcode mapSet
-        opcode mapHasKey:String
-        opcode mapGet:String
-        opcode mapSet:String
+        opcode mapHasKey (1)
+        opcode mapGet (2)
+        opcode mapSet (3)
+        opcode mapHasKey:String (1)
+        opcode mapGet:String (1)
+        opcode mapSet:String (1)
+        opcode mapKeys (1)
 
       # handling arrays
         opcode arrayNew
-        opcode arrayResv:Int
-        opcode arrayResv
-        opcode arrayGet:Int
-        opcode arrayGet
-        opcode arraySet:Int
-        opcode arraySet
-        opcode arraySize
+        opcode arrayResv:Int (1)
+        opcode arrayResv (2)
+        opcode arrayGet:Int (1)
+        opcode arrayGet (2)
+        opcode arraySet:Int (1)
+        opcode arraySet (2)
+        opcode arraySize (1)
 
       # handling object stacks
         opcode stackNew
-        opcode stackPush
-        opcode stackPop
-        opcode stackPeek
-        opcode stackPop:Int
-        opcode stackPeek:Int
-        opcode stackSize
+        opcode stackPush (2)
+        opcode stackPop (1)
+        opcode stackPeek (2)
+        opcode stackPop:Int (1)
+        opcode stackPeek:Int (1)
+        opcode stackSize (1)
 
       # string operations
-        opcode strcmp:String
-        opcode strcat:String
-        opcode strdup:String
-        opcode strcmp
-        opcode strcat
-        opcode strdup
-        opcode strlen
-        opcode charAt:Int
-        opcode setCharAt:Int
-        opcode charAt
-        opcode setCharAt
-        opcode substr
+        opcode strcmp:String (1)
+        opcode strcat:String (1)
+        opcode strdup:String (1)
+        opcode strcmp (1,2)
+        opcode strcat (1,2)
+        opcode strdup (1)
+        opcode strlen (1)
+        opcode charAt:Int (1)
+        opcode setCharAt:Int (1)
+        opcode charAt (2)
+        opcode setCharAt (2)
+        opcode substr (3)
 
       # basic conversions
-        opcode toS
-        opcode toI
-        opcode toF
+        opcode toS (1)
+        opcode toI (1)
+        opcode toF (1)
 
       # threading
         opcode newThread:Label          # pop prio
@@ -295,6 +299,20 @@ lib
         opcode _vm_prog_get_globals     # push symtab
         opcode typeof			# pop any, push int (Data* constant)
 
+      # Virtual objects
+        opcode _vobj_new  (1)
+        opcode _vobj_gcls (1)
+        opcode _vobj_scls (2)
+        opcode _vobj_gmbr:Int (1)
+        opcode _vobj_gmbr (2)
+        opcode _vobj_smbr:Int (2)
+        opcode _vobj_smbr (3)
+        opcode _vcls_new  (1)
+        opcode _vcls_gname (1)
+        opcode _vcls_sname (2)
+        opcode _vcls_cto (2)
+        opcode _vcls_cfrom (1)
+        opcode _vcls_soo (4) # cls, str (opcode), int (argtype), dyn_fun
 
-        end
+       end
 

@@ -24,6 +24,7 @@
 #include <math.h>
 #include "fastmath.h"
 #include "opcode_chain.h"
+#include "opcode_dict.h"
 #include "object.h"
 #include "generic_stack.h"
 
@@ -387,6 +388,93 @@ void _VM_CALL vm_op_regSet(vm_t vm, word_t unused) {
 	vm_op_regSet_Int(vm,d->data);
 }
 
+
+/*@}*/
+
+/*! \addtogroup vcop_vobj
+ * @{
+ */
+
+void _VM_CALL vm_op__vobj_new(vm_t vm, word_t unused) {
+	vm_push_data(vm, DataObjVObj, (word_t) vobj_new());
+}
+
+void _VM_CALL vm_op__vobj_gcls(vm_t vm, word_t unused) {
+	vobj_ref_t obj = (vobj_ref_t) dynamic_cast(vm, _vm_pop(vm), DataObjVObj, NULL, NULL);
+	vm_push_data(vm, DataObjVCls, (word_t) (obj->cls?obj->cls:ClassNil));
+}
+
+void _VM_CALL vm_op__vobj_scls(vm_t vm, word_t unused) {
+	vobj_class_t cls = (vobj_class_t) dynamic_cast(vm, _vm_pop(vm), DataObjVCls, NULL, NULL);
+	vobj_ref_t obj = (vobj_ref_t) dynamic_cast(vm, _vm_pop(vm), DataObjVObj, NULL, NULL);
+	vm_printf("set class to %p for object %p\n", cls, obj);
+	obj->cls = cls;
+}
+
+void _VM_CALL vm_op__vobj_gmbr_Int(vm_t vm, word_t index) {
+	vobj_ref_t obj = (vobj_ref_t) dynamic_cast(vm, _vm_pop(vm), DataObjVObj, NULL, NULL);
+	vm_data_t d = vobj_get_member(obj, index);
+	vm_push_data(vm, d->type, d->data);
+}
+
+void _VM_CALL vm_op__vobj_gmbr(vm_t vm, word_t unused) {
+	word_t index = dynamic_cast(vm, _vm_pop(vm), DataInt, NULL, NULL);
+	vm_op__vobj_gmbr_Int(vm, index);
+}
+
+void _VM_CALL vm_op__vobj_smbr_Int(vm_t vm, word_t index) {
+	vm_data_t d = _vm_pop(vm);
+	vobj_ref_t obj = (vobj_ref_t) dynamic_cast(vm, _vm_pop(vm), DataObjVObj, NULL, NULL);
+	vobj_set_member(obj, index, d);
+}
+
+void _VM_CALL vm_op__vobj_smbr(vm_t vm, word_t unused) {
+	word_t index = dynamic_cast(vm, _vm_pop(vm), DataInt, NULL, NULL);
+	vm_op__vobj_smbr_Int(vm, index);
+}
+
+void _VM_CALL vm_op__vcls_new(vm_t vm, word_t unused) {
+	vm_push_data(vm, DataObjVCls, (word_t) vclass_new());
+}
+
+void _VM_CALL vm_op__vcls_gname(vm_t vm, word_t unused) {
+	vobj_class_t cls = (vobj_class_t) dynamic_cast(vm, _vm_pop(vm), DataObjVCls, NULL, NULL);
+}
+
+void _VM_CALL vm_op__vcls_sname(vm_t vm, word_t unused) {
+	const char* name = (const char*) dynamic_cast(vm, _vm_pop(vm), DataString, NULL, NULL);
+	vobj_class_t cls = (vobj_class_t) dynamic_cast(vm, _vm_pop(vm), DataObjVCls, NULL, NULL);
+	vclass_set_name(cls, name);
+}
+
+void _VM_CALL vm_op__vcls_cto(vm_t vm, word_t unused) {
+	int fail=0;
+	vobj_class_t cls;
+	vobj_ref_t obj;
+	vm_data_t d = _vm_pop(vm);
+	cls = (vobj_class_t) dynamic_cast(vm, d, DataObjVCls, NULL, &fail);
+	if(fail) {
+		vm_data_type_t dt  = (vm_data_type_t) dynamic_cast(vm, d, DataInt, NULL, NULL);
+		vm_push_data(vm, dt, dynamic_cast(vm, d, dt, NULL, NULL));
+	} else {
+		vm_push_data(vm, DataObjVObj, dynamic_cast(vm, d, DataObjVObj, cls, NULL));
+	}
+}
+
+void _VM_CALL vm_op__vcls_cfrom(vm_t vm, word_t unused) {
+	vobj_class_t cls = (vobj_class_t) dynamic_cast(vm, _vm_pop(vm), DataObjVCls, NULL, NULL);
+	vm_data_t d = _vm_pop(vm);
+	vm_push_data(vm, DataObjVObj, dynamic_cast(vm, d, DataObjVObj, cls, NULL));
+}
+
+void _VM_CALL vm_op__vcls_soo(vm_t vm, word_t unused) {
+	vm_dyn_func_t df = (vm_dyn_func_t) dynamic_cast(vm, _vm_pop(vm), DataObjFun, NULL, NULL);
+	word_t ocarg = dynamic_cast(vm, _vm_pop(vm), DataInt, NULL, NULL);
+	char* oc = (char*) dynamic_cast(vm, _vm_pop(vm), DataString, NULL, NULL);
+	vobj_class_t cls = (vobj_class_t) dynamic_cast(vm, _vm_pop(vm), DataObjVCls, NULL, NULL);
+	struct _data_stack_entry_t d = { DataObjFun, (word_t) df };
+	vclass_set_overload(cls, opcode_stub_by_name(&vm->opcodes, ocarg, oc), &d);
+}
 
 /*@}*/
 
