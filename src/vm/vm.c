@@ -1203,9 +1203,10 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 				raise_exception(vm, DataString, (word_t) "OvlArg");
 			};
 			vm_push_data(vm, DataInt, argc); /* FIXME? calling convention : pop argc first */
-			vm_push_data(vm, DataObjArray, (word_t) obj->members);
-			vm_push_data(vm, DataObjFun, (word_t)method); 	/* setup stack for call_vc */
-			vm_op_call_vc(vm, 0);
+			/*vm_push_data(vm, DataObjArray, (word_t) obj->members);*/
+			vm_push_data(vm, DataObjFun, (word_t)method);	 	/* setup stack for call_vc */
+			/*vm_op_call_vc(vm, 0);*/
+			vm_op_call(vm, 0);
 		} else {
 			/*if(_vm_trace) {*/
 				/*vm_printf("  (no overload)\n");*/
