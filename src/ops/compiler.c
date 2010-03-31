@@ -61,9 +61,8 @@ void _VM_CALL vm_op__langDef_String(vm_t vm, const char* sernode) {
 }
 
 void _VM_CALL vm_op__langPlug_String(vm_t vm, const char* plugin) {
-	vm_data_t arg = _vm_pop(vm);
+	vm_data_t arg = vm_pop_string(vm);
 	const char* plug = (const char*) arg->data;
-	assert(arg->type==DataString);
 	/*vm_printf("ML::plugging %s into %s\n",plugin,plug);*/
 	tinyap_plug(vm->parser,plugin,plug);
 }
@@ -74,12 +73,15 @@ void _VM_CALL vm_op_write_data(vm_t vm, word_t x) {
 	char tmp_r[512], tmp_d[512];
 	_IFC conv;
 	vm_data_t d = _vm_pop(vm);
-	vm_data_t rep = _vm_pop(vm);
-	assert(rep->type==DataInt);
+	vm_data_t rep = vm_pop_int(vm);
 	sprintf(tmp_r,"%lu",rep->data);
 	switch(d->type) {
 	case DataInt:
 		sprintf(tmp_d,"%li",d->data);
+		opcode_chain_add_data(vm->result, d->type, tmp_d, tmp_r, -1, -1);
+		break;
+	case DataChar:
+		sprintf(tmp_d,"%c",d->data);
 		opcode_chain_add_data(vm->result, d->type, tmp_d, tmp_r, -1, -1);
 		break;
 	case DataFloat:
@@ -104,8 +106,7 @@ void _VM_CALL vm_op_write_label_String(vm_t vm, const char* label) {
 }
 
 void _VM_CALL vm_op_write_label(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_write_label_String(vm,(const char*)d->data);
 }
 
@@ -115,88 +116,74 @@ void _VM_CALL vm_op_write_oc_String(vm_t vm, const char* name) {
 }
 
 void _VM_CALL vm_op_write_oc(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_write_oc_String(vm,(const char*)d->data);
 }
 
 void _VM_CALL vm_op_write_ocString_String(vm_t vm, const char* name) {
-	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	const char*argstr;
-	assert(arg->type==DataString||arg->type==DataObjStr);
-	argstr = (const char*) arg->data;
-	/*vm_printf("vm_op_write_ocString_String %s %s\n",name,argstr);*/
+	vm_data_t arg = vm_pop_string(vm);
+	const char*argstr = (const char*) arg->data;
 	opcode_chain_add_opcode(vm->result, OpcodeArgString, name, argstr, -1, -1);
 }
 
 void _VM_CALL vm_op_write_ocString(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_write_ocString_String(vm,(const char*)d->data);
 }
 
 void _VM_CALL vm_op_write_ocChar_String(vm_t vm, const char* name) {
-	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
+	vm_data_t arg = vm_pop_char(vm);	/* -1 becomes 0 */
 	char argstr[16];
-	assert(arg->type==DataChar);
 	sprintf(argstr,"%c",(char)arg->data);
 	/*vm_printf("vm_op_write_ocString_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgChar, name, argstr, -1, -1);
 }
 
 void _VM_CALL vm_op_write_ocChar(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_write_ocChar_String(vm,(const char*)d->data);
 }
 
 void _VM_CALL vm_op_write_ocInt_String(vm_t vm, const char* name) {
-	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
+	vm_data_t arg = vm_pop_int(vm);	/* -1 becomes 0 */
 	char argstr[512];
-	assert(arg->type==DataInt);
 	sprintf(argstr,"%li",(long)arg->data);
 	/*vm_printf("vm_op_write_ocInt_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgInt, name, argstr, -1, -1);
 }
 
 void _VM_CALL vm_op_write_ocInt(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_write_ocInt_String(vm,(const char*)d->data);
 }
 
 void _VM_CALL vm_op_write_ocLabel_String(vm_t vm, const char* name) {
-	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
-	assert(arg->type==DataString||arg->type==DataObjStr);
+	vm_data_t arg = vm_pop_string(vm);	/* -1 becomes 0 */
 	/*vm_printf("vm_op_write_ocLabel_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgLabel, name, (const char*)arg->data, -1, -1);
 }
 
 void _VM_CALL vm_op_write_ocLabel(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_write_ocLabel_String(vm,(const char*)d->data);
 }
 
 void _VM_CALL vm_op_write_ocEnvSym_String(vm_t vm, const char* name) {
-	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
+	vm_data_t arg = vm_pop_string(vm);	/* -1 becomes 0 */
 	/*char argstr[512];*/
-	assert(arg->type==DataString||arg->type==DataObjStr);
 	/*vm_printf("vm_op_write_ocLabel_String %s %s\n",name,argstr);*/
 	opcode_chain_add_opcode(vm->result, OpcodeArgEnvSym, name, (char*)arg->data, -1, -1);
 }
 
 void _VM_CALL vm_op_write_ocEnvSym(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_write_ocEnvSym_String(vm,(const char*)d->data);
 }
 
 void _VM_CALL vm_op_write_ocFloat_String(vm_t vm, const char* name) {
-	vm_data_t arg = _vm_pop(vm);	/* -1 becomes 0 */
+	vm_data_t arg = vm_pop_string(vm);	/* -1 becomes 0 */
 	char argstr[512];
 	_IFC conv;
-	assert(arg->type==DataFloat);
 	conv.i=arg->data;
 	sprintf(argstr,"%f",conv.f);
 	/*vm_printf("vm_op_write_ocFloat_String %s %s\n",name,argstr);*/
@@ -205,8 +192,7 @@ void _VM_CALL vm_op_write_ocFloat_String(vm_t vm, const char* name) {
 
 
 void _VM_CALL vm_op_write_ocFloat(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_write_ocFloat_String(vm,(const char*)d->data);
 }
 
@@ -214,14 +200,14 @@ void _VM_CALL vm_op_write_ocFloat(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op___addCompileMethod_Label(vm_t vm, long rel_ofs) {
 	thread_t t=vm->current_thread;
-	vm_data_t local = _vm_pop(vm);	/* -1 becomes 0 */
+	vm_data_t local = vm_pop_string(vm);	/* -1 becomes 0 */
 	word_t ofs = t->IP+rel_ofs;
 	word_t vec_ofs;
 	const char*name;
-	if(local->type!=DataString) {
-		vm_printf("[VM:ERR] willingly obfuscated internal error.\n");
-		return;
-	}
+	/*if(local->type!=DataString) {*/
+		/*vm_printf("[VM:ERR] willingly obfuscated internal error.\n");*/
+		/*return;*/
+	/*}*/
 	vec_ofs = (word_t)hash_find(&vm->compile_vectors.by_text,(hash_elem)local->data);
 	if(vec_ofs) {
 		vm_printf("[VM:ERR] vector %s already exists !\n", (const char*)local->data);
@@ -279,7 +265,9 @@ void _VM_CALL vm_op_astGetChildrenCount(vm_t vm, word_t x) {
 }
 
 void _VM_CALL vm_op_astCompileChild_Int(vm_t vm, word_t x) {
-	assert(x<wa_opd_count(vm->current_node));
+	if(x>=wa_opd_count(vm->current_node)) {
+		raise_exception(vm, DataString, "OutOfRange");
+	}
 /*	vm_printf("calling sub compiler on child #%lu\n", x);*/
 /*	tinyap_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
 	try_walk(wa_opd(vm->current_node,x), "compiler", vm);
@@ -296,52 +284,40 @@ void _VM_CALL vm_op_doWalk_String(vm_t vm, const char* walker) {
 }
 
 void _VM_CALL vm_op_doWalk(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_doWalk_String(vm,(const char*)d->data);
 }
 
 
 void _VM_CALL vm_op_walkChild_Int(vm_t vm, word_t idx) {
-	assert(idx<wa_opd_count(vm->current_node));
-	/*vm_printf("calling sub compiler\n");*/
-	/*try_walk(wa_opd(vm->current_node,x),"prettyprint",NULL);*/
+	if(idx>=wa_opd_count(vm->current_node)) {
+		raise_exception(vm, DataString, "OutOfRange");
+	}
 	try_walk(wa_opd(vm->current_node,idx), "virtual", vm);
 }
 
 
 void _VM_CALL vm_op_walkChild(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_op_walkChild_Int(vm,d->data);
 }
 
 
 void _VM_CALL vm_op_astCompileChild(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
-	/*try_walk(vm->current_node, "prettyprint", vm);*/
-	assert(d->data<wa_opd_count(vm->current_node));
+	vm_data_t d = vm_pop_int(vm);
+	if(d->data>=wa_opd_count(vm->current_node)) {
+		raise_exception(vm, DataString, "OutOfRange");
+	}
 	vm_op_astCompileChild_Int(vm,d->data);
 }
 
 
-/*void _VM_CALL vm_op__pop_curNode(vm_t vm, word_t x) {*/
-	/*vm_printf("VM pop cur node !\n");*/
-	/*vm->current_node=*(wast_t*)_gpop(&vm->cn_stack);*/
-/*}*/
-
-
 void _VM_CALL vm_op_astGetChildString_Int(vm_t vm, word_t x) {
-	/*vm_printf("astGetChildString(%lu) : <%s> ip=%lX\n",x,wa_op(wa_opd(vm->current_node,x)),vm->current_thread->IP);*/
-	/*vm_printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
 	vm_push_data(vm,DataString,(word_t)wa_op(wa_opd(vm->current_node,x)));
-	/*vm_printf("stack size %lu\n",vm->current_thread->data_stack.sp);*/
 }
 
 void _VM_CALL vm_op_astGetChildString(vm_t vm, word_t x) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_op_astGetChildString_Int(vm,d->data);
 }
 
@@ -352,9 +328,8 @@ void _VM_CALL vm_op_pp_curNode(vm_t vm, word_t x) {
 
 void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
 	long lnb_backup=line_number_bias;
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_string(vm);
 	const char*buffer = (const char*)d->data;
-	assert(d->type==DataString||d->type==DataObjStr);
 
 	line_number_bias=0;
 
@@ -374,13 +349,10 @@ void _VM_CALL vm_op_compileString(vm_t vm, word_t unused) {
 }
 
 void _VM_CALL vm_op_compileStringToThread_Int(vm_t vm, word_t prio) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_string(vm);
 	const char*buffer = (const char*)d->data;
 	program_t p;
 	thread_t t;
-
-	assert(d->type==DataString||d->type==DataObjStr);
-
 	p = vm_compile_buffer(vm, buffer);
 	program_set_source(p, buffer);
 	t = vm_add_thread(vm, p, 0, prio, 0);
@@ -389,19 +361,15 @@ void _VM_CALL vm_op_compileStringToThread_Int(vm_t vm, word_t prio) {
 
 
 void _VM_CALL vm_op_compileStringToThread(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_op_compileStringToThread_Int(vm, d->data);
 }
 
 void _VM_CALL vm_op_compileFileToThread_Int(vm_t vm, word_t prio) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_string(vm);
 	const char*filename = (const char*)d->data;
 	program_t p;
 	thread_t t;
-
-	assert(d->type==DataString||d->type==DataObjStr);
-
 	p = vm_compile_file(vm, filename);
 	program_set_source(p, filename);
 	t = vm_add_thread(vm, p, 0, prio, 0);
@@ -409,8 +377,7 @@ void _VM_CALL vm_op_compileFileToThread_Int(vm_t vm, word_t prio) {
 }
 
 void _VM_CALL vm_op_compileFileToThread(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_op_compileFileToThread_Int(vm, d->data);
 }
 
@@ -426,60 +393,38 @@ void _VM_CALL vm_op_newSymTab(vm_t vm, long rel_ofs) {
 
 
 void _VM_CALL vm_op_symTabSz(vm_t vm, word_t x) {
-	vm_data_t t = _vm_pop(vm);
-	text_seg_t ts;
-	if(t->type==DataObjEnv) {
-		ts = & ((vm_dyn_env_t)t->data)->symbols;
-	} else {
-		assert(t->type==DataObjSymTab);
-		ts = (text_seg_t) t->data;
-	}
+	text_seg_t ts = (text_seg_t) dynamic_cast(vm, _vm_pop(vm), DataObjSymTab, NULL, NULL);
 	vm_push_data(vm,DataInt,ts->by_index.size);
 }
 
 
 void _VM_CALL vm_op_getSym(vm_t vm, word_t x) {
-	vm_data_t k = _vm_pop(vm);
-	vm_data_t t = _vm_pop(vm);
+	vm_data_t k = vm_pop_string(vm);
 	word_t idx;
-	text_seg_t ts;
-	if(t->type==DataObjEnv) {
-		ts = & ((vm_dyn_env_t)t->data)->symbols;
-	} else {
-		assert(t->type==DataObjSymTab);
-		ts = (text_seg_t) t->data;
-	}
-	assert(k->type==DataString||k->type==DataObjStr);
+	text_seg_t ts = (text_seg_t) dynamic_cast(vm, _vm_pop(vm), DataObjSymTab, NULL, NULL);
 	idx=text_seg_text_to_index(ts, (const char*)k->data);
 	/*vm_printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
 	vm_push_data(vm,DataInt, idx);
 }
 
 void _VM_CALL vm_op_getSymName(vm_t vm, word_t x) {
-	vm_data_t k = _vm_pop(vm);
-	vm_data_t t = _vm_pop(vm);
+	vm_data_t k = vm_pop_int(vm);
 	char* sym;
-	text_seg_t ts;
-	if(t->type==DataObjEnv) {
-		ts = & ((vm_dyn_env_t)t->data)->symbols;
-	} else {
-		assert(t->type==DataObjSymTab);
-		ts = (text_seg_t) t->data;
-	}
-	assert(k->type==DataInt);
+	text_seg_t ts = (text_seg_t) dynamic_cast(vm, _vm_pop(vm), DataObjSymTab, NULL, NULL);
 	sym=(char*)text_seg_find_by_index(ts, k->data);
-	/*vm_printf("getSym(%s) => %lu\n",(const char*)k->data,idx);*/
+	/*vm_printf("getSymName(%i) => %s\n",k->data,sym);*/
 	vm_push_data(vm,DataString, (word_t)sym);
 }
 
 void _VM_CALL vm_op_addSym(vm_t vm, word_t x) {
-	vm_data_t k = _vm_pop(vm);
-	vm_data_t t = _vm_pop(vm);
-	text_seg_t ts = (text_seg_t) t->data;
-	assert(t->type==DataObjSymTab);
-	assert(k->type==DataString||k->type==DataObjStr);
+	vm_data_t k;
+	text_seg_t ts;
+	/*vm_printf("addSym...\n");*/
+	k = vm_pop_string(vm);
+	/*vm_printf("   addSym...\n");*/
+	ts = (text_seg_t) dynamic_cast(vm, _vm_pop(vm), DataObjSymTab, NULL, NULL);
 	(void)text_seg_find_by_text(ts, (const char*)k->data);
-	/*vm_printf("addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
+	/*vm_printf("   addSym(%s) => %lu\n",(const char*)k->data,text_seg_text_to_index(ts, (const char*)k->data));*/
 }
 /*@}*/
 

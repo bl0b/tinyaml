@@ -166,7 +166,9 @@ word_t raise_exception(vm_t vm, vm_data_type_t dt, word_t exc) {
 		}
 		/*vm_push_data(vm,e->type,e->data);*/
 	} else {
-		vm_fatal("Uncaught exception. Aborting.");
+		char buf[256];
+		snprintf(buf, 255, "Uncaught exception [%s]. Aborting.", /* FIXME */ (char*) exc);
+		vm_fatal(buf);
 	}
 	return 0;
 }
@@ -198,8 +200,7 @@ int find_in_bases(vm_t vm, vm_data_t haystack, vobj_class_t needle) {
 	
 }
 
-vm_data_t vm_pop_numeric(vm_t vm) {
-	vm_data_t d = _vm_pop(vm);
+static inline vm_data_t _safe_numeric(vm_t vm, vm_data_t d) {
 	if(d->type!=DataInt&&d->type!=DataFloat) {
 		_IFC conv;
 		int fail=0;
@@ -207,7 +208,7 @@ vm_data_t vm_pop_numeric(vm_t vm) {
 		if(fail) {
 			conv.i = dynamic_cast(vm, d, DataInt, NULL, &fail);
 			if(fail) {
-				raise_exception(vm, DataString, "Type");
+				raise_exception(vm, DataString, (word_t) "Type");
 			} else {
 				d->type=DataInt;
 			}
@@ -219,23 +220,45 @@ vm_data_t vm_pop_numeric(vm_t vm) {
 	return d;
 }
 
-vm_data_t vm_pop_obj(vm_t vm) {
-	vm_data_t d = _vm_pop(vm);
-	if(d->type&ManagedObjFlag) {
+vm_data_t _VM_CALL vm_pop_numeric(vm_t vm) {
+	return _safe_numeric(vm, _vm_pop(vm));
+}
+
+vm_data_t _VM_CALL vm_peek_numeric(vm_t vm) {
+	return _safe_numeric(vm, _vm_peek(vm));
+}
+
+static inline vm_data_t _safe_obj(vm_t vm, vm_data_t d) {
+	if(d->type&DataManagedObjectFlag) {
 		return d;
 	}
-	raise_exception(vm, DataString, "Type");
+	raise_exception(vm, DataString, (word_t) "Type");
 	return d;
 }
 
-vm_data_t vm_pop_any(vm_t vm, vm_data_type_t dt) {
-	vm_data_t d = _vm_pop(vm);
+vm_data_t _VM_CALL vm_pop_obj(vm_t vm) {
+	return _safe_obj(vm, _vm_pop(vm));
+}
+
+vm_data_t _VM_CALL vm_peek_obj(vm_t vm) {
+	return _safe_obj(vm, _vm_peek(vm));
+}
+
+static inline vm_data_t _safe_any(vm_t vm, vm_data_type_t dt, vm_data_t d) {
 	if(d->type==dt) {
 		return d;
 	}
 	d->data = dynamic_cast(vm, d, dt, NULL, NULL);
 	d->type=dt;
 	return d;
+}
+
+vm_data_t _VM_CALL vm_pop_any(vm_t vm, vm_data_type_t dt) {
+	return _safe_any(vm, dt, _vm_pop(vm));
+}
+
+vm_data_t _VM_CALL vm_peek_any(vm_t vm, vm_data_type_t dt) {
+	return _safe_any(vm, dt, _vm_peek(vm));
 }
 
 
@@ -245,10 +268,13 @@ word_t dynamic_cast(vm_t vm, vm_data_t d, vm_data_type_t newtype, vobj_class_t n
 	dynarray_t da;
 	vm_dyn_func_t* cast;
 	vm_dyn_func_t df;
-	vm_printf("dynamic_cast from (%i:%8.8X) to %i/%p\n", d->type, d->data, newtype, newcls);
+	char* f2str;
+	if(_vm_trace) {
+		vm_printf("dynamic_cast from (%i:%8.8X) to %i/%p\n", d->type, d->data, newtype, newcls);
+	}
 	fail?*fail=0:(void)0;
 	if(newcls!=NULL) {
-		vm_printf("dc to class instance\n");
+		/*vm_printf("dc to class instance\n");*/
 		switch(d->type) {
 		case DataObjVCls:
 		case DataObjVObj:
@@ -271,17 +297,17 @@ word_t dynamic_cast(vm_t vm, vm_data_t d, vm_data_type_t newtype, vobj_class_t n
 			}
 		};
 	} else if(newtype==DataObjVObj&&(d->type==DataObjVObj||d->type==DataObjVCls)) {
-		vm_printf("dc raw obj\n");
+		/*vm_printf("dc raw obj\n");*/
 		return d->data;
 	}
 	if(d->type==newtype||d->type==DataObjVCls&&newtype==DataObjVObj) {
-		vm_printf("dc idem or class->obj\n");
+		/*vm_printf("dc idem or class->obj\n");*/
 		return d->data;
 	}
 	switch(d->type) {
 	case DataObjVCls:
 	case DataObjVObj:
-		vm_printf("dc from class/obj\n");
+		/*vm_printf("dc from class/obj\n");*/
 		objcls = ((vobj_ref_t)d->data)->cls;
 		cast = objcls?objcls->_cast_to:NULL;
 		df = cast?cast[newtype]:NULL;
@@ -293,7 +319,7 @@ word_t dynamic_cast(vm_t vm, vm_data_t d, vm_data_type_t newtype, vobj_class_t n
 		raise_exception(vm, DataString, (word_t) "Type");
 		break;
 	case DataInt:
-		vm_printf("dc from int\n");
+		/*vm_printf("dc from int\n");*/
 		switch(newtype) {
 		case DataChar:
 			return d->data;
@@ -306,21 +332,26 @@ word_t dynamic_cast(vm_t vm, vm_data_t d, vm_data_type_t newtype, vobj_class_t n
 		};
 		break;
 	case DataFloat:
-		vm_printf("dc from float\n");
+		/*vm_printf("dc from float\n");*/
 		switch(newtype) {
 		case DataInt:
 			conv.i = d->data;
 			return f2i(conv.f);
+		#if 0
 		case DataString:
 		case DataObjStr:
-			conv.f = atof((const char*)d->data);
-			return conv.i;
+			conv.i = d->data;
+			f2str = vm_string_new(32);
+			vm_obj_deref_ptr(f2str); /* collect soon */
+			sprintf(f2str, "%f", conv.f);
+			return f2str;
+		#endif
 		default:;
 		};
 		break;
 	case DataString:
 	case DataObjStr:
-		vm_printf("dc from string\n");
+		/*vm_printf("dc from string\n");*/
 		switch(newtype) {
 		case DataInt:
 			return atoi((const char*)d->data);
@@ -333,8 +364,16 @@ word_t dynamic_cast(vm_t vm, vm_data_t d, vm_data_type_t newtype, vobj_class_t n
 		default:;
 		};
 		break;
+	case DataObjEnv:
+		switch(newtype) {
+		case DataObjSymTab:
+			return (word_t) (&((vm_dyn_env_t)d->data)->symbols);
+		case DataObjArray:
+			return (word_t) (&((vm_dyn_env_t)d->data)->data);
+		default:;
+		};
 	default:;
-		vm_printf("dc fail\n");
+		/*vm_printf("dc fail\n");*/
 		fail?*fail=1:raise_exception(vm, DataString, (word_t) "Type");
 	};
 	return 0;
@@ -1106,16 +1145,16 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 		vm_dyn_func_t method = NULL;
 		opcode_stub_overload_t ovl = opcode_overloads_by_stub(&vm->opcodes, (opcode_stub_t)*array);
 		while(ovl&&!method) {
-			if(_vm_trace) { printf("overload offset %i\n", ovl->offset); }
+			/*if(_vm_trace) { printf("overload offset %i\n", ovl->offset); }*/
 			if(gstack_size(&t->data_stack)>=ovl->offset) {
 				offset = ovl->offset;
 				d = gpeek( vm_data_t , &t->data_stack, -offset);
 				obj = (vobj_ref_t) d->data;
 				method = d->type==DataObjVObj?find_overload(obj, ovl->target):NULL;
 				argc=ovl->argc;
-				if(_vm_trace) {
-					printf(" dt=%i d=%8.8X\n method=%p\n", d->type, d->data, method);
-				}
+				/*if(_vm_trace) {*/
+					/*printf(" dt=%i d=%8.8X\n method=%p\n", d->type, d->data, method);*/
+				/*}*/
 			}
 			ovl=ovl->next;
 		}
@@ -1168,9 +1207,9 @@ thread_state_t _VM_CALL vm_exec_cycle(vm_t vm, thread_t t) {
 			vm_push_data(vm, DataObjFun, (word_t)method); 	/* setup stack for call_vc */
 			vm_op_call_vc(vm, 0);
 		} else {
-			if(_vm_trace) {
-				vm_printf("  (no overload)\n");
-			}
+			/*if(_vm_trace) {*/
+				/*vm_printf("  (no overload)\n");*/
+			/*}*/
 			((opcode_stub_t) *array) ( vm, *(array+1) );
 		}
 	}

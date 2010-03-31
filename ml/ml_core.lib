@@ -99,6 +99,7 @@ lib
         opcode and (1,2)
         opcode or (1,2)
         opcode not (1)
+        opcode neg (1)
         opcode xor (1,2)
         opcode and:Int (1)
         opcode or:Int (1)

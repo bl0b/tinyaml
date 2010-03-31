@@ -522,7 +522,7 @@ compile script_return
 asm
 	#pp_curNode
 	# process righthand side
-	+$cur_fname push "" eq [ push "EmptyFuncName" throw ]
+	+$cur_fname push "" strcmp not [ push "EmptyFuncName" throw ]
 	astCompileChild 0
 	local locsz {
 		#push "compiling RETURN in " +$cur_fname push "\n" print 3

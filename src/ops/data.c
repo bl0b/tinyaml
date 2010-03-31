@@ -127,10 +127,7 @@ void _VM_CALL vm_op_setClosure_Int(vm_t vm, word_t index) {
 }
 
 void _VM_CALL vm_op_setClosure(vm_t vm, word_t unused) {
-	vm_data_t top = _vm_pop(vm);
-	if(top->type!=DataInt) {
-		return;
-	}
+	vm_data_t top = vm_pop_int(vm);
 	vm_op_setClosure_Int(vm, (long)top->data);
 }
 

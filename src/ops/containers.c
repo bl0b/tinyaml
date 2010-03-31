@@ -53,9 +53,8 @@ void _VM_CALL vm_op_arrayNew(vm_t vm, word_t unused) {
  * Object -> Object
  */
 void _VM_CALL vm_op_arrayResv_Int(vm_t vm, word_t sz) {
-	vm_data_t d = _vm_peek(vm);
+	vm_data_t d = vm_peek_array(vm);
 	dynarray_t da = (dynarray_t) d->data;
-	assert(d->type==DataObjArray);
 	dynarray_reserve(da,sz<<1);
 	/*vm_printf("reserved %lu words for array %p\n",sz,da);*/
 }
@@ -66,8 +65,7 @@ void _VM_CALL vm_op_arrayResv_Int(vm_t vm, word_t sz) {
  * Object X Int -> Object
  */
 void _VM_CALL vm_op_arrayResv(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_op_arrayResv(vm,d->data);
 }
 
@@ -77,16 +75,9 @@ void _VM_CALL vm_op_arrayResv(vm_t vm, word_t unused) {
  * Object -> (something)
  */
 void _VM_CALL vm_op_arrayGet_Int(vm_t vm, word_t index) {
-	vm_data_t d = _vm_pop(vm);
 	word_t ofs = index<<1;
 	word_t* data;
-	dynarray_t da;
-	if(d->type==DataObjEnv) {
-		da = &((vm_dyn_env_t)d->data)->data;
-	} else {
-		da = (dynarray_t) d->data;
-		assert(d->type==DataObjArray);
-	}
+	dynarray_t da = (dynarray_t) vm_pop_array(vm)->data;
 	data = da->data+ofs;
 	if(da->size>ofs+1) {
 		vm_push_data(vm,*data,*(data+1));
@@ -106,8 +97,7 @@ void _VM_CALL vm_op_arrayGet_Int(vm_t vm, word_t index) {
  * Object X Int -> (something)
  */
 void _VM_CALL vm_op_arrayGet(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_op_arrayGet_Int(vm,d->data);
 }
 
@@ -118,16 +108,9 @@ void _VM_CALL vm_op_arrayGet(vm_t vm, word_t unused) {
  */
 void _VM_CALL vm_op_arraySet_Int(vm_t vm, word_t index) {
 	vm_data_t data = _vm_pop(vm);
-	vm_data_t d = _vm_peek(vm);
 	word_t ofs = index<<1;
 	vm_data_t da_data;
-	dynarray_t da;
-	if(d->type==DataObjEnv) {
-		da = &((vm_dyn_env_t)d->data)->data;
-	} else {
-		assert(d->type==DataObjArray);
-		da = (dynarray_t) d->data;
-	}
+	dynarray_t da = (dynarray_t) dynamic_cast(vm, _vm_peek(vm), DataObjArray, NULL, NULL);
 	da_data = (vm_data_t)(da->data+ofs);
 	if(da->size>ofs+1) {
 		if(da_data->type&DataManagedObjectFlag) { vm_obj_deref_ptr(vm,(void*)da_data->data); }
@@ -148,8 +131,7 @@ void _VM_CALL vm_op_arraySet_Int(vm_t vm, word_t index) {
  * Object X (something) X Int -> Object
  */
 void _VM_CALL vm_op_arraySet(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_op_arraySet_Int(vm,d->data);
 }
 
@@ -160,13 +142,7 @@ void _VM_CALL vm_op_arraySet(vm_t vm, word_t unused) {
  */
 void _VM_CALL vm_op_arraySize(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
-	dynarray_t da;
-	if(d->type==DataObjEnv) {
-		da = &((vm_dyn_env_t)d->data)->data;
-	} else {
-		assert(d->type==DataObjArray);
-		da = (dynarray_t) d->data;
-	}
+	dynarray_t da = (dynarray_t) dynamic_cast(vm, d, DataObjArray, NULL, NULL);
 	vm_push_data(vm,DataInt,dynarray_size(da)>>1);
 }
 /*@}*/
@@ -184,9 +160,8 @@ void _VM_CALL vm_op_mapNew(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_mapKeys(vm_t vm, word_t unused) {
 	word_t i, size;
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_env(vm);
 	vm_dyn_env_t env = (vm_dyn_env_t) d->data;
-	assert(d->type==DataObjEnv);
 	dynarray_t da = vm_array_new();
 	size = dynarray_size(&env->data);
 	dynarray_reserve(da, size);
@@ -198,10 +173,9 @@ void _VM_CALL vm_op_mapKeys(vm_t vm, word_t unused) {
 }
 
 void _VM_CALL vm_op_mapGet_String(vm_t vm, const char* key) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_env(vm);
 	vm_dyn_env_t env = (vm_dyn_env_t) d->data;
 	long index;
-	assert(d->type==DataObjEnv);
 	index = text_seg_text_to_index(&env->symbols,key);
 	index<<=1;
 	/*vm_printerrf("MapGet : index is %ld for key '%s' and data is %lX:%8.8lX\n",index,key,env->data.data[index],env->data.data[index+1]);*/
@@ -210,18 +184,16 @@ void _VM_CALL vm_op_mapGet_String(vm_t vm, const char* key) {
 
 
 void _VM_CALL vm_op_mapGet(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_mapGet_String(vm,(const char*)d->data);
 }
 
 
 void _VM_CALL vm_op_mapSet_String(vm_t vm, const char* key) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_env(vm);
 	vm_data_t val = _vm_pop(vm);
 	vm_dyn_env_t env = (vm_dyn_env_t) d->data;
 	long index;
-	assert(d->type==DataObjEnv);
 	index = text_seg_text_to_index(&env->symbols,key);
 	if(index==-1) {
 		index = text_seg_text_to_index(&env->symbols,text_seg_find_by_text(&env->symbols,key));
@@ -246,25 +218,22 @@ void _VM_CALL vm_op_mapSet_String(vm_t vm, const char* key) {
 
 
 void _VM_CALL vm_op_mapSet(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_mapSet_String(vm,(const char*)d->data);
 }
 
 
 void _VM_CALL vm_op_mapHasKey_String(vm_t vm, const char* key) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_env(vm);
 	vm_dyn_env_t env = (vm_dyn_env_t) d->data;
 	long index;
-	assert(d->type==DataObjEnv);
 	index = text_seg_text_to_index(&env->symbols,key);
 	vm_push_data(vm,DataInt,index!=-1);
 }
 
 
 void _VM_CALL vm_op_mapHasKey(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataString||d->type==DataObjStr);
+	vm_data_t d = vm_pop_string(vm);
 	vm_op_mapHasKey_String(vm,(const char*)d->data);
 }
 
@@ -288,10 +257,9 @@ void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, long index) {
 
 
 void _VM_CALL vm_op_envGet(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_string(vm);
 	const char*key = (const char*) d->data;
 	long index;
-	assert(d->type==DataString);
 	index = text_seg_text_to_index(&vm->env->symbols,key);
 	index<<=1;
 	vm_push_data(vm,vm->env->data.data[index],vm->env->data.data[index+1]);
@@ -301,7 +269,7 @@ void _VM_CALL vm_op_envGet(vm_t vm, word_t unused) {
 
 
 void _VM_CALL vm_op_envAdd(vm_t vm, word_t unused) {
-	vm_data_t dk = _vm_pop(vm);
+	vm_data_t dk = vm_pop_string(vm);
 	vm_data_t dc = _vm_pop(vm);
 	vm_dyn_env_t env = vm->current_thread->program->env;
 	/*vm_data_t env_dc;*/
@@ -373,10 +341,9 @@ void _VM_CALL vm_op_envSet_EnvSym(vm_t vm, long index) {
 
 
 void _VM_CALL vm_op_envLookup(vm_t vm, long index) {
-	vm_data_t key = _vm_pop(vm);
+	vm_data_t key = vm_pop_string(vm);
 	vm_dyn_env_t env = vm->current_thread->program->env;
 	/* let string objects in */
-	assert(key->type=DataString||key->type==DataObjStr);
 	if(!env) {
 		/*vm_printf("### program->env should be set ! ###\n");*/
 		env = vm->env;
@@ -398,8 +365,7 @@ void _VM_CALL vm_op_stackNew(vm_t vm, word_t unused) {
 
 void _VM_CALL vm_op_stackPush(vm_t vm, word_t unused) {
 	vm_data_t d = _vm_pop(vm);
-	vm_data_t sk = _vm_pop(vm);
-	assert(sk->type==DataObjStack);
+	vm_data_t sk = vm_pop_stack(vm);
 	/*printf("Push data : %i:%X\n", d->type, d->data);*/
 	if(d->type&DataManagedObjectFlag) {
 		vm_obj_ref_ptr(vm, (void*)d->data);
@@ -409,9 +375,8 @@ void _VM_CALL vm_op_stackPush(vm_t vm, word_t unused) {
 
 
 void _VM_CALL vm_op_stackPop_Int(vm_t vm, word_t counter) {
-	vm_data_t sk = _vm_pop(vm);
+	vm_data_t sk = vm_pop_stack(vm);
 	vm_data_t d;
-	assert(sk->type==DataObjStack);
 	while(counter>0) {
 		d = _gpop((generic_stack_t)sk->data);
 		if(d->type&DataManagedObjectFlag) {
@@ -424,10 +389,11 @@ void _VM_CALL vm_op_stackPop_Int(vm_t vm, word_t counter) {
 
 
 void _VM_CALL vm_op_stackPeek_Int(vm_t vm, long peek_ofs) {
-	vm_data_t sk = _vm_pop(vm);
+	vm_data_t sk = vm_pop_stack(vm);
 	vm_data_t d;
-	assert(sk->type==DataObjStack);
-	assert(peek_ofs>=0);
+	if(peek_ofs<0) {
+		raise_exception(vm, DataString, "OutOfRange");
+	}
 	d = (vm_data_t) _gpeek((generic_stack_t)sk->data,-peek_ofs);
 	/*printf("Peek data : %i:%X\n", d->type, d->data);*/
 	vm_push_data(vm, d->type, d->data);
@@ -440,15 +406,13 @@ void _VM_CALL vm_op_stackPop(vm_t vm, word_t counter) {
 
 
 void _VM_CALL vm_op_stackPeek(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
-	assert(d->type==DataInt);
+	vm_data_t d = vm_pop_int(vm);
 	vm_op_stackPeek_Int(vm,d->data);
 }
 
 
 void _VM_CALL vm_op_stackSize(vm_t vm, word_t unused) {
-	vm_data_t sk = _vm_pop(vm);
-	assert(sk->type==DataObjStack);
+	vm_data_t sk = vm_pop_stack(vm);
 	vm_push_data(vm,DataInt,gstack_size((generic_stack_t)sk->data));
 }
 

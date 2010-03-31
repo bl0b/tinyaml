@@ -53,480 +53,336 @@
  */
 
 void _VM_CALL vm_op_shr(vm_t vm, word_t count) {
-	vm_data_type_t oa;
-	word_t data;
-	vm_peek_data(vm,0,&oa,&data);
-	if(oa==DataInt) {
-		data>>=1;
-		vm_poke_data(vm,oa,data);
-	}
+	vm_peek_int(vm)->data>>=1;
 }
 
 void _VM_CALL vm_op_shr_Int(vm_t vm, word_t count) {
-	vm_data_type_t oa;
-	word_t data;
-	vm_peek_data(vm,0,&oa,&data);
-	if(oa==DataInt) {
-		data>>=count;
-		vm_poke_data(vm,oa,data);
-	}
+	vm_peek_int(vm)->data>>=count;
 }
 
-void _VM_CALL vm_op_vshr(vm_t vm, word_t count) {
-	vm_data_type_t oa;
-	word_t data;
-	vm_peek_data(vm,0,&oa,&count);
-	vm_pop_data(vm,1);
-	vm_peek_data(vm,0,&oa,&data);
-	if(oa==DataInt) {
-		data>>=count;
-		vm_poke_data(vm,oa,data);
-	}
+void _VM_CALL vm_op_vshr(vm_t vm, word_t unused) {
+	vm_data_t count = vm_pop_int(vm);
+	vm_peek_int(vm)->data>>=count->data;
 }
 
 void _VM_CALL vm_op_shl(vm_t vm, word_t count) {
-	vm_data_type_t oa;
-	word_t data;
-	vm_peek_data(vm,0,&oa,&data);
-	if(oa==DataInt) {
-		data<<=1;
-		vm_poke_data(vm,oa,data);
-	}
+	vm_peek_int(vm)->data<<=1;
 }
 
 void _VM_CALL vm_op_shl_Int(vm_t vm, word_t count) {
-	vm_data_type_t oa;
-	word_t data;
-	vm_peek_data(vm,0,&oa,&data);
-	if(oa==DataInt) {
-		data<<=count;
-		vm_poke_data(vm,oa,data);
-	}
+	vm_peek_int(vm)->data<<=count;
 }
 
-void _VM_CALL vm_op_vshl(vm_t vm, word_t count) {
-	vm_data_type_t oa;
-	word_t data;
-	vm_peek_data(vm,0,&oa,&count);
-	vm_pop_data(vm,1);
-	vm_peek_data(vm,0,&oa,&data);
-	if(oa==DataInt) {
-		data<<=count;
-		vm_poke_data(vm,oa,data);
-	}
+void _VM_CALL vm_op_vshl(vm_t vm, word_t unused) {
+	vm_data_t count = vm_pop_int(vm);
+	vm_peek_int(vm)->data<<=count->data;
 }
 
 void _VM_CALL vm_op_and(vm_t vm, word_t data) {
-	vm_data_type_t dt;
-	word_t a,b;
-	vm_peek_data(vm,-1,&dt,&a); if(dt!=DataInt) { return; }
-	vm_peek_data(vm,0,&dt,&b); if(dt!=DataInt) { return; }
-	vm_pop_data(vm,1);
-	vm_poke_data(vm,dt,a&b);
+	vm_data_t b = vm_pop_int(vm);
+	vm_peek_int(vm)->data &= b->data;
 }
 
 void _VM_CALL vm_op_or(vm_t vm, word_t data) {
-	vm_data_type_t dt;
-	word_t a,b;
-	vm_peek_data(vm,-1,&dt,&a); if(dt!=DataInt) { return; }
-	vm_peek_data(vm,0,&dt,&b); if(dt!=DataInt) { return; }
-	vm_pop_data(vm,1);
-	vm_poke_data(vm,dt,a|b);
+	vm_data_t b = vm_pop_int(vm);
+	vm_peek_int(vm)->data |= b->data;
 }
 
 void _VM_CALL vm_op_xor(vm_t vm, word_t data) {
-	vm_data_type_t dt;
-	word_t a,b;
-	vm_peek_data(vm,-1,&dt,&a); if(dt!=DataInt) { return; }
-	vm_peek_data(vm,0,&dt,&b); if(dt!=DataInt) { return; }
-	vm_pop_data(vm,1);
-	vm_poke_data(vm,dt,a^b);
+	vm_data_t b = vm_pop_int(vm);
+	vm_peek_int(vm)->data ^= b->data;
 }
 
 void _VM_CALL vm_op_not(vm_t vm, word_t data) {
-	vm_data_type_t dt;
-	word_t a;
-	vm_peek_data(vm,0,&dt,&a); if(dt!=DataInt) { return; }
-	vm_poke_data(vm,dt,~a);
+	vm_data_t d = vm_peek_int(vm);
+	d->data = !d->data;
+}
+
+void _VM_CALL vm_op_neg(vm_t vm, word_t data) {
+	vm_data_t d = vm_peek_int(vm);
+	d->data = ~d->data;
 }
 
 
 void _VM_CALL vm_op_and_Int(vm_t vm, word_t immed) {
-	vm_data_type_t dt;
-	word_t a;
-	vm_peek_data(vm,0,&dt,&a); if(dt!=DataInt) { return; }
-	vm_poke_data(vm,dt,a&immed);
+	vm_peek_int(vm)->data &= immed;
 }
 
 void _VM_CALL vm_op_or_Int(vm_t vm, word_t immed) {
-	vm_data_type_t dt;
-	word_t a;
-	vm_peek_data(vm,0,&dt,&a); if(dt!=DataInt) { return; }
-	vm_poke_data(vm,dt,a|immed);
+	vm_peek_int(vm)->data |= immed;
 }
 
 void _VM_CALL vm_op_xor_Int(vm_t vm, word_t immed) {
-	vm_data_type_t dt;
-	word_t a;
-	vm_peek_data(vm,0,&dt,&a); if(dt!=DataInt) { return; }
-	vm_poke_data(vm,dt,a^immed);
+	vm_peek_int(vm)->data ^= immed;
 }
 
 
 void _VM_CALL vm_op_inc(vm_t vm, word_t immed) {
-	vm_data_type_t dt;
-	word_t a;
-	vm_peek_data(vm,0,&dt,&a); if(dt!=DataInt) { return; }
-	vm_poke_data(vm,dt,a+1);
+	vm_peek_int(vm)->data += 1;
 }
 
 void _VM_CALL vm_op_dec(vm_t vm, word_t immed) {
-	vm_data_type_t dt;
-	word_t a;
-	vm_peek_data(vm,0,&dt,&a); if(dt!=DataInt) { return; }
-	vm_poke_data(vm,dt,a-1);
+	vm_peek_int(vm)->data -= 1;
 }
 
 
 void _VM_CALL vm_op_rmod(vm_t vm, word_t immed) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dtb,b,dta,a,m_mod,fmod,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t a = vm_pop_numeric(vm);
+	vm_data_t b = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,m_mod,fmod,b->data, b->type);
 }
 
 void _VM_CALL vm_op_mod(vm_t vm, word_t immed) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dta,a,dtb,b,m_mod,fmod,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,m_mod,fmod,a->data, a->type);
 }
 
-void _VM_CALL vm_op_mod_Int(vm_t vm, long b) {
-	vm_data_type_t dta,dtb=DataInt;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,m_mod,fmod,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_mod_Int(vm_t vm, long bval) {
+	vm_data_t b = DATA_INT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,m_mod,fmod,a->data, a->type);
 }
 
-void _VM_CALL vm_op_mod_Float(vm_t vm, long b) {
-	vm_data_type_t dta,dtb=DataFloat;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,m_mod,fmod,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_mod_Float(vm_t vm, long bval) {
+	vm_data_t b = DATA_FLOAT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,m_mod,fmod,a->data, a->type);
 }
 
 
 
 void _VM_CALL vm_op_add(vm_t vm, word_t immed) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dta,a,dtb,b,_add,_add,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_add,_add,a->data, a->type);
 }
 
 
 void _VM_CALL vm_op_rsub(vm_t vm, word_t immed) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	/*printf("debug sub : a=%li b=%li\n", a, b);*/
-	fast_apply_bin_func(dtb,b,dta,a,_sub,_sub,a,dta);
-	/*printf("debug sub : a=%li\n", a);*/
-	vm_poke_data(vm,dta,a);
+	vm_data_t a = vm_pop_numeric(vm);
+	vm_data_t b = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_sub,_sub,b->data, b->type);
 }
 
 void _VM_CALL vm_op_sub(vm_t vm, word_t immed) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	/*printf("debug sub : a=%li b=%li\n", a, b);*/
-	fast_apply_bin_func(dta,a,dtb,b,_sub,_sub,a,dta);
-	/*printf("debug sub : a=%li\n", a);*/
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_sub,_sub,a->data, a->type);
 }
 
 
 void _VM_CALL vm_op_mul(vm_t vm, word_t immed) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dta,a,dtb,b,_mul,_mul,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_mul,_mul,a->data, a->type);
 }
 
 
 void _VM_CALL vm_op_div(vm_t vm, word_t immed) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	assert((dta==DataInt||dta==DataFloat)&&(dtb==DataInt||dtb==DataFloat));
-	if(b==0) {
-		vm_fatal("Division by zero !");
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	if(b->data==0) {
+		raise_exception(vm, DataString, "DivByZero");
 	}
-	fast_apply_bin_func(dta,a,dtb,b,_div,_div,a,dta);
-	vm_poke_data(vm,dta,a);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_div,_div,a->data, a->type);
 }
 
 void _VM_CALL vm_op_rdiv(vm_t vm, word_t immed) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dta,&a);
-	vm_peek_data(vm,-1,&dtb,&b);
-	vm_pop_data(vm,1);
-	assert((dta==DataInt||dta==DataFloat)&&(dtb==DataInt||dtb==DataFloat));
-	if(b==0) {
+	vm_data_t a = vm_pop_numeric(vm);
+	vm_data_t b = vm_peek_numeric(vm);
+	if(b->data==0) {
 		vm_fatal("Division by zero !");
 	}
-	fast_apply_bin_func(dta,a,dtb,b,_div,_div,a,dta);
-	vm_poke_data(vm,dta,a);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_div,_div,b->data, b->type);
 }
 
 
-void _VM_CALL vm_op_add_Int(vm_t vm, long b) {
-	vm_data_type_t dta,dtb=DataInt;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,_add,_add,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_add_Int(vm_t vm, long bval) {
+	vm_data_t b = DATA_INT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_add,_add,a->data, a->type);
 }
 
 
-void _VM_CALL vm_op_sub_Int(vm_t vm, long b) {
-	vm_data_type_t dta,dtb=DataInt;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,_sub,_sub,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_sub_Int(vm_t vm, long bval) {
+	vm_data_t b = DATA_INT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_sub,_sub,a->data, a->type);
 }
 
 
-void _VM_CALL vm_op_mul_Int(vm_t vm, long b) {
-	vm_data_type_t dta,dtb=DataInt;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,_mul,_mul,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_mul_Int(vm_t vm, long bval) {
+	vm_data_t b = DATA_INT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_mul,_mul,a->data, a->type);
 }
 
 
-void _VM_CALL vm_op_div_Int(vm_t vm, long b) {
-	vm_data_type_t dta,dtb=DataInt;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,_div,_div,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_div_Int(vm_t vm, long bval) {
+	vm_data_t b = DATA_INT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	if(b->data==0) {
+		vm_fatal("Division by zero !");
+	}
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_div,_div,a->data, a->type);
 }
 
 
-void _VM_CALL vm_op_add_Float(vm_t vm, word_t b) {
-	vm_data_type_t dta,dtb=DataFloat;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,_add,_add,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_add_Float(vm_t vm, word_t bval) {
+	vm_data_t b = DATA_FLOAT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_add,_add,a->data, a->type);
 }
 
 
-void _VM_CALL vm_op_sub_Float(vm_t vm, word_t b) {
-	vm_data_type_t dta,dtb=DataFloat;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,_sub,_sub,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_sub_Float(vm_t vm, word_t bval) {
+	vm_data_t b = DATA_FLOAT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_sub,_sub,a->data, a->type);
 }
 
 
-void _VM_CALL vm_op_mul_Float(vm_t vm, word_t b) {
-	vm_data_type_t dta,dtb=DataFloat;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,_mul,_mul,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_mul_Float(vm_t vm, word_t bval) {
+	vm_data_t b = DATA_FLOAT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_mul,_mul,a->data, a->type);
 }
 
 
-void _VM_CALL vm_op_div_Float(vm_t vm, word_t b) {
-	vm_data_type_t dta,dtb=DataFloat;
-	word_t a;
-	vm_peek_data(vm,0,&dta,&a);
-	fast_apply_bin_func(dta,a,dtb,b,_div,_div,a,dta);
-	vm_poke_data(vm,dta,a);
+void _VM_CALL vm_op_div_Float(vm_t vm, word_t bval) {
+	vm_data_t b = DATA_FLOAT(bval);
+	vm_data_t a = vm_peek_numeric(vm);
+	if(b->data==0) {
+		vm_fatal("Division by zero !");
+	}
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_div,_div,a->data, a->type);
 }
 
 void _VM_CALL vm_op_inf(vm_t vm, word_t unused) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dta,a,dtb,b,_inf,_inf,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_inf,_inf,a->data, a->type);
 }
 
 void _VM_CALL vm_op_sup(vm_t vm, word_t unused) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dta,a,dtb,b,_sup,_sup,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_sup,_sup,a->data, a->type);
+	vm_poke_data(vm,a->type, a->data);
 }
 
 void _VM_CALL vm_op_pow(vm_t vm, word_t unused) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
 	_IFC x, y;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	if(dta==DataInt) {
-		x.f = i2f(a);
-	} else if(dta==DataFloat) {
-		x.i = a;
+	if(a->type==DataInt) {
+		x.f = i2f(a->data);
 	} else {
-		assert(dta==DataInt||dta==DataFloat);
+		x.i = a->data;
 	}
-	if(dtb==DataInt) {
-		y.f = i2f(b);
-	} else if(dtb==DataFloat) {
-		y.i = b;
+	if(b->type==DataInt) {
+		y.f = i2f(b->data);
 	} else {
-		assert(dtb==DataInt||dtb==DataFloat);
+		y.i = b->data;
 	}
 	x.f = powf(x.f, y.f);
-	vm_poke_data(vm,dta,x.i);
+	a->data = x.i;
+	a->type = DataFloat;
 }
 
 void _VM_CALL vm_op_infEq(vm_t vm, word_t unused) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dta,a,dtb,b,_infeq,_infeq,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_infeq,_infeq,a->data, a->type);
 }
 
 void _VM_CALL vm_op_supEq(vm_t vm, word_t unused) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dta,a,dtb,b,_supeq,_supeq,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_supeq,_supeq,a->data, a->type);
 }
 
 void _VM_CALL vm_op_eq(vm_t vm, word_t unused) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	fast_apply_bin_func(dta,a,dtb,b,_eq,_eq,a,dta);
-	vm_poke_data(vm,dta,a);
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_eq,_eq,a->data, a->type);
 }
 
 void _VM_CALL vm_op_nEq(vm_t vm, word_t unused) {
-	vm_data_type_t dta,dtb;
-	word_t a,b;
-	vm_peek_data(vm,0,&dtb,&b);
-	vm_peek_data(vm,-1,&dta,&a);
-	vm_pop_data(vm,1);
-	/*vm_printf("comp: %li != %li => ",a,b);*/
-	fast_apply_bin_func(dta,a,dtb,b,_neq,_neq,a,dta);
-	vm_poke_data(vm,dta,a);
-	/*vm_printf("%li\n",a);*/
+	vm_data_t b = vm_pop_numeric(vm);
+	vm_data_t a = vm_peek_numeric(vm);
+	fast_apply_bin_func(a->type, a->data,b->type, b->data,_neq,_neq,a->data, a->type);
 }
 
 void _VM_CALL vm_op_sin(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
 	_IFC conv;
-	/*tinyaml_float_t f;*/
-	assert(d->type==DataFloat);
-	conv.i = d->data;
+	conv.i = vm_pop_float(vm)->data;
 	conv.f = sinf(conv.f);
 	vm_push_data(vm, DataFloat, conv.i);
 }
 
 void _VM_CALL vm_op_cos(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
 	_IFC conv;
-	assert(d->type==DataFloat);
-	conv.i = d->data;
+	conv.i = vm_pop_float(vm)->data;
 	conv.f = cosf(conv.f);
 	vm_push_data(vm, DataFloat, conv.i);
 }
 
 void _VM_CALL vm_op_tan(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
 	_IFC conv;
-	assert(d->type==DataFloat);
-	conv.i = d->data;
+	conv.i = vm_pop_float(vm)->data;
 	conv.f = tanf(conv.f);
 	vm_push_data(vm, DataFloat, conv.i);
 }
 
 
+
+#define ALL_BITS ((word_t)-1)
+#define BIT_SIGN (ALL_BITS^(ALL_BITS>>1))
+
+
 void _VM_CALL vm_op_sqrt(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_numeric(vm);
 	_IFC conv;
+	if((d->data&BIT_SIGN)||!d->data) {
+		raise_exception(vm, DataString, "OutOfRange");
+	}
 	if(d->type==DataFloat) {
 		conv.i = d->data;
 	} else if(d->type==DataInt) {
 		conv.f = i2f(d->data);
-	} else {
-		assert(d->type==DataFloat||d->type==DataInt);
 	}
 	conv.f = sqrtf(conv.f);
 	vm_push_data(vm, DataFloat, conv.i);
 }
 
 void _VM_CALL vm_op_log(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_numeric(vm);
 	_IFC conv;
+	if((d->data&BIT_SIGN)||!d->data) {
+		raise_exception(vm, DataString, "OutOfRange");
+	}
 	if(d->type==DataFloat) {
 		conv.i = d->data;
 	} else if(d->type==DataInt) {
 		conv.f = i2f(d->data);
-	} else {
-		assert(d->type==DataFloat||d->type==DataInt);
 	}
 	conv.f = logf(conv.f);
 	vm_push_data(vm, DataFloat, conv.i);
 }
 
 void _VM_CALL vm_op_log_Float(vm_t vm, word_t base) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_numeric(vm);
 	_IFC conv;
 	_IFC convbase;
+	if((d->data&BIT_SIGN)||!d->data) {
+		raise_exception(vm, DataString, "OutOfRange");
+	}
 	if(d->type==DataFloat) {
 		conv.i = d->data;
 	} else if(d->type==DataInt) {
 		conv.f = i2f(d->data);
-	} else {
-		assert(d->type==DataFloat||d->type==DataInt);
 	}
 	convbase.i = base;
 	conv.i = logf(conv.f)/logf(convbase.f);
@@ -534,14 +390,12 @@ void _VM_CALL vm_op_log_Float(vm_t vm, word_t base) {
 }
 
 void _VM_CALL vm_op_exp(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_numeric(vm);
 	_IFC conv;
 	if(d->type==DataFloat) {
 		conv.i = d->data;
 	} else if(d->type==DataInt) {
 		conv.f = i2f(d->data);
-	} else {
-		assert(d->type==DataFloat||d->type==DataInt);
 	}
 	conv.f = expf(conv.f);
 	vm_push_data(vm, DataFloat, conv.i);

@@ -399,6 +399,7 @@ compile gs_String asm
 end
 
 compile GlobSym asm
+	#pp_curNode
 	astGetChildString 0
 	call @addGlobSym
 	astCompileChild 1

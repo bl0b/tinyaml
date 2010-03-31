@@ -298,22 +298,49 @@ void vm_compinput_push_walker(vm_t vm, const char*wname);
 void vm_compinput_pop(vm_t vm);
 
 
-vm_data_t vm_pop_numeric(vm_t);
-vm_data_t vm_pop_obj(vm_t);
-vm_data_t vm_pop_any(vm_t, vm_data_type_t);
+vm_data_t _VM_CALL vm_peek_numeric(vm_t);
+vm_data_t _VM_CALL vm_peek_obj(vm_t);
+vm_data_t _VM_CALL vm_peek_any(vm_t, vm_data_type_t);
+#define vm_peek_int(_v) vm_peek_any(_v, DataInt)
+#define vm_peek_char(_v) vm_peek_any(_v, DataChar)
+#define vm_peek_float(_v) vm_peek_any(_v, DataFloat)
+#define vm_peek_string(_v) vm_peek_any(_v, DataString)
+#define vm_peek_array(_v) vm_peek_any(_v, DataObjArray)
+#define vm_peek_symtab(_v) vm_peek_any(_v, DataObjSymtab)
+#define vm_peek_mutex(_v) vm_peek_any(_v, DataObjMutex)
+#define vm_peek_thread(_v) vm_peek_any(_v, DataObjThread)
+#define vm_peek_env(_v) vm_peek_any(_v, DataObjEnv)
+#define vm_peek_stack(_v) vm_peek_any(_v, DataObjStack)
+#define vm_peek_func(_v) vm_peek_any(_v, DataObjFun)
+#define vm_peek_vobj(_v) vm_peek_any(_v, DataObjVObj)
+#define vm_peek_vclass(_v) vm_peek_any(_v, DataObjVCls)
+#define vm_peek_user(_v) vm_peek_any(_v, DataObjUser)
+
+vm_data_t _VM_CALL vm_pop_numeric(vm_t);
+vm_data_t _VM_CALL vm_pop_obj(vm_t);
+vm_data_t _VM_CALL vm_pop_any(vm_t, vm_data_type_t);
 #define vm_pop_int(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_char(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_float(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_string(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_symtab(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_mutex(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_thread(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_env(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_stack(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_func(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_vobj(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_vclass(_v) vm_pop_any(_v, DataInt)
-#define vm_pop_user(_v) vm_pop_any(_v, DataInt)
+#define vm_pop_char(_v) vm_pop_any(_v, DataChar)
+#define vm_pop_float(_v) vm_pop_any(_v, DataFloat)
+#define vm_pop_string(_v) vm_pop_any(_v, DataString)
+#define vm_pop_array(_v) vm_pop_any(_v, DataObjArray)
+#define vm_pop_symtab(_v) vm_pop_any(_v, DataObjSymtab)
+#define vm_pop_mutex(_v) vm_pop_any(_v, DataObjMutex)
+#define vm_pop_thread(_v) vm_pop_any(_v, DataObjThread)
+#define vm_pop_env(_v) vm_pop_any(_v, DataObjEnv)
+#define vm_pop_stack(_v) vm_pop_any(_v, DataObjStack)
+#define vm_pop_func(_v) vm_pop_any(_v, DataObjFun)
+#define vm_pop_vobj(_v) vm_pop_any(_v, DataObjVObj)
+#define vm_pop_vclass(_v) vm_pop_any(_v, DataObjVCls)
+#define vm_pop_user(_v) vm_pop_any(_v, DataObjUser)
+
+word_t dynamic_cast(vm_t vm, vm_data_t d, vm_data_type_t newtype, vobj_class_t newcls, int*fail);
+
+#define _DATA_ (struct _data_stack_entry_t[]){{0,0}}
+#define DATA_VALUE(_v) (struct _data_stack_entry_t[]){{0,_v}}
+#define DATA_INT(_v) (struct _data_stack_entry_t[]){{DataInt,_v}}
+#define DATA_FLOAT(_v) (struct _data_stack_entry_t[]){{DataFloat,_v}}
+#define DATA_TYPE_VALUE(_t, _v) (struct _data_stack_entry_t[]){{_t,_v}}
 
 #endif
 

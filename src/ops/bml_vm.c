@@ -34,7 +34,7 @@ void _VM_CALL vm_op__set_timeslice_Int(vm_t vm, word_t timeslice) {
 }
 
 void _VM_CALL vm_op__set_timeslice(vm_t vm, word_t unused) {
-	vm_op__set_timeslice_Int(vm, vm_pop_int(vm));
+	vm_op__set_timeslice_Int(vm, vm_pop_int(vm)->data);
 }
 
 void _VM_CALL vm_op__get_timeslice(vm_t vm, word_t unused) {
@@ -334,7 +334,7 @@ void _VM_CALL vm_op_call_vc(vm_t vm, word_t unused) {
 	dynarray_t da;
 	thread_t t=vm->current_thread;
 	/* pop dynfun */
-	d = vm_pop_fun(vm);
+	d = vm_pop_func(vm);
 	fun = (vm_dyn_func_t) d->data;
 	assert(fun->closure==NULL);
 	/* pop closure */
@@ -592,8 +592,7 @@ void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 	vm_data_t d;
 	thread_t t = vm->current_thread,joinee;
 	if(!t->pending_lock) {
-		d=_vm_pop(vm);
-		assert(d->type==DataObjThread);
+		d=vm_pop_thread(vm);
 		joinee = (thread_t)d->data;
 		assert(_is_a_ptr(joinee,DataObjThread));
 		assert(((thread_t)joinee->sched_data.value) == joinee /* check that it's really a thread */);
@@ -612,7 +611,7 @@ void _VM_CALL vm_op_joinThread(vm_t vm, word_t unused) {
 
 
 void _VM_CALL vm_op_killThread(vm_t vm, word_t unused) {
-	vm_data_t d = _vm_pop(vm);
+	vm_data_t d = vm_pop_thread(vm);
 	thread_t victim = (thread_t)d->data;
 	assert(_is_a_ptr(victim,DataObjThread));
 	assert(((thread_t)victim->sched_data.value) == victim /* check that it's really a thread */);
@@ -651,10 +650,9 @@ void _VM_CALL vm_op_dynFunAddClosure(vm_t vm, word_t unused) {
 	word_t index;
 	vm_data_t dc = _vm_pop(vm);
 	/* FIXME : changes pops to peeks wherever it fits and change asm compiler code accordingly */
-	vm_data_t df = _vm_peek(vm);
+	vm_data_t df = vm_peek_func(vm);
 	vm_dyn_func_t f=(vm_dyn_func_t) df->data;
 	word_t data=0;
-	assert(_is_a_ptr(f,DataObjFun));
 	if(dc->type&DataManagedObjectFlag) {
 		data = (word_t) vm_obj_clone_obj(vm,PTR_TO_OBJ(dc->data));
 		vm_obj_ref_ptr(vm, (void*)data);
