@@ -1,0 +1,158 @@
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+language
+
+ script_sym =	# match any one-letter symbol except e (constant)
+ 		( /\<[_a-df-zA-Z]\>/
+		# match any two-letter symbol except pi (constant)
+ 		| /\<(p[_a-hj-zA-Z0-9]|[_a-oq-zA-Z][_a-zA-Z0-9])\>/
+		# match any three-letter symbol except end (keyword)
+		| /\<(en[_a-ce-zA-Z0-9]|e[_a-mo-zA-Z0-9][_a-zA-Z0-9]|[_a-df-zA-Z][_a-zA-Z0-9]{2})\>/
+		# match any four-and-more-letter symbol
+ 		| /\<[_a-zA-Z][_a-zA-Z0-9]{3,}\>/
+		).
+
+ Script ::= "script" script_glob? p_ScriptStatement* script_end.
+ script_end ::= "end".
+ p_ScriptStatement = ( script_glob_fun | script_instruction ).
+
+ script_glob ::= "global" script_sym ("," script_sym)*.
+ script_loc ::= "local"  script_sym ("," script_sym)*.
+ script_id ::= script_sym.
+ script_string ::= string.
+ script_char ::= char.
+
+ script_glob_fun ::= "function" script_sym script_fun_decl.
+ script_anon_fun ::= "function" script_fun_decl.
+ script_fun_decl ::= script_param_list script_fun_body.
+ script_param_list ::= "(" ( ")" | (script_param ",")* ( script_vararg | script_param ) ")" ).
+ script_param ::= script_sym.
+ script_vararg ::= script_sym "...".
+ script_fun_body ::= script_local? script_instruction+ "end".
+ script_local ::= "local" script_sym ("," script_sym)*.
+
+ script_instruction = ( script_if | script_while | AsmBloc | script_print | script_return | script_throw | script_try | script_assign | script_call ).
+ instruction_seq = script_instruction+.
+ instruction_bloc ::= instruction_seq.
+
+ script_try ::= "try" instruction_bloc "catch" catch_bloc.
+ catch_bloc ::= catch_bloc_loop.
+ catch_bloc_loop = ( catch_statement catch_bloc_loop | "end" ).
+ catch_statement ::= script_sym ":" instruction_bloc.
+ script_throw ::= "throw" script_sym.
+
+ script_while ::= "while" (b_expr|m_expr|script_call|script_var) "do" sb_end.
+ script_if ::= "if" (b_expr|m_expr|script_call|script_var) "then" ( sb_else sb_end | sb_end ).
+
+ sb_end ::= script_instruction* "end".
+ sb_else ::= script_instruction* "else".
+
+ #script_call ::= script_var "(" ( ")" | script_expr_list ")" ).
+ script_call ::= (script_call script_call_args | script_var script_call_args).
+ script_call_args = "(" ( ")" | script_expr_list ")" ).
+
+ script_print ::= "print" "(" script_expr_list ")".
+ p_ScriptExpr = ( script_anon_array | script_anon_map | script_string | script_char | script_anon_fun | b_expr | m_expr | script_call | script_var ).
+
+ script_anon_array ::= "[" script_anon_array_item_list? script_anon_array_end.
+ script_anon_array_item_list = ( script_anon_array_item_list "," script_anon_array_item | script_anon_array_item ).
+ script_anon_array_item ::= p_ScriptExpr.
+ script_anon_map   ::= "{" script_anon_map_item_list? script_anon_map_end.
+ script_anon_map_item_list = ( script_anon_map_item_list "," script_anon_map_item | script_anon_map_item ).
+ script_anon_map_item   ::= script_sym ":" p_ScriptExpr.
+ script_anon_map_end ::= "}".
+ script_anon_array_end ::= "]".
+
+ script_return ::= "return" script_expr_list.
+ #script_expr_list ::= _epsilon (p_ScriptExpr ",")* p_ScriptExpr script_expr_list_end.
+ script_expr_list ::= script_el_loop? script_expr_list_end.
+ script_el_atom = (p_ScriptExpr|script_expand).
+ script_el_loop = script_el_atom ("," script_el_loop)*.
+ script_expr_list_end ::= _epsilon.
+
+ script_assign ::= script_var_list "=" script_expr_list.
+
+ script_expand ::= "*" p_ScriptExpr.
+
+ script_int ::= int.
+ script_float ::= float.
+ number = ( script_float | script_int | "(" m_expr ")" ).
+
+ script_var ::= ( script_var (script_array_access|script_struc_access) | ( script_env | script_id )).
+ script_var_list ::= _epsilon (script_var ",")* script_var script_var_list_end.
+ script_var_list_end ::= _epsilon.
+
+ script_env ::= "&" script_sym.
+
+ script_array_access ::= "[" (m_expr|script_call|script_var) "]".
+ script_struc_access ::= "." script_sym.
+
+ m_expr ::= (expr5 expr_end|number expr_end).
+ b_expr ::= bexpr4 expr_end.
+
+ expr_end ::= _epsilon.
+
+m_minus ::= "-" number.
+m_pow ::= (m_pow "^" expr00 | expr00 "^" expr00 ).
+m_div ::= ( m_div "/" expr11 | expr11 "/" expr11 ).
+m_mul ::= ( m_mul "*" expr22 | expr22 "*" expr22 ).
+m_sub ::= ( m_sub "-" expr33 | expr33 "-" expr33 ).
+m_add ::= ( m_add "+" expr44 | expr44 "+" expr44 ).
+m_log ::= /\<log\>/ (m_expr_plug | script_call | script_var).
+m_exp ::= /\<e\>/ "^" (m_expr_plug | script_call | script_var).
+m_sqrt ::= /\<sqrt\>/ (m_expr_plug | script_call | script_var).
+
+b_not ::= /\<not\>/ (m_expr | script_call | script_var).
+b_and ::= ( b_and /\<and\>/ bexpr11 | bexpr11 /\<and\>/ bexpr11 ).
+b_or ::= ( b_or /\<or\>/ bexpr22 | bexpr22 /\<or\>/ bexpr22 ).
+
+comp ::= bexpr33 /(<|>|=|!=|>=|<=)/ bexpr33.
+
+m_expr_plug = ( m_sqrt | m_log | m_exp | m_const | number ).
+
+m_const = ( m_pi | m_e ).
+
+m_pi ::= /\<pi\>/.
+m_e ::= /\<e\>/.
+
+expr0	= m_expr_plug.
+expr00	= ( m_expr_plug | script_call | script_var ).
+expr1	= ( m_pow | expr0 ).
+expr11	= ( m_pow | expr0 | m_expr_plug | script_call | script_var ).
+expr2	= ( m_div | expr1 ).
+expr22	= ( m_div | expr1 | m_expr_plug | script_call | script_var ).
+expr3	= ( m_mul | expr2 ).
+expr33	= ( m_mul | expr2 | m_expr_plug | script_call | script_var ).
+expr4	= ( m_sub | expr3 ).
+expr44	= ( m_sub | expr3 | m_expr_plug | script_call | script_var ).
+expr5	= ( m_add | expr4 ).
+
+bexpr1	= ( b_not | m_expr ).
+bexpr11	= ( b_not | m_expr | m_expr_plug | script_call | script_var ).
+bexpr2	= ( b_and | bexpr1 ).
+bexpr22	= ( b_and | bexpr1 | m_expr_plug | script_call | script_var ).
+bexpr3	= ( b_or | bexpr2 ).
+bexpr33	= ( b_or | bexpr2 | m_expr_plug | script_call | script_var ).
+
+bexpr4 = ( comp | bexpr3 ).
+
+end
+
+
+plug Script into p_Code
+

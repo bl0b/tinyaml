@@ -1,0 +1,276 @@
+require "script.wc"
+require "obj_core_lib.wc"
+
+global Nil, NilClass
+
+asm push 0 _vobj_new dup 0 _vcls_new _vobj_scls -$Nil pop end     # empty object
+
+export("Nil", Nil)
+exportGroup("Classes")
+
+core_getters = {
+	write_only: function(self, index) throw "WriteOnlyAttribute" end,
+	raw_get: function(...) asm pop _vobj_gmbr end
+}
+
+core_setters = {
+	read_only: function(self, index, value) throw "ReadOnlyAttribute" end,
+	raw_set: asm _vobj_smbr end
+}
+
+
+
+function class_declare(name)
+	local cls
+	asm push 0 _vcls_new -$cls pop end
+	class_set_name(cls, name)
+	addToExportGroup("Classes", name, cls)
+	return cls
+end
+
+function class_aggregate(cls, base)
+	Map.foreach(base.members, function(i, k, v) Map.add(cls.members, k, v) end)
+end
+
+function class_aggregate_bases(cls, bases)
+	if isA(bases, DataObjArray) then
+		Array.foreach(bases, function(i, c) class_aggregate(cls, c) end)
+	else
+		class_aggregate(cls, bases)
+	end
+	class_set_base(cls, bases)
+end
+
+
+export("build_class",
+	function(name, bases, members, methods, overrides)
+		local cls
+		asm push 0 _vcls_new -$cls end
+		return cls
+	end)
+
+function get_member_by_name(obj, mbr)
+	local getter
+	getter = object_get_class(obj).members[mbr].get
+	asm +$obj push 1 +$getter call end
+end
+
+function set_member_by_name(obj, mbr)
+	object_get_class(obj).members[mbr].set(obj)
+end
+
+function gen_get_with_cast(getter, type)
+	return function(obj, idx)
+		return cast_to(type, getter(obj, idx))
+	end
+end
+
+function gen_set_with_cast(setter, type)
+	return function(obj, idx, value)
+		setter(obj, idx, cast_to(type, value))
+	end
+end
+
+
+core_descriptions = {
+	object: {
+		bases: [],
+		members: [
+			[ "class", raw_get, no_set ]
+			[ "doc", raw_get, raw_set ]
+			]
+		],
+		methods: [
+			[ "clone", object_clone ]
+		]
+		overrides: []
+	},
+	class: {
+		bases: [ "object" ],
+		members: [
+			[ "bases", raw_get, no_set ],
+			[ "membernames", raw_get, raw_set ],
+			[ "getters", raw_get, raw_set ],
+			[ "setters", raw_get, raw_set ],
+			[ "methods", raw_get, raw_set ],
+		],
+		methods: [
+			[ "new", object_new_instance ]
+		],
+		overrides: [
+			[ "mapGet", OpcodeArgString, get_member_by_name ],
+			[ "mapGet", OpcodeNoArg, get_member_by_name ],
+			[ "mapSet", OpcodeArgString, set_member_by_name ],
+			[ "mapSet", OpcodeNoArg, set_member_by_name ]
+		]
+	}
+	field: {
+		bases: ["class"],
+		members: [
+			[ "index", DataInt, raw_get, raw_set ],
+			[ "get", DataObjFun, raw_get, raw_set ],
+			[ "set", DataObjFun, raw_get, raw_set ]
+		],
+		overrides: []
+	},
+	fieldwithcast: {
+		bases: ["field"],
+		members: [
+			[ "valuetype", DataInt, raw_get, raw_set ],
+			[ "valueclass", DataObjVCls, raw_get, raw_set ],
+		],
+		overrides: []
+	}
+	method: {
+		bases: ["field"],
+		members: [],
+		methods: [ "call" ]
+		overrides: [ "call", OpcodeNoArg, ]
+	}
+}
+
+classes=[]
+Map.foreach(core_descriptions, function(i, k, v) classes[i] = class_declare(k) end)
+Map.foreach(core_descriptions, function(i, k, v) class_init(classes[i], v) end)
+
+
+
+
+
+#	
+#	# This object model assumes :
+#	# - inheritance by aggregation
+#	# - runtime symbolic member resolution (hence no vtable)
+#	
+#	class object {
+#	members
+#		class:get(self) asm +$self _vobj_gcls end end
+#	
+#	methods
+#		init(self)
+#			asm
+#				push "new instance of class " +$self _vobj_gcls _vcls_gname push "\n" print 3
+#			end
+#		end
+#	
+#	overrides
+#		on _vobj_new(cls)
+#			local ret, m, i
+#			asm
+#				push 0 _vobj_new -$ret pop
+#				+$cls _vobj_gmbr 1 -$a
+#				push 0 -$i
+#				_mbr_clone_lp:
+#					+$i +$a arraySize inf [
+#						+$ret +$i +$a +$i arrayGet clone _vobj_smbr
+#						+$i inc -$i
+#						jmp@_mbr_clone_lp
+#					]
+#				+$ret +$cls _vobj_smbr 0
+#				+$ret +$cls _vobj_scls
+#				+$ret
+#			end
+#		end
+#	
+#		on _vcls_new(cls)
+#			local base, bases, i, newcls
+#			asm
+#				push 0 _vcls_new -$newcls
+#				+$cls _vcls_gbase -$bases
+#				+$cls 
+#				+$cls newSymTab _vobj_smbr 1
+#				+$bases typeof envGet &DataObjArray eq [[
+#					push 0 -$i
+#				_agregate_fields_lp:
+#					+$i +$bases arraySize inf [
+#						
+#						+$i inc -$i
+#						jmp @_agregate_fields_lp
+#					]
+#	
+#				][
+#				]]
+#			
+#		end
+#	}
+#	
+#	
+#	class class(object) {
+#	members
+#		instance_attributes = {}
+#		class_attributes = {}
+#		metaclass = 0
+#		
+#	overrides
+#		on mapGet:String (self, str)
+#			asm
+#				+$self
+#				dup 0 _vobj_gcls _vobj_gmbr 1 +$str findSym
+#				dup 0 push -1 eq [[
+#					pop
+#					dup 0 _vobj_gcls _vobj_gmbr 2 +$str findSym
+#					dup 0 push -1 eq [[
+#						push "UnknownMember" throw
+#					][
+#						+$cls swap 1 _vobj_gmbr
+#					]]
+#				][
+#					_vobj_gmbr
+#				]]
+#			end
+#		end
+#		on mapGet (self, str)
+#			asm
+#				+$self _vobj_gcls _vobj_gmbr 1 +$str findSym
+#				dup 0 push -1 eq [[
+#					pop
+#					dup 0 _vobj_gcls _vobj_gmbr 2 +$str findSym
+#					dup 0 push -1 eq [[
+#						push "UnknownMember" throw
+#					][
+#						+$cls swap 1 _vobj_gmbr
+#					]]
+#				][
+#					_vobj_gmbr
+#				]]
+#			end
+#		end
+#		on mapSet:String (self, str, value)
+#			asm
+#				+$self _vobj_gcls _vobj_gmbr 1 +$str findSym
+#				dup 0 push -1 eq [[
+#					pop
+#					dup 0 _vobj_gcls _vobj_gmbr 2 +$str findSym
+#					dup 0 push -1 eq [[
+#						push "UnknownMember" throw
+#					][
+#						+$cls swap 1 +$value _vobj_smbr
+#					]]
+#				][
+#					+$value _vobj_smbr
+#				]]
+#			end
+#		end
+#		on mapSet (self, str, value)
+#			asm
+#				+$self _vobj_gcls _vobj_gmbr 1 +$str findSym
+#				dup 0 push -1 eq [[
+#					pop
+#					dup 0 _vobj_gcls _vobj_gmbr 2 +$str findSym
+#					dup 0 push -1 eq [[
+#						push "UnknownMember" throw
+#					][
+#						+$cls swap 1 +$value _vobj_smbr
+#					]]
+#				][
+#					+$value _vobj_smbr
+#				]]
+#			end
+#		end
+#	}
+#	
+#	class field (class) {
+#	methods
+#		get(self) asm push "CanNotGet" throw end end
+#		set(self) asm push "CanNotSet" throw end end
+#	}

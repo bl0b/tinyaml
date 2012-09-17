@@ -1,0 +1,2 @@
+2009/10/24
+	tinyaml now compiles and runs on 64b archs (well, at least x86_64).

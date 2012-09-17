@@ -1,0 +1,28 @@
+require "script.wc"
+require "obj_core.wc"
+
+glob A=0 B=0 end
+
+asm
+	envGet &Object _vobj_new -$A
+	+$A push "plop" mapSet "coin"
+
+	+$A _vobj_new -$B
+	+$B push "hoplaboum" mapSet "pouet"
+end
+
+script
+
+	function keys(map)
+		print('{')
+		Map.foreach(map, function(i,k,v) print(k, ':', v, ' ') end)
+		print('}')
+	end
+
+	print("Object :") keys(Object)
+	print("\nA :") keys(A)
+	print("\nB :") keys(B)
+	print("\n")
+
+end
+

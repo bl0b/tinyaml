@@ -1,0 +1,91 @@
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+glob
+
+# NOTE
+# ----
+#
+# The calling convention is the following :
+# Caller pushes args from right to left then pushes the number of args then calls.
+# Callee cleans the stack then pushes its results then pushes the number of results then returns.
+# i.e. Foo : A:a x B:b -> C:c x D:d
+# Foo(a,b) gives
+#	push a
+#	push b
+#	push 2
+#	get Foo
+#	call
+# and return a,b in Foo() gives
+#	push a
+#	push b
+#	push 2
+#
+
+
+#
+# big tinyaml FIXME : define a nil/undef data value with type 0 (and possibly value 0, but may not be required)
+#
+
+
+
+
+	glob_dic = 0			# symbol table for globals
+	func_dic = 0			# symbol table for functions
+	func_tab = 0			# table of function decls
+	local_dic_stack = 0		# stack for inner local contexts
+# for scope management :
+	symIsLocal = 101		# constants
+	symIsParam = 102		#
+	symIsGlobal = 103		#
+	symIsClosure = 104		#
+	symMustEnclose = 105		#
+	symIsEnv = 106			#
+	symUnknown = 107		#
+
+	call_size         = 0
+	expr_size         = 0
+	legal_return_size = 0		# number of values that must or may be returned.
+					# 0 causes any return to be discarded.
+					# 1 or more retain only as many values, and make the call fail if not enough values are returned.
+					# -1 for the "running size" stub. i.e. handle  foo(x) => a,b  and  foo(x),c => a,b,c
+					# full running size handling is :
+					# local sz { push 0 -$sz (compile_expr...) (compile one call) +$sz add -$sz (...) +$sz add (computed constant : count of expressions in return (all children - all calls)) }
+					# TODO : handle running size in call parameters lists also !
+	expr_list_calls = 0		# temporary variable : count calls in a script_expr_list
+	expr_list_exprs = 0		# temporary variable : count single expressions in a script_expr_list
+
+	exprListRunningSize = 201
+	exprListOnlyExprs = 202
+	exprListOnlyCall = 203
+
+	_sym_ofs = 0
+
+	cur_fname = 0
+	lbl_counter = 0
+
+	call_local_ofs = 0
+	is_lvalue = 0
+	current_end_tc = 0		# global for try-catch bloc management
+
+	list_algo = 0
+
+	#lst_backup = 0
+
+	#function_has_returned = 0
+end
+
