@@ -1,0 +1,107 @@
+require "script.wc"
+
+script
+
+
+global a,b,c,d,e
+
+function newArray(args...) return args end
+function newStruc() local ret asm mapNew -$ret end return ret end
+
+function genDecimator(y)
+	return function(x) return x/y end
+end
+
+e = newStruc()
+
+e.foo = newArray()
+e.foo[0] = newStruc()
+e.foo[0].bla=newStruc()
+e.foo[0].bla.foo = newArray()
+
+e.foo[0].bla.foo[0+3] = 3
+
+print(e.foo[0],"\n",e.foo[0].bla.foo[0+3],"\n")
+
+e.decim = genDecimator(10)
+e.septim = genDecimator(7)
+
+function hello (a,b)
+	local z,zz,zzz
+	zz=3
+	zzz=0
+	#z=e.foo[zzz].bla.foo[zz]
+	#z= zz+zzz/0
+	z = 3*(5-z)
+	print("Hello, ",a," & ",b,"\n")
+	return b
+end
+
+hello("bla","pouet")
+
+hello(e.decim(6106),e.septim(6106))
+
+function genHello(a,b)
+	local x,y
+	x=a
+	y=b
+	return function() hello(x,y) return genDecimator(9) end
+end
+
+a = genHello("Toto","Pouet")
+
+b = a()
+print("b(999) = ",b(999),"\n")
+
+#b("foobar")
+
+function fact(n)
+	#asm getmem -1 dec SZ jmp @skip push 1 ret 0 skip: nop end
+	asm nop end
+	if n<=1 then
+		return 1
+		asm ret 0 end
+	end
+	return n*fact(n-1)
+end
+#
+#c="yop"
+#d="bla"
+#
+#hello(c,d)
+#
+print("1 and 1 = ",1 and 1,"\n")
+print("23 = 42 ? ",23=42,"\n")
+print("23 != 42 ? ",23!=42,"\n")
+print("23 < 42 ? ",23<42,"\n")
+print("23 < 42 and 0 ? ",23<42 and 0,"\n")
+print("23 < 42 and not 0 ? ",23<42 and not 0,"\n")
+print("\n")
+a=1
+while a!=20 do
+	print("La factorielle de ",a,"\test : ",fact(a),"\n")
+	a=a+1
+end
+
+#asm nop end
+end
+
+language
+	hello ::= "hello" ("," world | foobar ).
+	world ::= "world".
+	foobar = [/[a-zA-Z]*/] world.
+end
+
+plug hello into _start
+
+compile hello script
+	print("hello\n")
+	asm compileStateDown end
+end
+
+compile world script print("world\n") asm compileStateNext end end
+compile foobar script print("foobar\n") asm compileStateNext end end
+
+asm push "hello foobarish world" compileString end
+
+

@@ -1,0 +1,63 @@
+# TinyaML - Object-orientation layer based on existing script language.
+# Copyright (C) 2007 Damien Leroux
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+require "script.wc"
+
+language
+	p_ClassDecl ::= ( simple_class_decl ).
+	simple_class_decl ::= "class" class_decl.
+	class_decl ::= class_name p_ClassDeclBase "{" class_content_decl* "}".
+	class_name ::= sym.
+	p_ClassDeclBase = ( scd_single_inher ).
+	scd_single_inher ::= "(" sym ")".
+
+
+
+
+	p_ObjClassDeclaration = ( obj_glob_class_decl ).
+	obj_class_decl ::= "class" obj_class_name ("(" obj_class_bases ")")? obj_class_inner_decl_lp.
+	obj_class_name ::= sym.
+	obj_class_inner_decl_lp = ("end" | obj_class_inner_decl obj_class_inner_decl_lp).
+	obj_class_inner_decl = (obj_cast_decl|obj_oo_decl|p_ObjMemberDecl).
+	obj_cast_decl = "cast" (obj_cast_from_decl|obj_cast_to_decl).
+	obj_cast_from_decl ::= "from" sym (script_fun_decl | "as" p_ScriptExpr).
+	obj_cast_from_decl ::= "to" sym (script_fun_decl | "as" p_ScriptExpr).
+	obj_oo_decl ::= "on" [sym] obj_oo_opcode_opt_arg script_fun_decl. 
+	p_ObjMemberDecl = (obj_instance_attr_decl|obj_method_decl).
+	obj_instance_attr_decl ::= "TODO".
+
+	obj_oo_opcode_opt_arg =	( obj_oo_opcode_Float
+				| obj_oo_opcode_Int
+				| obj_oo_opcode_Char
+				| obj_oo_opcode_String
+				| obj_oo_opcode_Label
+				| obj_oo_opcode_EnvSym
+				| obj_oo_opcode_NoArg
+				).
+
+	obj_oo_opcode_Float ::= ":" "Float".
+	obj_oo_opcode_Int ::= ":" "Int".
+	obj_oo_opcode_Char ::= ":" "Char".
+	obj_oo_opcode_String ::= ":" "String".
+	obj_oo_opcode_Label ::= ":" "Label".
+	obj_oo_opcode_EnvSym ::= ":" "EnvSym".
+	obj_oo_opcode_NoArg ::= _epsilon.
+
+end
+
+plug obj_class_decl into p_ScriptStatement
+plug obj_class_use into p_ScriptStatement

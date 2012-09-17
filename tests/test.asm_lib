@@ -1,0 +1,9 @@
+asm
+  _lib "core"
+
+  DOP.Int "push"
+  DOP.Float "push"
+  DOP "pop"
+  DOP.Int "pop"
+  DOP "prout"
+end

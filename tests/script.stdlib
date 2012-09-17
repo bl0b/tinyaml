@@ -1,0 +1,115 @@
+require "script.wc"
+
+#################################################################################
+# Standard library for tinyaml script language.				#
+#									#
+# All functions are grouped in the global environment as follows :		#
+# - &Compiler : contains all compilation-oriented functions.		#
+# - &String : string manipulation.					#
+#									#
+#################################################################################
+
+script
+	function export(sym,val)
+		#print "exporting '",sym,"'\\n"
+		asm getmem -2 getmem -1 envAdd end
+	end
+	function addTo(name,field,value)
+		#print "adding '",field,"' to group '",name,"'\\n"
+		asm getmem -3 getmem -1 envGet getmem -2 mapSet push 0 end
+	end
+	function exportGroup(name)
+#		print "exporting Group '",name,"\\n"
+		asm mapNew getmem -1 envAdd end
+	end
+	function strcmp(a,b) asm getmem -1 getmem -2 strcmp push 1 ret 0 end end
+
+	export("export",export)
+
+	exportGroup("String")
+
+	addTo("String","compare",strcmp)
+	addTo("String","append",
+		function(a,b) asm getmem -1 getmem -2 strcat push 1 ret 0 end end)
+	addTo("String","charAt",
+		function(str,i) asm getmem -1 getmem -2 charAt push 1 ret 0 end end)
+	addTo("String","setCharAt",
+		function(str,i,c) asm getmem -1 getmem -3 getmem -2 setCharAt end end)
+
+	exportGroup("Compiler")
+
+	addTo("Compiler","setState",
+		function(n)
+			if not strcmp(n,"down") then asm compileStateDown end
+			else	if not strcmp(n,"next") then asm compileStateNext end
+				else	if not strcmp(n,"error") then asm compileStateError end
+					else	if not strcmp(n,"done") then asm compileStateDone end
+						else if not strcmp(n,"up") then asm compileStateUp end end
+						end
+					end
+				end
+			end
+		end)
+	addTo("Compiler","toto",
+		function(x) print("Toto ",x,"\n") end)
+	addTo("Compiler","opcodeNoArg",
+		function(oc) asm getmem -1 write_oc end end)
+	addTo("Compiler","opcodeInt",
+		function(oc,arg) asm getmem -2 getmem -1 write_ocInt end end)
+	addTo("Compiler","opcodeFloat",
+		function(oc,arg) asm getmem -2 getmem -1 write_ocFloat end end)
+	addTo("Compiler","opcodeLabel",
+		function(oc,arg) asm getmem -2 getmem -1 write_ocLabel end end)
+	addTo("Compiler","opcodeString",
+		function(oc,arg) asm getmem -2 getmem -1 write_ocString end end)
+	addTo("Compiler","opcodeEnvSym",
+		function(oc,arg) asm getmem -2 getmem -1 write_ocEnvSym end end)
+	addTo("Compiler","label",
+		function(label) asm getmem -1 write_label end end)
+	addTo("Compiler","data",
+		function(data,rep) asm getmem -1 getmem -2 write_data end end)
+	addTo("Compiler","printNode",
+		function() asm pp_curNode end end)
+	addTo("Compiler","getChildString",
+		function(i) asm getmem -1 astGetChildString push 1 ret 0 end end)
+	addTo("Compiler","getChildrenCount",
+		function() asm astGetChildrenCount push 1 ret 0 end end)
+	addTo("Compiler","compileChild",
+		function(i) asm getmem -1 astCompileChild end end)
+	addTo("Compiler","walk",
+		function(walkerName) asm getmem -1 doWalk end end)
+
+	exportGroup("Array")
+	addTo("Array","new",
+		function() asm arrayNew push 1 ret 0 end end)
+	addTo("Array","size",
+		function(a) asm getmem -1 arraySize push 1 ret 0 end end)
+	addTo("Array","apply",
+		function(a,f)
+			local i,j
+			asm getmem -3 arraySize setmem -2 end
+			i=0
+			while i<j do
+				a[i] = f(i,a[i])
+				i=i+1
+			end
+		end)
+	addTo("Array","foreach",
+		function(a,f)
+			local i,j
+			asm getmem -3 arraySize setmem -2 end
+			i=0
+			while i<j do
+				f(i,a[i])
+				i=i+1
+			end
+		end)
+
+	exportGroup("SymTab")
+	addTo("SymTab","new",
+		function() asm newSymTab push 1 ret 0 end end)
+	addTo("SymTab","size",
+		function(st) asm getmem -1 symTabSz push 1 ret 0 end end)
+
+end
+

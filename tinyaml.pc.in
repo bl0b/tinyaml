@@ -1,0 +1,17 @@
+prefix = #PREFIX#
+
+includedir=${prefix}/include/tinyaml
+libdir=${prefix}/lib
+extlibdir=${libdir}/tinyaml
+extlibcflags=-I${includedir}
+extliblibs=-L${libdir} -ltinyaml -pthread -shared -Wl,-shared
+
+Name: Tinyaml (This is not yet another meta-language)
+Description: A meta-language, its compiler and compiler-compiler, and a light and easily extendable virtual machine to support it all.
+Version: #VERSION#
+URL: http://tinyaml.googlecode.com/
+Requires: tinyap >= 1.3
+Libs: -L${libdir} -ltinyaml -pthread
+Libs.private: -lm
+Cflags: -I${includedir}
+

@@ -1,0 +1,133 @@
+data
+	0 rep 3
+end
+
+asm
+	newSymTab setmem 0
+	arrayNew setmem 1
+	jmp @_skip_0
+
+_skip_0:
+	nop
+end
+
+language
+	Struc ::= "struc" <sym> "{" <struc_loop>.
+	StrucNew ::= "strucNew" <sym> "{" <newstruc_loop>.
+	StrucGet ::= "+" <sym> "." <sym>.
+	StrucSet ::= "-" <sym> "." <sym>.
+	struc_loop = ( <sym> <struc_loop> | "}" ).
+	newstruc_loop = ( <struc_item> <newstruc_loop> | "}" ).
+	struc_item = <sym> ":" ( <Opcode> | <AsmBloc> ).
+end
+
+plug Struc into p_ProgramTopLevel
+plug StrucNew into Opcode
+plug StrucGet into Opcode
+plug StrucSet into Opcode
+
+compile Struc asm
+	enter 2
+			newSymTab
+		setmem -1
+			push 1
+		setmem -2
+_fill_struc_loop:
+				getmem -2
+				astGetChildrenCount
+			sub
+		SNZ jmp @_done_struc_loop
+
+			getmem -1
+				getmem -2
+			astGetChildString
+		addSym
+
+		getmem -2 inc setmem -2
+		jmp @_fill_struc_loop
+_done_struc_loop:
+			getmem 0
+			astGetChildString 0
+		addSym
+			getmem 1
+			getmem -1
+				getmem 0
+				astGetChildString 0
+			getSym
+		arraySet
+	leave 2
+	compileStateNext
+end
+
+
+compile StrucNew asm
+	enter 2
+			getmem 1
+				getmem 0
+				astGetChildString 0
+			getSym
+		arrayGet
+		setmem -2
+		write_oc "arrayNew"
+			push 0
+		write_oc_Int "dup"
+			push "children count : "
+			astGetChildrenCount
+			push "\n"
+		print 3
+			astGetChildrenCount dec shr 1
+		write_oc_Int "arrayResv"
+			push 1
+		setmem -1
+
+_fill_newstruc_loop:
+				getmem -1
+				astGetChildrenCount
+			sub
+		SNZ jmp @_done_newstruc_loop
+
+			push 0
+		write_oc_Int "dup"
+			push "compiling #"
+			getmem -1 shr 1 inc
+			push "\n"
+		print 3
+			getmem -1 inc
+		astCompileChild
+			getmem -2
+				getmem -1
+			astGetChildString
+		getSym dec
+		write_oc_Int "arraySet"
+
+		getmem -1 add 2 setmem -1
+		jmp @_fill_newstruc_loop
+_done_newstruc_loop:
+	leave 2
+	compileStateNext
+end
+
+compile StrucGet asm
+			getmem 1
+				getmem 0
+				astGetChildString 0
+			getSym
+		arrayGet
+		astGetChildString 1
+	getSym dec
+	write_oc_Int "arrayGet"
+	compileStateNext
+end
+
+compile StrucSet asm
+			getmem 1
+				getmem 0
+				astGetChildString 0
+			getSym
+		arrayGet
+		astGetChildString 1
+	getSym dec
+	write_oc_Int "arraySet"
+	compileStateNext
+end
+

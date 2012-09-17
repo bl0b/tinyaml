@@ -1,0 +1,32 @@
+require "script.wc"
+
+script
+	global a,i
+
+	&Compiler.toto("POUET")
+
+	a = &Array.new()
+
+	&Compiler.toto("POUET")
+
+	i = 0
+	while i<10 do
+		a[i]=10+i
+		&Compiler.toto(a[i])
+		i=i+1
+	end
+
+	&Compiler.toto("POUET")
+
+	print("[ ")
+	&Array.foreach(a,function(i,x) print(i,":",x," ") end)
+	print("]\n")
+
+	&Array.apply(a,function(i,x) return x*x end)
+
+	print("[ ")
+	&Array.foreach(a,function(i,x) print( i,":",x," ") end)
+	print("]\n")
+
+end
+	

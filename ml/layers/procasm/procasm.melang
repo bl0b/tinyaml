@@ -1,0 +1,135 @@
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+require "symasm.wc" glob
+	cur_fname = ""
+	lbl_counter = 0
+	label = 0	# string : start label
+	endlabel = 0	# string : end label
+	n_param = 0
+end
+
+
+asm
+	jmp @_skip_0
+
+# string:something -> string:label
+gen_label:
+	+$lbl_counter inc -$lbl_counter
+	push "_" +$lbl_counter toS strcat strcat
+	ret 0
+
+_skip_0:
+end
+
+
+
+language
+	procasm_func =  procasm_envfunc | procasm_locfunc .
+	procasm_envfunc ::= "export" procasm_locfunc.
+	procasm_locfunc ::= "func" procasm_funcname procasm_fundecl.
+	procasm_funcname ::= sym.
+	procasm_fundecl = "(" procasm_arglist ")" procasm_func_body.
+	procasm_arglist ::= _pal_lp.
+	_pal_lp = (procasm_arg ",")* procasm_arg?.
+	procasm_arg ::= sym.
+	procasm_func_body ::= _pafb_lp.
+	_pafb_lp = (procasm_endfunc|_pa_op _pafb_lp).
+	procasm_endfunc ::= "endfunc".
+	_pa_op = asm_statement.
+	procasm_call ::= "%" sym procasm_exprlist.
+	procasm_exprlist ::= "(" _pael_lp? ")".
+	_pael_lp = {procasm_expr ","} _pael_lp | procasm_expr.
+	procasm_expr ::= asm_statement+.
+
+    p_ProgramTopLevel
+        = procasm_func.
+
+    asm_statement
+        = procasm_call.
+end
+
+
+compile procasm_envfunc
+asm
+	astCompileChild 0
+	<<	getmem i(+$cur_fname envGet &_GSTGet call)
+		push s(+$cur_fname) envAdd
+	>>
+	compileStateDown
+end
+
+compile procasm_expr asm compileStateDown end
+compile procasm_func_body asm compileStateDown end
+
+compile procasm_call
+asm
+	astCompileChild 1	# have all args and argc pushed
+	local i {
+		astGetChildString 0 envGet &_GSTGet call -$i
+		+$i push -1 eq [[
+			<< envGet e(astGetChildString 0) call >>
+		][
+			<< getmem i(+$i) call >>
+		]]
+	}
+	compileStateNext
+end
+
+compile procasm_locfunc asm compileStateDown end
+compile procasm_funcname
+asm
+	envGet &_LSTNew call
+	astGetChildString 0 -$cur_fname
+	+$cur_fname call @gen_label -$label
+	+$cur_fname call @gen_label -$endlabel
+	<< jmp l(+$endlabel) (+$label): >>
+	push 1 push 0 write_data
+	+$cur_fname envGet &_GSTAdd call
+	compileStateNext
+end
+
+compile procasm_endfunc
+asm
+	+$n_param [ << leave i(+$n_param) >> ]
+	<<	ret 0
+	(+$endlabel):
+		dynFunNew l(+$label)
+		setmem i(+$cur_fname envGet &_GSTGet call)
+	>>
+	envGet &_LSTPop call
+	compileStateNext
+end
+
+compile procasm_arglist asm
+	astGetChildrenCount -$n_param
+	+$n_param [ << enter i(+$n_param) >> ]
+	compileStateDown
+end
+
+compile procasm_arg
+asm
+	<< setmem i(astGetChildString 0 envGet &_LSTAdd call astGetChildString 0 envGet &_LSTFindSym call) >>
+	compileStateNext
+end
+
+
+compile procasm_exprlist
+asm
+	compileStateDown
+end
+

@@ -1,0 +1,41 @@
+#!/usr/local/share/tinyaml/script.wc
+require "RTC.wc"
+
+script
+	global d
+
+	function disp(str,date)
+		print("Display : ",str," at ",&RTC.GetDate()," (given date is ",date,")\n")
+	end
+
+
+	&RTC.Init()
+	&RTC.Start()
+
+	d = &RTC.GetDate()
+	&RTC.Schedule(d+8.0,function(date) disp("Coucou 4",date) end)
+	&RTC.Schedule(d+4.0,function(date) disp("Coucou 2",date) end)
+	&RTC.Schedule(d+2.0,function(date) disp("Coucou 1",date) end)
+	&RTC.Schedule(d+6.0,function(date) disp("Coucou 3",date) end)
+
+	#function genDisp(disp)
+	#	return function(date)
+	#		print("Display : ",disp,"\ at ",date,"\\n")
+	#	end
+	#end
+
+	#d = &RTC.GetDate()
+	#&RTC.Schedule(d+2.0,genDisp("CoucouGen 1"))
+	#&RTC.Schedule(d+4.0,genDisp("CoucouGen 2"))
+	#&RTC.Schedule(d+6.0,genDisp("CoucouGen 3"))
+	#&RTC.Schedule(d+8.0,genDisp("CoucouGen 4"))
+
+	&RTC.Wait(10.0)
+
+	&RTC.Stop()
+	&RTC.Term()
+
+	print("Date=", &RTC.GetDate(), "\nBye !\n")
+
+end
+

@@ -1,0 +1,90 @@
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+loadlib RTC
+require "script.wc"
+
+glob
+	callback_wrapper = 0
+end
+
+asm
+	jmp @_skip
+
+_mk_cb_wr:
+	enter 1
+	setmem -1
+	push "Make callback wrapper for " getmem -1 push "\n" print 3
+	dynFunNew @_script_callback_wrapper
+	getmem -1 dynFunAddClosure
+	push " => " dup -1 push "\n" print 3
+	
+	leave 1
+	ret 0
+
+_script_callback_wrapper:
+	push 1
+	push "About to call " getClosure 0 push " from wrapper\n" print 3
+	getClosure 0
+	call
+	popN
+	ret 0
+
+_skip:
+end
+
+script
+	function init() asm envGet &rtc_init call end end
+	function term() asm envGet &rtc_term call end end
+
+	function start() asm RTC_start end end
+	function stop() asm RTC_stop end end
+
+	function getDate() asm RTC_getDate push 1 ret 0 end end
+	function getBeat() asm RTC_getBeat push 1 ret 0 end end
+	function setBeat(b) asm +$b RTC_setBeat end end
+
+	function getTempo() asm RTC_getTempo push 1 ret 0 end end
+	function setTempo(t) asm +$t RTC_setTempo end end
+
+	function getRes() asm RTC_getRes push 1 ret 0 end end
+	function setRes(r) asm +$r RTC_setRes end end
+
+	function sched(timestamp, func)
+		asm	+$func call @_mk_cb_wr
+			+$timestamp
+			RTC_sched
+		end
+	end
+	function wait(timestamp) asm +$timestamp RTC_wait end end
+
+	&exportGroup("RTC")
+	&addToExportGroup("RTC", "Init", init)
+	&addToExportGroup("RTC", "Term", term)
+	&addToExportGroup("RTC", "Start", start)
+	&addToExportGroup("RTC", "Stop", stop)
+	&addToExportGroup("RTC", "GetDate", getDate)
+	&addToExportGroup("RTC", "GetBeat", getBeat)
+	&addToExportGroup("RTC", "SetBeat", setBeat)
+	&addToExportGroup("RTC", "GetTempo", getTempo)
+	&addToExportGroup("RTC", "SetTempo", setTempo)
+	&addToExportGroup("RTC", "GetRes", getRes)
+	&addToExportGroup("RTC", "SetRes", setRes)
+	&addToExportGroup("RTC", "Schedule", sched)
+	&addToExportGroup("RTC", "Wait", wait)
+end
+

@@ -1,0 +1,50 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.61)
+AC_INIT(tinyaml, 0.4, damien.leroux@gmail.com)
+AC_CONFIG_SRCDIR([src])
+AM_CONFIG_HEADER([include/config.h])
+
+AM_INIT_AUTOMAKE
+
+AC_CONFIG_MACRO_DIR([m4])
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_LIBTOOL
+LT_INIT
+AM_PROG_CC_C_O
+
+# Checks for libraries.
+# FIXME: Replace `main' with a function in `-ltinyap':
+#AC_CHECK_LIB([tinyap], [tinyap_new])
+PKG_CHECK_MODULES([tinyap], [tinyap >= 1.4])
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([stdlib.h string.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_CHECK_FUNCS([memmove memset strdup])
+
+AC_CHECK_SIZEOF([void*], [], 
+    [AC_INCLUDES_DEFAULT])
+
+AC_CHECK_SIZEOF([long], [], 
+    [AC_INCLUDES_DEFAULT])
+
+AC_CHECK_SIZEOF([float], [], 
+    [AC_INCLUDES_DEFAULT])
+
+AC_CHECK_SIZEOF([double], [], 
+    [AC_INCLUDES_DEFAULT])
+
+AC_CONFIG_FILES([Makefile ml/Makefile tests/Makefile include/Makefile src/Makefile extension/Makefile extension/IO/Makefile extension/RTC/Makefile extension/MessageQueue/Makefile ml/layers/Makefile ml/layers/metasm/Makefile ml/layers/symasm/Makefile ml/layers/procasm/Makefile ml/layers/script/Makefile ml/layers/extensions/Makefile Doc/Makefile Doc/OpcodeReference/Makefile Doc/OpcodeReference/Sections/Makefile Doc/OpcodeReference/Extensions/Makefile Doc/Tutorial/Makefile Doc/Tutorial/1.Basics/Makefile Doc/Tutorial/2.Layers/Makefile Doc/Tutorial/3.Writing_Compilers/Makefile Doc/Tutorial/4.Writing_Extensions/Makefile Doc/Tutorial/1.Basics/extras/Makefile Doc/Tutorial/2.Layers/3.script/Makefile])
+AC_OUTPUT

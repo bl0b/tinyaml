@@ -1,0 +1,333 @@
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+lib
+        opcode nop
+        opcode nop:EnvSym
+        opcode nop:Int
+        opcode nop:Char
+        opcode nop:Float
+        opcode nop:String
+        opcode nop:Label
+      # stack management
+        opcode push:Int
+        opcode push:Char
+        opcode push:Float
+        opcode push:String
+
+        opcode pop   
+        opcode popN    
+        opcode pop:Int          # pop n values
+        opcode dup:Int          # duplicate n-th value on top of stack
+        opcode swap:Int         # swap top and top-offset on data stack
+
+      # char/int conversions
+        opcode chr:Int          # push char
+        opcode chr      (1)    # pop int, push char
+        opcode ord:Char         # push int
+        opcode ord      (1)    # pop char, push int
+
+      # objects
+        opcode clone (1)
+
+      # tests
+
+        opcode inf (2,1=supEq)
+        opcode sup (2,1=infEq)
+        opcode eq (2,1=nEq)
+        opcode nEq (2,1=eq)
+        opcode infEq (2,1=sup)
+        opcode supEq (2,1=inf)
+
+        opcode SZ               # skip next instruction if zero
+        opcode SNZ              # skip next instruction if non zero
+      # raw exception handling
+        opcode instCatcher:Label        # try {         # label is catch address
+        opcode uninstCatcher:Label      # }             # label is end
+                                                        # of catch bloc
+        opcode throw                    # try and pop data and jump to
+                                        # top catcher or fail
+        opcode getException             # push current exception
+        
+      # jumps
+        opcode jmp:Label        # relative intra-segment jump
+      # call stack
+        opcode call (1)        # call a function object
+        opcode call_vc          # pop function object, pop array or
+                                # VObj, use the latter as closure and
+                                # call the former.
+        opcode call:Label       # intra-segment call (no closure support)
+        opcode retval:Int       # copy stack top then pop out n values
+                                # then poke old stack top then return
+        opcode ret:Int          # pop out n values then return
+
+      # function objects
+        opcode dynFunNew:Label   # push func obj
+        opcode dynFunAddClosure (2)  # pop (data to clone)
+        opcode getClosure:Int    # pop (data to clone)
+        opcode getClosure        # pop index, pop (data to clone)
+        opcode setClosure:Int    # pop (data to set)
+        opcode setClosure        # pop index, pop (data to set)
+
+      # address space management
+        opcode enter:Int        # reserve n local variables
+        opcode leave:Int        # undo previous enter
+
+        opcode getClosure:Int
+
+        opcode getmem:Int       # n>0  : push n-th global data
+                                # n<=0 : push n-th local data
+        opcode setmem:Int       # pop data into mem cell #n (see above)
+        opcode getmem           # pop n from data stack then getmem n
+        opcode setmem           # pop n from data stack then setmem n
+      # bin&arith
+        opcode shr (1)             # shift right
+        opcode shr:Int (1)         # shift right n bits
+        opcode vshr (2)            # pop n then shift right n bits
+
+        opcode shl (1)             # shift left
+        opcode shl:Int (1)         # shift left n bits
+        opcode vshl (2)            # pop n then shift left n bits
+
+        opcode and (1,2)
+        opcode or (1,2)
+        opcode not (1)
+        opcode neg (1)
+        opcode xor (1,2)
+        opcode and:Int (1)
+        opcode or:Int (1)
+        opcode xor:Int (1)
+
+        opcode inc (1)
+        opcode dec (1)
+
+        opcode rmod (2,1=mod)
+        opcode mod (2,1=rmod)
+        opcode mod:Int (1)
+        opcode mod:Float
+
+        opcode add (1,2)             # use two values on top of stack
+        opcode sub (2,1=rsub)
+        opcode rsub (2,1=sub)
+        opcode mul (1,2)
+        opcode div (2,1=rdiv)
+        opcode rdiv (2,1=div)
+
+        opcode add:Int (1)         # use top of stack and immed value
+        opcode sub:Int (1)
+        opcode mul:Int (1)
+        opcode div:Int (1)
+
+        opcode add:Float (1)
+        opcode sub:Float (1)
+        opcode mul:Float (1)
+        opcode div:Float (1)
+
+        opcode sin (1)
+        opcode cos (1)
+        opcode tan (1)
+
+        opcode sqrt (1)         # pop float, push sqrt(value)
+        opcode log  (1)         # pop float, push ln(value)
+        opcode log:Float (1)    # pop float, push ln(value)/ln(arg)
+        opcode exp (1)          # pop float, push exp(float)
+        opcode pow (1)          # pop int/float (x), pop int/float (y),
+                                # push float (x^y)
+
+      # AST manipulation
+        opcode astGetOp
+        opcode astGetRow
+        opcode astGetCol
+        opcode astGetChildString
+        opcode astGetChildString:Int
+        opcode astGetChildrenCount
+        opcode astCompileChild:Int
+        opcode astCompileChild
+
+      # compiler manipulation
+        opcode onCompInit               # pop dynFun
+        opcode onCompTerm               # pop dynFun
+        opcode __addCompileMethod:Label
+        opcode write_data               # pop data, pop rep, write
+        opcode write_label:String
+        opcode write_label
+        opcode write_oc:String
+        opcode write_ocInt:String
+        opcode write_ocChar:String
+        opcode write_ocFloat:String
+        opcode write_ocLabel:String
+        opcode write_ocString:String
+        opcode write_ocEnvSym:String
+        opcode write_oc
+        opcode write_ocInt
+        opcode write_ocChar
+        opcode write_ocFloat
+        opcode write_ocLabel
+        opcode write_ocString
+        opcode write_ocEnvSym
+
+        opcode compileStateNext
+        opcode compileStateDown
+        opcode compileStateUp
+        opcode compileStateDone
+        opcode compileStateError
+
+        opcode pp_curNode
+
+        #opcode _pop_curNode
+
+        opcode _langDef:String
+        opcode _langPlug:String         # pop plug
+
+        opcode compileString		# compile in the current compiler context
+        opcode compileStringToThread:Int # pop buffer, push thread
+                                         # with given prio
+        opcode compileStringToThread	# pop int(prio), pop buffer,
+                                        # push thread
+        opcode compileFileToThread:Int	# pop filename, push thread
+                                        # with given prio
+        opcode compileFileToThread	# pop int(prio), pop filename,
+                                        # push thread
+
+        opcode doWalk:String            # walk current node with named
+        opcode doWalk                   # walker, or pop name from stack
+        opcode walkChild:Int            # perform walking on this child
+        opcode walkChild
+
+      # handling symbol tables
+        opcode newSymTab                # create a new sym tab and push
+                                        # it onto data stack
+        opcode symTabSz (1)
+        opcode getSym   (2)             #pop key, pop table, push index
+        opcode getSymName (2)           #pop key, pop table, push symbol
+        opcode addSym (2)               # pop key, pop table
+
+      # runtime environment
+        opcode envLookup                # [symbol] => offset
+        opcode envGet                   # [symbol] => env value
+        opcode envGet:EnvSym
+        opcode envSet:EnvSym
+        opcode envAdd
+
+        opcode mapNew
+        opcode mapHasKey (1)
+        opcode mapGet (2)
+        opcode mapSet (3)
+        opcode mapHasKey:String (1)
+        opcode mapGet:String (1)
+        opcode mapSet:String (1)
+        opcode mapKeys (1)
+
+      # handling arrays
+        opcode arrayNew
+        opcode arrayResv:Int (1)
+        opcode arrayResv (2)
+        opcode arrayGet:Int (1)
+        opcode arrayGet (2)
+        opcode arraySet:Int (1)
+        opcode arraySet (2)
+        opcode arraySize (1)
+
+      # handling object stacks
+        opcode stackNew
+        opcode stackPush (2)
+        opcode stackPop (1)
+        opcode stackPeek (2)
+        opcode stackPop:Int (1)
+        opcode stackPeek:Int (1)
+        opcode stackSize (1)
+
+      # string operations
+        opcode strcmp:String (1)
+        opcode strcat:String (1)
+        opcode strdup:String (1)
+        opcode strcmp (1,2)
+        opcode strcat (2)
+        opcode strdup (1)
+        opcode strlen (1)
+        opcode charAt:Int (1)
+        opcode setCharAt:Int (1)
+        opcode charAt (2)
+        opcode setCharAt (2)
+        opcode substr (3)
+
+      # basic conversions
+        opcode toS (1)
+        opcode toI (1)
+        opcode toF (1)
+
+      # threading
+        opcode newThread:Label          # pop prio
+        opcode newThread                # pop prio
+        opcode getPid                   # push int
+        opcode yield                    # yield current thread
+        opcode joinThread               # pop int thread pid
+        opcode killThread               # pop int thread pid
+
+        opcode newMtx
+        opcode lockMtx:Int              # ref a memcell
+        opcode unlockMtx:Int            # same
+        opcode lockMtx                  # pop int memcell
+        opcode unlockMtx                # same
+
+      # Critical sections
+        opcode crit_begin
+        opcode crit_end
+
+      # time-slice management
+        opcode _set_timeslice:Int
+        opcode _set_timeslice
+        opcode _get_timeslice
+
+      # accessing thread registers
+        opcode regGet:Int               # push reg value
+        opcode regGet                   # pop index, push reg value
+        opcode regSet:Int               # pop value
+        opcode regSet                   # pop index, pop value
+
+      # FIXME: output and debug mechanisms
+        opcode print:Int
+        opcode print                    # pop number of items, pop each item
+
+      # Access to internals
+        opcode _vm_prog_get_globals     # push symtab
+        opcode typeof			# pop any, push int (Data* constant)
+
+      # Virtual objects (raw access)
+        opcode _vobj_new      (1)
+        opcode _vobj_init     (1)
+        opcode _vobj_gofs     (1)
+        opcode _vobj_sofs     (2)
+        opcode _vobj_gcls     (1)
+        opcode _vobj_scls     (2)
+        opcode _vobj_cmbr     (1)
+        opcode _vobj_gmbr:Int (1)
+        opcode _vobj_gmbr     (2)
+        opcode _vobj_smbr:Int (2)
+        opcode _vobj_smbr     (3)
+        opcode _vcls_new      (1)
+        opcode _vcls_gname    (1)
+        opcode _vcls_sname    (2)
+        opcode _vcls_gbase    (1)
+        opcode _vcls_sbase    (2)
+        opcode _vcls_cto      (2)
+        opcode _vcls_cfrom    (1)
+        opcode _vcls_soo      (4) # cls, str (opcode), int (argtype), dyn_fun
+
+        opcode cast (2=_vcls_cfrom,1=_vcls_cto)
+
+       end

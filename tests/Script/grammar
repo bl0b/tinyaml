@@ -1,0 +1,106 @@
+
+language
+
+ Script ::= "script" script_glob script_statement+ "end".
+ script_statement = ( script_glob_fun | script_instruction ).
+
+ script_glob ::= ("global" sym ("," sym)*|_epsilon).
+ script_loc ::= "local"  sym ("," sym)*.
+ script_id ::= sym.
+ script_string ::= string.
+
+ script_glob_fun ::= "function" sym script_fun_decl.
+ script_anon_fun ::= "function" script_fun_decl.
+ script_fun_decl ::= script_param_list script_fun_body.
+ script_param_list ::= "(" ( ")" | (script_param ",")* ( script_vararg | script_param ) ")" ).
+ script_param ::= sym.
+ script_vararg ::= sym "...".
+ script_fun_body ::= script_local? script_instruction+ "end".
+ script_local ::= "local" sym ("," sym)*.
+
+ script_instruction = ( script_if | script_while | AsmBloc | script_print | script_return | script_throw | script_try | script_assign | script_call_ret_0 ).
+ instruction_seq = script_instruction+.
+ instruction_bloc ::= instruction_seq.
+
+ script_try ::= "try" instruction_bloc "catch" catch_bloc.
+ catch_bloc ::= catch_bloc_loop.
+ catch_bloc_loop = ( catch_statement catch_bloc_loop | "end" ).
+ catch_statement ::= sym ":" instruction_bloc.
+ script_throw ::= "throw" sym.
+
+ script_while ::= "while" b_expr "do" sb_end.
+ script_if ::= "if" b_expr "then" ( sb_else sb_end | sb_end ).
+
+ sb_end ::= script_instruction* "end".
+ sb_else ::= script_instruction* "else".
+
+ script_call ::= script_var "(" ( ")" | script_expr_list ")" ).
+ script_call_ret_1 ::= script_call.
+ script_call_ret_0 ::= script_call.
+ script_call_ret_any ::= script_call.
+
+ script_print ::= "print" "(" script_expr_list ")".
+ script_expr ::= ( script_string | script_anon_fun | b_expr | m_expr | script_call_ret_any | script_var ).
+
+ script_return ::= "return" script_expr_list.
+ #script_expr_list ::= _epsilon (script_expr ",")* script_expr script_expr_list_end.
+ script_expr_list ::= script_el_loop? script_expr_list_end.
+ script_el_atom = (script_expr|script_call_ret_any|script_var).
+ script_el_loop = script_el_atom ("," script_el_loop)*.
+# (script_el_loop "," (script_expr|script_call_ret_any) | (script_expr|script_call_ret_any) ).
+ script_expr_list_end ::= _epsilon.
+
+ script_assign ::= script_var_list "=" script_expr_list.
+
+ script_int ::= int.
+ script_float ::= float.
+ number = ( script_float | script_int | "(" m_expr ")" ).
+
+ script_var ::= ( script_var (script_array_access|script_struc_access) | ( script_env | script_id )).
+ script_var_list ::= _epsilon (script_var ",")* script_var script_var_list_end.
+ script_var_list_end ::= _epsilon.
+
+ script_env ::= "&" sym.
+
+ script_array_access ::= "[" (m_expr|script_call_ret_1|script_var) "]".
+ script_struc_access ::= "." sym.
+
+ m_expr = expr4.
+ b_expr = bexpr4.
+
+m_minus ::= "-" number.
+m_div ::= ( m_div "/" expr00 | expr00 "/" expr00 ).
+m_mul ::= ( m_mul "*" expr11 | expr11 "*" expr11 ).
+m_sub ::= ( m_sub "-" expr22 | expr22 "-" expr22 ).
+m_add ::= ( m_add "+" expr33 | expr33 "+" expr33 ).
+
+b_not ::= "not" (m_expr | script_call_ret_1 | script_var).
+b_and ::= ( b_and "and" bexpr11 | bexpr11 "and" bexpr11 ).
+b_or ::= ( b_or "or" bexpr22 | bexpr22 "or" bexpr22 ).
+
+comp ::= bexpr33 /(<|>|=|!=|>=|<=)/ bexpr33.
+
+expr0	= ( m_minus | number ).
+expr00	= ( m_minus | number | script_call_ret_1 | script_var ).
+expr1	= ( m_div | expr0 ).
+expr11	= ( m_div | expr0 | script_call_ret_1 | script_var ).
+expr2	= ( m_mul | expr1 ).
+expr22	= ( m_mul | expr1 | script_call_ret_1 | script_var ).
+expr3	= ( m_sub | expr2 ).
+expr33	= ( m_sub | expr2 | script_call_ret_1 | script_var ).
+expr4	= ( m_add | expr3 ).
+
+bexpr1	= ( b_not | m_expr ).
+bexpr11	= ( b_not | m_expr | script_call_ret_1 | script_var ).
+bexpr2	= ( b_and | bexpr1 ).
+bexpr22	= ( b_and | bexpr1 | script_call_ret_1 | script_var ).
+bexpr3	= ( b_or | bexpr2 ).
+bexpr33	= ( b_or | bexpr2 | script_call_ret_1 | script_var ).
+
+bexpr4 = ( comp | bexpr3 ).
+
+end
+
+
+plug Script into p_Code
+

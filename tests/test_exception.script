@@ -1,0 +1,31 @@
+script
+	function toto()
+		throw pouet
+	end
+
+	function test()
+		try toto() catch
+			hop: print("haha.\n")
+			pouet: print("'\\o/'\n")
+		end
+	end
+
+	function notest()
+		toto()
+	end
+
+	test()
+
+#	asm nop end
+
+	try
+		test()
+		notest()
+		test()
+	catch
+		pouet: print("hop.\n")
+	end
+
+#	notest()
+end
+

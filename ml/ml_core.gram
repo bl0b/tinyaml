@@ -1,0 +1,244 @@
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+# 
+# Grammar for the meta-language, written in tinyaP 'short' language.
+
+string = ~","~.
+
+float = /[-]?[0-9]+[.][0-9]+\\b/.
+int = /[-]?[0-9]+\\b/.
+sym = /\\b[_a-zA-Z][_a-zA-Z0-9]*\\b/.
+
+char = .raw "'" /\\[\\'trn]|./ "'".
+
+##
+## Opcodes
+##
+
+asm_statement
+	= DeclLabel
+    | Opcode_Float
+	| Opcode_Int
+	| Opcode_Char
+	| Opcode_Label
+	| Opcode_String
+	| Opcode_EnvSym
+	| Opcode_NoArg
+	.
+
+decl_opcode = /[_a-zA-Z][_a-zA-Z0-9]*/:opcode!.
+opcode_sym = ~opcode!~.
+Opcode_NoArg ::= opcode_sym.
+Opcode_Int ::= opcode_sym OpcodeArg_Int.
+Opcode_Char ::= opcode_sym OpcodeArg_Char.
+Opcode_Float ::= opcode_sym OpcodeArg_Float.
+Opcode_String ::= opcode_sym OpcodeArg_String.
+Opcode_Label ::= opcode_sym OpcodeArg_Label.
+Opcode_EnvSym ::= opcode_sym OpcodeArg_EnvSym.
+
+OpcodeArg_NoArg = .epsilon.
+OpcodeArg_Int = int.
+OpcodeArg_Char = char.
+OpcodeArg_Float = float.
+OpcodeArg_String = string.
+OpcodeArg_Label = "@" sym | /[+-][0-9]+/.
+OpcodeArg_EnvSym = "&" sym.
+
+##
+## Labels
+##
+
+DeclLabel ::= sym ":".
+
+##
+## Assembly language (programs)
+##
+
+AsmBloc ::= "asm" asm_statements "end".
+asm_statements = asm_statement | asm_statements asm_statement.
+
+
+Program ::= p_ProgramTopLevel+ .eof.
+
+p_Code = AsmBloc.
+
+p_ProgramTopLevel = p_Data | p_Code | LangDef | LangComp | NewWalker.
+
+
+
+p_Data = DataBloc.
+
+DataBloc ::= "data" data+ "end".
+
+data = DataFloat | DataInt | DataChar | DataString.
+DataInt ::= int ("rep" int)?.
+DataFloat ::= float ("rep" int)?.
+DataString ::= string.
+DataChar ::= char.
+
+
+
+##
+## Opcode declarations (libraries)
+##
+
+DeclOpcode = "opcode" DeclOpcodeOverloads.
+
+declOpcode_opt_arg  = DeclOpcode_Float
+					| DeclOpcode_Int
+					| DeclOpcode_Char
+					| DeclOpcode_String
+					| DeclOpcode_Label
+					| DeclOpcode_EnvSym
+					| DeclOpcode_NoArg
+					.
+
+
+DeclOpcode_Float ::= decl_opcode ":" "Float".
+DeclOpcode_Int ::= decl_opcode ":" "Int".
+DeclOpcode_Char ::= decl_opcode ":" "Char".
+DeclOpcode_String ::= decl_opcode ":" "String".
+DeclOpcode_Label ::= decl_opcode ":" "Label".
+DeclOpcode_EnvSym ::= decl_opcode ":" "EnvSym".
+DeclOpcode_NoArg ::= decl_opcode.
+
+
+DeclOpcodeOverloads ::= declOpcode_opt_arg.
+DeclOpcodeOverloads ::= declOpcode_opt_arg "(" DeclOpcode_Overload ("," DeclOpcode_Overload)* ")".
+DeclOpcode_Overload ::= int ("=" declOpcode_opt_arg)?.
+
+Library ::= "lib" p_libStatement+ "end" (.eof|Postponed).
+p_libStatement =  DeclOpcode | LibFile .
+
+LibFile ::= "file" string.
+
+
+##
+## Grammar declaration
+##
+
+LangDef ::= "language" Grammar "end".
+LangComp ::= "compile" sym p_Code.
+
+
+##
+## Defining new walkers
+##
+
+
+NewWalker ::= "walker" sym WalkerBodies.
+WalkerBodies ::= "{" wb_select+ "}".
+wb_select =  WalkerDefault | WalkerInit | WalkerTerminate | WalkerBody .
+WalkerDefault ::= "default" p_Code.
+WalkerInit ::= "init" p_Code.
+WalkerTerminate ::= "terminate" p_Code.
+WalkerBody ::= "on" sym p_Code.
+
+
+
+
+##
+## Entry point
+##
+
+
+
+_start = toplevel.
+
+toplevel = (Program | Library | Preproc).
+
+Preproc ::= rqll+ (.eof|Postponed).
+
+Include ::= "include" string.
+Require ::= "require" string.
+LoadLib ::= "loadlib" sym.
+rqll =  Include | Require | LoadLib .
+Postponed ::= ~,~.
+#Postponed ::= ~,~ .eof.
+#Postponed ::= /.+/ .eof.
+
+
+
+
+
+##
+## META-GRAMMAR
+##
+## adapted from a copypasta of tinyap's `short' dialect.
+##
+# TinyaP : this is not yet another 
+# Copyright (C) 2007-2011 Damien Leroux
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+#
+# Production Atoms
+#
+symbol = /[_a-zA-Z][0-9a-zA-Z_]*/.
+T ::= ~","~.
+NT ::= symbol.
+RE ::= ~/,/~.
+STR ::= .raw "~" /[^~,]?/ "," /[^~,]?/ "~".
+BOW ::= .raw "~" /[_a-zA-Z][_a-zA-Z0-9]*/ /!?/ "~".
+AddToBag ::= RE ":" symbol /!?/.
+#
+# Compositions
+#
+RawSeq ::= ".raw" (.space (T | STR | RE | BOW | AddToBag))+.
+alt_elem = RawSeq | Seq | single.
+Seq ::= single (.space single)+.
+Alt ::= alt_elem (.space "|" .space alt_elem)+.
+Rep01 ::= single_norep "?".
+Rep1N ::= single_norep "+".
+Rep0N ::= single_norep "*".
+single = Rep01 | Rep0N | Rep1N | single_norep | Space | NewLine | Indent | Dedent.
+single_norep = Prefix | Postfix | NT | STR | BOW | AddToBag | T | RE | Epsilon | EOF | sub_rmb.
+Prefix ::= "[" rmember "]" NT.
+Postfix ::= "{" rmember "}" NT.
+#
+# Top-level
+#
+TransientRule ::= symbol .space "=" .space rmember "." .newline.
+OperatorRule ::= symbol .space "::=" .space rmember "." .newline.
+rmember = Alt | alt_elem.
+sub_rmb = "(" (Seq | Alt | RawSeq) ")".
+Comment ::= /#.*/ .newline.
+Grammar ::= gram_toplevel+.
+gram_toplevel = TransientRule | OperatorRule.
+#
+# Miscellaneous
+#
+#_start = Grammar.
+_whitespace = /(#[^\n]*\n|[ \r\n\t])+/.
+EOF ::= ".eof".
+Epsilon ::= ".epsilon".
+Space ::= ".space".
+NewLine ::= ".newline".
+Indent ::= ".indent".
+Dedent ::= ".dedent".
