@@ -1,0 +1,71 @@
+     lib
+        file "RTC"
+
+        opcode RTC_init
+        opcode RTC_term
+
+        opcode RTC_start
+        opcode RTC_stop
+
+        opcode RTC_sched        # pop float, pop dyn_fun
+        opcode RTC_wait         # pop float, hang
+
+        opcode RTC_getDate
+
+        opcode RTC_getBeat
+        opcode RTC_setBeat:Float
+        opcode RTC_setBeat
+
+        opcode RTC_getTempo
+        opcode RTC_setTempo:Float
+        opcode RTC_setTempo
+
+        opcode RTC_getRes
+        opcode RTC_setRes:Float
+        opcode RTC_setRes
+
+        # used by driver thread
+        opcode _RTC_nextTask
+
+     end
+
+#########################################
+# DRIVER CODE                            
+#########################################
+
+data 0 0 end
+
+asm
+        dynFunNew @_init
+        push "rtc_init"
+        envAdd
+
+        dynFunNew @_term
+        push "rtc_term"
+        envAdd
+
+        jmp @_skip0
+
+      _init:
+        RTC_init
+        RTC_start
+
+        push 99
+        newThread @_tasks
+        setmem 1
+        ret 0
+
+      _term:
+        getmem 1 push 0 setmem 1	# unreference thread before killing it
+	killThread
+        RTC_term
+        ret 0
+
+      _tasks:
+        _RTC_nextTask call
+        jmp @_tasks
+
+      _skip0:
+        nop
+end
+

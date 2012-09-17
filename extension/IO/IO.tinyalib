@@ -1,0 +1,143 @@
+require "procasm.wc"
+
+      lib
+	file "IO"
+
+	opcode __IO__init
+
+	opcode fopen:String	# pop string (filepath), push file
+	opcode fopen		# pop string (mode), pop string (filepath), push file
+	opcode udpopen		# pop int (port), pop int (IP), push file
+	opcode tcpopen		# pop int (port), pop int (IP), push file
+	opcode isOpen		# pop file, push int
+	opcode atEOF		# pop file, push int
+	opcode tell		# pop file, push int (ofs)
+	opcode seek:Char	# pop int (ofs), pop file
+				# seek to ofs from :
+				#	S : start
+				#	E : end
+				#	C : current position
+				# buffers and files are seekable
+				# sockets and pipes are not seekable
+	opcode flush		# pop file
+	#opcode bufferNew		# pop int (size), pop string (mode), push file
+	#opcode toBuffer		# pop file, push file
+	opcode string2ip	# pop string (name), push array[int] (ip)
+	opcode ip2string	# pop string (name), push array[int] (ip)
+	opcode popen:String	# pop string (command), push file
+	opcode popen		# pop string (mode), pop string (command), push file
+	opcode close		# pop file
+
+	opcode _fpack:Char	# pop value, peek file
+	opcode _fpack		# pop format (ONE char), pop value, peek file
+				# defined format characters (corresponding value types between brackets) :
+				#	S : text string			[String]
+				#	I : text int (dec)		[Int]
+				#	X : text int (hex)		[Int]
+				#	F : text float			[Float]
+				#	C : single character		[Char]
+				#	s : bin string (0-terminated)	[String]
+				#	i : bin int (32bit)		[Int]
+				#	f : bin float (32bit)		[Float]
+				#	b : bin byte (8bit)		[Int]
+				# NOTA : push "foobar" _fpack "S" is equivalent to push "foobar" fprint 1
+	opcode _funpack:Char	# peek file, push value
+	opcode _funpack		# pop format, peek file, push value
+
+	opcode fprint		# pop count, pop file, pop values...
+
+	opcode fsize		# pop string (filepath), push int (size)
+
+	opcode ftype		# pop string (filepath), push string (filetype)
+	opcode readlink		# pop string (linkpath), push string (dest filepath)
+	opcode symlink		# pop string (linkpath), pop string (dest filepath)
+
+	opcode rename		# pop string (dest filepath), pop string (src filepath)
+	opcode unlink		# pop string (filepath)
+
+	opcode fsource		# pop file, push string (filepath or IP:port)
+
+	opcode mkdir		# pop string (dirpath)
+	opcode getcwd		# push string (cwd)
+	opcode chdir		# pop string (dirpath), change cwd
+
+	opcode opendir		# pop string (dirpath), push file (dir)
+	opcode readdir		# push next entry name or empty string if at end of directory
+
+	opcode stdout		# push stdout file
+	opcode stderr		# push stderr file
+	opcode stdin		# push stdin file
+
+	# server code
+	opcode __tcpserver
+	opcode __accept
+      end
+
+glob
+	_stdin=0	# stdin
+	_stdout=0	# stdout
+	_stderr=0	# stderr
+end
+
+
+
+func make_tcps_cb(client_callback, file, ip, port)
+	dynFunNew @_tcps_tch
+	push "Make client session thread " +$client_callback
+	push " file " +$file 
+	push " IP " +$ip
+	push " port " +$port
+	push '\n' print 9
+	+$client_callback dynFunAddClosure
+	+$file dynFunAddClosure
+	+$ip dynFunAddClosure
+	+$port dynFunAddClosure
+endfunc
+
+# void callback(file, ip, port)
+export func _TCPServer(ip, port, client_callback, q_len)
+	+$ip +$port +$q_len __tcpserver
+	dynFunNew @_tcpserv_th
+	dup -1 dynFunAddClosure
+	+$client_callback dynFunAddClosure
+	push 50 swap 1 newThread
+	pop
+endfunc
+
+export func __IO__term()
+	+$_stderr close
+	+$_stdout close
+	+$_stdin close
+	push 0 -$_stderr
+	push 0 -$_stdout
+	push 0 -$_stdin
+endfunc
+
+asm
+	__IO__init
+	-$_stderr
+	-$_stdout
+	-$_stdin
+	ret 0
+
+
+
+# TCP server thread
+_tcpserv_th:
+	local file, p, i {
+		getClosure 0
+	_tcps_lp:
+		__accept -$file -$p -$i
+		+$file push -1 nEq [
+			push 50 %make_tcps_cb(getClosure 1, +$file, +$i, +$p) newThread pop
+			jmp@_tcps_lp
+		]
+	}
+	ret 0
+
+# TCP server client session thread
+_tcps_tch:
+	getClosure 1 getClosure 2 getClosure 3 getClosure 0 call
+	ret 0
+end
+
