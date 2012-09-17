@@ -1,0 +1,60 @@
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+#################################################################################
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
+#                                                                               #
+#                                TINYAML TUTORIAL                               #
+#                                Part II : Layers                               #
+#                               3. Script language                              #
+#                                      Data                                     #
+#                                                                               #
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
+#################################################################################
+
+# Here we demonstrate the declaration and use of data and variables.
+require "script.wc"
+
+script
+	# the global statement declares global variables.
+	global myglobvar1, myglobvar2
+
+	# Functions will be covered more extensively in part 4. For the moment,
+	# we have to define a function to use the local variable definition
+	# statement.
+	function test_func()
+		# the local statement declares local variables (only inside functions. Local variables are meaningless outside of functions)
+		local foobar, plop
+		myglobvar1, foobar, plop = "Hello", "World !", '\n'
+		print(myglobvar1, ", ", foobar, plop)
+	end
+
+	test_func()
+
+	myglobvar2 = 1 and 0
+	print("1 and 0 = ", myglobvar2, '\n')
+	myglobvar2 = 1 and 1
+	print("1 and 1 = ", myglobvar2, '\n')
+end
+
+# Example command and output :
+#
+# $ tinyaml 2.data.script 
+# Hello, World !
+# 1 and 0 = 0
+# 1 and 1 = 1
+

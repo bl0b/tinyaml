@@ -1,0 +1,68 @@
+# TinyaML
+# Copyright (C) 2007 Damien Leroux
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+#################################################################################
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
+#                                                                               #
+#                                TINYAML TUTORIAL                               #
+#                                Part II : Layers                               #
+#                               3. Script language                              #
+#                                  Flow control                                 #
+#                                                                               #
+#   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #
+#################################################################################
+
+# Here we demonstrate the few flow control statements available in the script language.
+# There only exist if..then..(else)..end and while..do..end constructs.
+# Booleans as shown in the previous part are, just like in C, integers with 0==False and any other value==True.
+require "script.wc"
+
+script
+	global i
+
+	# demonstrating conditional execution with a recursive function
+	function fibonacci(n)
+		if n<=2 then
+			return 1
+		else
+			return fibonacci(n-2)+fibonacci(n-1)
+		end
+	end
+
+	# now display the first ten values of the sequence using a while loop
+	i=0
+	while i<=10 do
+		i=i+1
+		print("fibonacci(",i,") = ", fibonacci(i), '\n')
+	end
+end
+
+# Example command and output :
+# 
+# $ tinyaml 3.control.script
+# fibonacci(1) = 1
+# fibonacci(2) = 1
+# fibonacci(3) = 2
+# fibonacci(4) = 3
+# fibonacci(5) = 5
+# fibonacci(6) = 8
+# fibonacci(7) = 13
+# fibonacci(8) = 21
+# fibonacci(9) = 34
+# fibonacci(10) = 55
+# fibonacci(11) = 89
+
