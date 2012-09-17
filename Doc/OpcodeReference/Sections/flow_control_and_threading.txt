@@ -1,0 +1,80 @@
+call
+	Description : Call a dynamic function object.
+	Stack in : DynFun (function)
+	Stack out : ? (function return values if any)
+call:Label
+	Description : Call a static function at label.
+	Stack in : -
+	Stack out : ? (function return values if any)
+call_vc
+	Description : Call a dynamic function object with a Virtual Closure.
+	Stack in : Array/VObj (closure), DynFun (function)
+	Stack out : ? (function return values if any)
+crit_begin
+	Description : Start a critical section (thread can't be interrupted).
+	Stack in : -
+	Stack out : -
+crit_end
+	Description : End a critical section (thread can be interrupted). 
+	Stack in : -
+	Stack out : -
+instCatcher:Label
+	Description : Install an exception catch bloc starting at label.
+	Stack in : -
+	Stack out : -
+jmp:Label
+	Description :  Jump to label.
+	Stack in : -
+	Stack out : -
+joinThread
+	Description : Wait for given thread to terminate. 
+	Stack in : Thread
+	Stack out : -
+killThread
+	Description : Terminate given thread at once.
+	Stack in : Thread
+	Stack out : -
+lockMtx
+	Description : Lock a Mutex. Will interrupt thread if mutex is already locked.
+	Stack in : Mutex
+	Stack out : -
+lockMtx:Int
+	Description : Lock Mutex at offset arg in memory (locals if arg<0, data segment if n>=0). Prevents race condition that exists in equivalent sequence "getmem N lockMtx". Will interrupt thread if mutex is already locked.
+	Stack in : -
+	Stack out : -
+ret:Int
+	Description : Clean the data stack and return from call or terminate thread if no call to return from.
+	Stack in : any [arg times]
+	Stack out : -
+retval:Int
+	Description : Clean the data stack, retaining topmost value and return from call or terminate thread if no call to return from.
+	Stack in : any [arg times], any (return value)
+	Stack out : any (return value)
+SNZ
+	Description : Skip next instruction if value is Non-Zero.
+	Stack in : Int (value)
+	Stack out : -
+SZ
+	Description : Skip next instruction if value is Zero.
+	Stack in : Int (value)
+	Stack out : -
+throw
+	Description : Raise an exception.
+	Stack in : any (exception)
+	Stack out : -
+uninstCatcher:Label
+	Description : Uninstall the last exception catch bloc installed and jump to label.
+	Stack in : -
+	Stack out : -
+unlockMtx
+	Description : Unlock a Mutex. Will interrupt thread if a thread with higher priority is waiting for this lock. 
+	Stack in : Mutex
+	Stack out : -
+unlockMtx:Int
+	Description : Unlock a mutex at offset arg in memory (locals if arg<0, data segment if arg>=0). Will interrupt thread if a thread with higher priority is waiting for this lock. 
+	Stack in :
+	Stack out :
+yield
+	Description : Tell the scheduler to interrupt thread execution and resume next thread.
+	Stack in : -
+	Stack out : -

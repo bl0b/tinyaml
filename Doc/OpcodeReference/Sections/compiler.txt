@@ -1,0 +1,188 @@
+__addCompileMethod:Label
+	Description : Add a node visit method for node name (name) to the compiler.
+	Stack in : String (name)
+	Stack out : -
+astCompileChild
+	Description : Recursively compile n-th child of the current node.
+	Stack in : Int (n)
+	Stack out : -
+astCompileChild:Int
+	Description : Recursively compile arg-th child of the current node. 
+	Stack in : -
+	Stack out : -
+astGetChildrenCount
+	Description : Get the children count for current node. 
+	Stack in : -
+	Stack out : Int (count)
+astGetChildString
+	Description : Get the n-th child string (node name or immediate string if leaf) in current node.
+	Stack in : Int (n)
+	Stack out : String
+astGetChildString:Int
+	Description : Get the arg-th child string (node name or immediate string if leaf) in current node.
+	Stack in : -
+	Stack out : String
+astGetCol
+	Description : Get the column where this node originated in source text.
+	Stack in : -
+	Stack out : Int (column)
+astGetOp
+	Description : Get the current node name.
+	Stack in : -
+	Stack out : String
+astGetRow
+	Description : Get the line number where this node originated in source text.
+	Stack in : -
+	Stack out : Int (line number)
+compileFileToThread
+	Description : Compile the file filename in a new compilation context and spawn a thread object running the newly compiled program with priority value prio.
+	Stack in : String (filename), Int (prio)
+	Stack out : Thread
+compileFileToThread:Int
+	Description : Compile the file filename in a new compilation context and spawn a thread object running the newly compiled program with priority value arg.
+	Stack in : String (filename)
+	Stack out : Thread
+compileStateDone
+	Description : Tell the compiler or walker the compilation is done and successful.
+	Stack in : -
+	Stack out : -
+compileStateDown
+	Description : Tell the compiler or walker to enter the current node and process all children in sequence. 
+	Stack in : -
+	Stack out : -
+compileStateError
+	Description : Tell the compiler or walker the compilation has failed. 
+	Stack in : -
+	Stack out : -
+compileStateNext
+	Description : Tell the compiler or walker to process next node (also synonym for state Done if last node in tree). 
+	Stack in : -
+	Stack out : -
+compileStateUp
+	Description : Tell the compiler or walker to exit this node and process the next sibling of the parent node.
+	Stack in : -
+	Stack out : -
+compileString
+	Description : Compile the given string in the current compilation context.
+	Stack in : String
+	Stack out : -
+compileStringToThread
+	Description : Compile the string s in a new compilation context and spawn a thread object running the newly compiled program with priority value prio.
+	Stack in : String (s), Int (prio)
+	Stack out : Thread
+compileStringToThread:Int
+	Description : Compile the string s in a new compilation context and spawn a thread object running the newly compiled program with priority value arg.
+	Stack in : String (s)
+	Stack out : Thread
+doWalk
+	Description : Walk the current subtree with a user-defined walker.
+	Stack in : String (walkername)
+	Stack out : -
+doWalk:String
+	Description : Walk the current subtree with a user-defined walker.
+	Stack in : -
+	Stack out : -
+_langDef:String
+	Description : Add given rules to the VM grammar. 
+	Stack in : -
+	Stack out : -
+_langPlug:String
+	Description : Plug node named arg into given node. Refer to tinyap documentation for details.
+	Stack in : String (node name to plug into)
+	Stack out : -
+onCompInit
+	Description : Register a dynamic function to be run when a new compilation context is initialized.
+	Stack in : DynFun
+	Stack out : -
+onCompTerm
+	Description : Register a dynamic function to be run when a compilation context is terminated. 
+	Stack in : DynFun
+	Stack out : -
+_pop_curNode
+	Description : DEPRECATED. DO NOT USE.
+	Stack in : -
+	Stack out : -
+pp_curNode
+	Description : Prettyprint current AST node.
+	Stack in : -
+	Stack out : -
+_vm_prog_get_globals
+	Description : Get the globals SymTab for the currently compiled program.
+	Stack in : -
+	Stack out : SymTab
+walkChild
+	Description : Recursively walk a child node with current user-defined walker.
+	Stack in : Int (node index)
+	Stack out : -
+walkChild:Int
+	Description : Recursively walk a child node with current user-defined walker. 
+	Stack in : -
+	Stack out : -
+write_data
+	Description : Append to the data segment of the currently compiled program.
+	Stack in : Int/Float/String (data)
+	Stack out : -
+write_label
+	Description : Create a label at current code offset in the currently compiled program.
+	Stack in : String (label)
+	Stack out : -
+write_label:String
+	Description : Create a label at current code offset in the currently compiled program.
+	Stack in : -
+	Stack out : -
+write_oc
+	Description : Write an opcode without argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode name)
+	Stack out : -
+write_ocChar
+	Description : Write an opcode with Char argument at current code offset in the currently compiled program. 
+	Stack in : Char (opcode argument), String (opcode name)
+	Stack out : -
+write_ocChar:String
+	Description : Write an opcode with Char argument at current code offset in the currently compiled program. 
+	Stack in : Char (opcode argument)
+	Stack out : -
+write_ocEnvSym
+	Description : Write an opcode with EnvSym argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode argument), String (opcode name)
+	Stack out : -
+write_ocEnvSym:String
+	Description : Write an opcode with EnvSym argument at current code offset in the currently compiled program.
+	Stack in : String (opcode argument)
+	Stack out : -
+write_ocFloat
+	Description : Write an opcode with Float argument at current code offset in the currently compiled program. 
+	Stack in : Float (opcode argument), String (opcode name)
+	Stack out : -
+write_ocFloat:String
+	Description : Write an opcode with Float argument at current code offset in the currently compiled program. 
+	Stack in : Float (opcode argument)
+	Stack out : -
+write_ocInt
+	Description : Write an opcode with Int argument at current code offset in the currently compiled program. 
+	Stack in : Int (opcode argument), String (opcode name)
+	Stack out : -
+write_ocInt:String
+	Description : Write an opcode with Int argument at current code offset in the currently compiled program. 
+	Stack in : Int (opcode argument)
+	Stack out : -
+write_ocLabel
+	Description : Write an opcode with Label argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode argument), String (opcode name)
+	Stack out : -
+write_ocLabel:String
+	Description : Write an opcode with Label argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode argument)
+	Stack out : -
+write_ocString
+	Description : Write an opcode with String argument at current code offset in the currently compiled program. 
+	Stack in : String (opcode argument), String (opcode name)
+	Stack out :
+write_oc:String
+	Description : Write an opcode without argument at current code offset in the currently compiled program. 
+	Stack in :
+	Stack out :
+write_ocString:String
+	Description : Write an opcode with String argument at current code offset in the currently compiled program.
+	Stack in : String (opcode argument)
+	Stack out : -

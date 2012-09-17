@@ -1,0 +1,176 @@
+add
+	Description :  Arithmetic addition of two values. The result is Float if at least one value is Float, Int otherwise.
+	Stack in : Int/Float (a) , Int/Float (b)
+	Stack out : Int/Float (a+b)
+add:Float
+	Description : Arithmetic addition of two values. Result is Float. 
+	Stack in : Int/Float (a)
+	Stack out : Float (a+arg)
+add:Int
+	Description : Arithmetic addition of two values. Result is Float if the other value is Float, Int otherwise.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a+b)
+and
+	Description : Boolean and.
+	Stack in : Int (a), Int (b)
+	Stack out : Int (a&&b)
+and:Int
+	Description : Boolean and.
+	Stack in : Int (a)
+	Stack out : Int (a&&arg)
+cos
+	Description : Compute cosinus of value.
+	Stack in : Float (x)
+	Stack out : Float (cos(x))
+dec
+	Description : Decrease value. 
+	Stack in : Int (v)
+	Stack out : Int (v-1)
+div
+	Description : Divide two values. Like any other arithmetic operator, result is Float if at least one value is Float, Int otherwise.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a/b)
+div:Float
+	Description : Divide two values.
+	Stack in : Int/Float (a)
+	Stack out : Float (a/arg)
+div:Int
+	Description : Divide two values. Result is Float if value is Float, Int otherwise.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a/arg)
+eq
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a==b)
+exp
+	Description : Exponential function.
+	Stack in : Int/Float (x)
+	Stack out : Float (e^x)
+inc
+	Description : Increase value.
+	Stack in : Int (i)
+	Stack out : Int (i+1)
+inf
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a<b)
+infEq
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a<=b)
+log
+	Description : Natural logarithm function.
+	Stack in : Int/Float (a)
+	Stack out : Float (log(a))
+log:Float
+	Description : Natural logarithm function.
+	Stack in : -
+	Stack out : Float (log(arg))
+mod
+	Description : Arithmetic modulo of two values. Result is Float if at least one value is Float, Int otherwise.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a mod b)
+mod:Float
+	Description : Arithmetic modulo of two values. Result is Float.
+	Stack in : Int/Float (a)
+	Stack out : Float (a mod arg)
+mod:Int
+	Description : Arithmetic modulo of two values. Result is Float if given value is Float, Int otherwise.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a mod arg)
+mul
+	Description : Multiply two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a*b)
+mul:Float
+	Description : Multiply two numeric values.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a*arg)
+mul:Int
+	Description : Multiply two numeric values.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a*arg)
+nEq
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a!=b)
+not
+	Description : Boolean negation.
+	Stack in : Int (x)
+	Stack out : Int (!x)
+or
+	Description : Boolean or. 
+	Stack in : Int (a), Int (b)
+	Stack out : Int (a||b)
+or:Int
+	Description : Boolean or.
+	Stack in : Int (a)
+	Stack out : Int (a||arg)
+pow
+	Description : Power function.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a to the power of b)
+shl
+	Description : Bitwise left shift.
+	Stack in : Int (x)
+	Stack out : Int (x<<1)
+shl:Int
+	Description : Bitwise left shift.
+	Stack in : Int (x)
+	Stack out : Int (x<<arg)
+shr
+	Description : Bitwise right shift.
+	Stack in : Int (x)
+	Stack out : Int (x>>1)
+shr:Int
+	Description : Bitwise right shift.
+	Stack in : Int (x)
+	Stack out : Int (x>>arg)
+sin
+	Description : Sine function.
+	Stack in : Int/Float (x)
+	Stack out : Float (sin(x))
+sqrt
+	Description : Square root function.
+	Stack in : Int/Float (x)
+	Stack out : Float (sqrt(x))
+sub
+	Description : Substract two numeric values. Result is Float if at least one value is Float, Int otherwise.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int/Float (a-b)
+sub:Float
+	Description : Substract two numeric values. Result is Float.
+	Stack in : Int/Float (a)
+	Stack out : Float (a-arg)
+sub:Int
+	Description : Substract two numeric values. Result is Float if given value is Float, Int otherwise.
+	Stack in : Int/Float (a)
+	Stack out : Int/Float (a-arg)
+sup
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a>b)
+supEq
+	Description : Compare two numeric values.
+	Stack in : Int/Float (a), Int/Float (b)
+	Stack out : Int (a>=b)
+tan
+	Description : Compute trigonometric tangent of value.
+	Stack in : Float (value)
+	Stack out : Float (tan(value))
+vshl
+	Description : Variable bitwise left shift.
+	Stack in : Int (x), Int (count)
+	Stack out : Int (x<<count)
+vshr
+	Description : Variable bitwise right shift.
+	Stack in : Int (x), Int (count)
+	Stack out : Int (x>>count)
+xor
+	Description : Boolean exclusive or.
+	Stack in : Int (a), Int (b)
+	Stack out : Int ((a or b) and not (a and b))
+xor:Int
+	Description : Boolean exclusive or.
+	Stack in : Int (a), Int (b)
+	Stack out : Int ((a or b) and not (a and b))

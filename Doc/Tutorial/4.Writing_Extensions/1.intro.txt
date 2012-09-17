@@ -1,0 +1,66 @@
+In this section we will explain how to write and install opcode libraries for
+tinyaml.
+
+There are basically two parts in an extension :
+- C code that actually implements the opcodes' behaviours,
+- a tinyaml library file which describes the newly defined opcodes, and
+  optionally supply some driver code.
+
+The API reference (http://beublo23.free.fr/doxygen/tinyaml/) will come in handy
+to go through this section.
+
+The C routine for a VM opcode has the following signature :
+
+#include <tinyaml.h>
+void _VM_CALL vm_op_myopcodename(vm_t vm, word_t argument);
+
+If the opcode expects an immediate argument (Int, Float, String, Label, EnvSym)
+the name must be vm_op_myopcodename_Argtype (replace Argtype with the argument
+type).
+
+For instance :
+
+#include <tinyaml.h>
+
+void _VM_CALL vm_op_nop(vm_t vm, word_t unused);
+void _VM_CALL vm_op_push_Int(vm_t vm, int value);
+void _VM_CALL vm_op_push_Float(vm_t vm, float value);
+void _VM_CALL vm_op_push_String(vm_t vm, char* value);
+void _VM_CALL vm_op_call_Label(vm_t vm, word_t ip);
+void _VM_CALL vm_op_envGet_EnvSym(vm_t vm, word_t index);
+
+The tinyaml library file has the same syntax as any tinyaml program, except it
+starts with a lib..end bloc. There may be require and loadlib statements before
+this bloc.
+Inside the lib..end bloc, there are two types of statements :
+- file "RADIX" : select EXTLIBDIR/libtinyaml_RADIX.so to resolve the next
+                 opcodes. Unless you are defining the opcodes directly in your
+		 C program, this statement must appear prior to declaring any
+		 opcode, and can appear multiple times, if you wish to declare
+		 opcodes from many .so files in one tinyaml library file.
+- opcode OPCODENAME : declare the opcode OPCODENAME, which will resolve to the
+                      C routine vm_op_OPCODENAME.
+		      use OPCODENAME:ARGTYPE to declare opcodes with arguments.
+		      The corresponding C routine is vm_op_OPCODENAME_ARGTYPE.
+
+After the lib..end bloc can appear any other bloc (including other lib..end
+blocs). The lib..end bloc is compiled BEFORE whatever follows it (i.e. the
+compilation of whatever follows happen in a different compilation context), so
+you can use the opcodes declared in the lib..end bloc. It is convenient for
+writing driver code, for instance resource initialization (see IO extension) or
+the setup of worker threads (see RTC extension).
+
+We will focus in this tutorial on writing opcodes that demonstrate the use of
+the basic VM API, such as push/pop data, check types of popped data, and
+perform usual conversions :
+- 2.tutorial.tinyalib : the tinyaml library file declaring the opcodes, as well
+                        as a hello-world "driver" code.
+- 3.tutorial.c        : the C implementation of the declared opcodes.
+- 4.Makefile          : the Makefile to compile and install the extension.
+- 5.test.asm          : a simple example demonstrating the use of the new
+                        opcodes.
+
+Then you can take a look at the extension MessageQueue which demonstrates the
+definition of new managed types (i.e. allocated by the VM and collected by it)
+and how to implement blocking opcodes (interrupt the thread, but not the VM).
+

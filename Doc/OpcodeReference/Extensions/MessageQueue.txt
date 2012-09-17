@@ -1,0 +1,25 @@
+
+ Opcodes |
+________/
+
+
+msgQueueNew
+	Description : Create a new message queue.
+	Stack in : -
+	Stack out : MessageQueue
+
+msgQueueWrite
+	Description : Write a message to a message queue.
+	Stack in : any (message), MessageQueue
+	Stack out : -
+
+msgQueueReaderNew
+	Description : Create a new message queue reader.
+	Stack in : MessageQueue
+	Stack out : MessageQueueReader
+
+msgQueueRead
+	Description : Read a message from a MessageQueue. May block thread until a message arrives.
+	Stack in : MessageQueueReader
+	Stack out : any (message)
+

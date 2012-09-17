@@ -1,0 +1,95 @@
+
+ Opcodes |
+________/
+
+
+RTC_init
+	Description : Initialize the Real-Time Clock subsystem.
+	Stack in : -
+	Stack out : -
+
+RTC_term
+	Description : terminate the Real-Time Clock subsystem.
+	Stack in : -
+	Stack out : -
+
+RTC_start
+	Description : start the Real-Time Clock.
+	Stack in : -
+	Stack out : -
+
+RTC_stop
+	Description : stop the Real-Time Clock.
+	Stack in : -
+	Stack out : -
+
+RTC_sched
+	Description : schedule a task.
+		Tasks must accept a single Float argument which represents the
+		actual timestamp when the task was called.
+	Stack in : DynFun (task), Float (timestamp)
+	Stack out : -
+
+RTC_wait
+	Description : suspend thread and wake-up at given timestamp.
+	Stack in : Float (timestamp)
+	Stack out : -
+
+RTC_getDate
+	Description : get elapsed time in seconds since Real-Time Clock was started.
+	Stack in : -
+	Stack out : Float (date in seconds)
+
+RTC_getBeat
+	Description : get elapsed time in beats since Real-Time Clock was started.
+	Stack in : -
+	Stack out : Float (date in beats)
+
+RTC_setBeat:Float
+	Description : force current Real-Time Clock time in beats to arg value.
+	Stack in : -
+	Stack out : -
+
+RTC_setBeat
+	Description : force current Real-Time Clock time in beats.
+	Stack in : Float (new date in beats)
+	Stack out : -
+
+RTC_getTempo
+	Description : get current tempo (beats per minute).
+	Stack in : -
+	Stack out : Float (BPM)
+
+RTC_setTempo:Float
+	Description : set tempo to arg value.
+	Stack in : -
+	Stack out : -
+
+RTC_setTempo
+	Description : set tempo.
+	Stack in : Float (new BPM value)
+	Stack out : -
+
+RTC_getRes
+	Description : get current Real-Time Clock resolution.
+	Stack in : -
+	Stack out : Float (resolution in seconds)
+
+RTC_setRes:Float
+	Description : try to set Real-Time Clock resolution to arg value.
+		The result can be checked with RTC_getRes.
+	Stack in : -
+	Stack out : -
+
+RTC_setRes
+	Description : try to set Real-Time Clock resolution.
+		The result can be checked with RTC_getRes.
+	Stack in : Float (new resolution value in seconds)
+	Stack out : -
+
+_RTC_nextTask
+	Description : wait for next task's timestamp.
+		This opcode is for internal use in RTC driver code ONLY.
+	Stack in : -
+	Stack out : Float (timestamp), DynFun (task)
+
